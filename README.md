@@ -68,6 +68,10 @@ __Install anycluster with your Django installation__
 - in your urls.py add the following
 
     ``url(r'anycluster/', include('anycluster.urls')),``
+    
+- add anycluster to your ``STATICFILES_DIRS``
+
+    ``'/PATH_TO_YOUR_PROJECT_FOLDER/anycluster/static'``
 
 
 That's it! you are now ready to cluster your map markers.
