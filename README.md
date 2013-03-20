@@ -24,7 +24,7 @@ Requirements
 - Django 1.4.x (others might work, but are untested)
 - Geodjango
 - PostGis 2.0 (1.5 might work, it is untested)
-- (only for kmeans clustering) kmeans PostgreSQL extension: https://github.com/umitanuki/kmeans-postgresql
+- (for kmeans clustering, recommended) kmeans PostgreSQL extension: https://github.com/umitanuki/kmeans-postgresql
 
 If you want to use the shipped javascript files you also need JQuery.
 
