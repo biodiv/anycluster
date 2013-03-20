@@ -32,7 +32,7 @@ If you want to use the shipped javascript files you also need JQuery.
 Demo
 ----
 
-There's a demo at 
+There's a demo at http://www.anymals.org/nx/bigmap/
 Note: This one shows the kmeans clustering.
 
 
