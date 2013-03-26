@@ -11,11 +11,13 @@ This application offers 2 methods of clustering:
 - grid-based clustering
 - clustering based on geometric density of the points (needs PSQL extension)
 
-And lots of customization possibilities:
+... and has a builtin caching mechanism: if the user pans a map, only the new areas are processed.
+
+And lots of optional customization possibilities:
 - works with google maps and OpenLayers
 - define what happens if you click on a cluster
 - use your own cluster graphics
-- define grid and other cluster parameters
+- define gridsize and other cluster parameters
 - apply filters to your clusters
 
 
@@ -87,16 +89,17 @@ You first have to initialize the clusterer class ``Gmap``.
   
     googleMap = new Gmap('YOUR_MAP_DIV');
     
-You can then cluster your map with (kmeans)
+You can then cluster your map with
 
-    googleMap.pinCluster();
+    googleMap.cluster();
     
-or use a grid clusterer
+As the default cluster is a grid, you can change the clustering method:
 
-    googleMap.gridCluster();
+    googleMap.method = 'kmeans';
+    googleMap.cluster();    
     
 
-Both methods accept ``GRIDSIZE`` as an integer, e.g. ``googleMap.pinCluster(256);``. Play around with gridsizes to optimize the clustering for your dataset.
+The clusterer accepts ``GRIDSIZE`` as an integer, e.g. ``googleMap.cluster(256);``. Play around with gridsizes to optimize the clustering for your dataset.
 
 
 Full Example
@@ -105,11 +108,17 @@ Full Example
     $(document).ready(function() {
 
         googleMap = new Gmap('bigMapDiv', function(){
-        
-            googleMap.markerFinalClickFunction = function(marker) {
-                alert('you clicked the final marker');
-            };
             
-            googleMap.pinCluster(256);
+            googleMap.cluster();
+            
+        });
+        
+        googleMap.method = 'kmeans';
+        
+        googleMap.markerFinalClickFunction = function(marker) {
+                alert('you clicked the final marker');
+        };
+        
+        
         
     });
