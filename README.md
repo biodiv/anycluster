@@ -105,6 +105,8 @@ The clusterer accepts ``GRIDSIZE`` as an integer, e.g. ``googleMap.cluster(256);
 Full Example
 ------------
 
+This example reclusters the map on panning/zooming as the Gmap class receives the clustercommand in the callback function.
+
     $(document).ready(function() {
 
         googleMap = new Gmap('bigMapDiv', function(){
