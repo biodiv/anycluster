@@ -124,3 +124,6 @@ This example reclusters the map on panning/zooming as the Gmap class receives th
         
         
     });
+
+
+If further documentation is required write me a message. I might contribute something on readthedocs then.
