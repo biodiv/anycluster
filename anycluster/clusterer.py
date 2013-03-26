@@ -11,7 +11,6 @@ LICENSE: GPL
 
 ---------------------------------------------------------------------------------------'''
 import math, pyproj
-from django.db.models import Q
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from django.contrib.gis.geos import Point
 from globalmaptiles import GlobalMercator, GlobalGeodetic #optional for fallback calculations, not included yet
@@ -21,12 +20,13 @@ DEBUG = False
 
 if DEBUG == False:
     from django.conf import settings
+    from django.db.models import Q
     from django.db.models.loading import get_model
 
     #get the model as defined in settings
     geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
     geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
-    cluster_filters = getattr(settings, 'ANYCLUSTER_FILTERS', None)
+    CLUSTER_FILTERS = getattr(settings, 'ANYCLUSTER_FILTERS', None)
 
     Gis = get_model(geoapp,geomodel)
 
@@ -127,6 +127,7 @@ if DEBUG:
     viewport = {'left':-180,'top':89.90729724588122,'right':180,'bottom':-89.33684882403654}
     viewport2 = {'left':-180,'top':86.18232163314582,'right':180,'bottom':-82.57085949880509}
     viewport3 = {'left':-175.78124999999775, 'top':84.67351256610502, 'right':175.78124999999775, 'bottom':-84.67351256610502}
+    viewport4 = {'left':22.90021780289203, 'top':40.65626255144421, 'right':23.001498015294374, 'bottom':40.62369765879888} #thessaloniki distance cluster
 
 
 class MapTools():
@@ -254,19 +255,18 @@ class MapTools():
 
     #returns tile bounds in pixels
     def cellIDToTileBounds(self, cellID, gridSize):
-        left = cellID[0] * gridSize #minx
-        bottom = cellID[1] * gridSize #miny
-        right = (cellID[0]+1) * gridSize #maxx
-        top = (cellID[1]+1) * gridSize #maxy
+        x,y = cellID.split(',')
+        left = int(x) * gridSize #minx
+        bottom = int(y) * gridSize #miny
+        right = (int(x)+1) * gridSize #maxx
+        top = (int(y)+1) * gridSize #maxy
 
         if DEBUG:
             print('pixelbounds for cell %s%s: left: %s, top: %s, right: %s, bottom: %s' %(cellID[0],cellID[1],left,top,right, bottom))
 
         pixelbounds = {'left':left, 'top':top, 'right':right, 'bottom':bottom}
 
-        return pixelbounds
-        
-    
+        return pixelbounds       
 
 
     '''
@@ -292,7 +292,8 @@ class MapTools():
         min_y = bottomleftCellID[1]
         for x in range(min_x,max_x+1,1):
             for y in range(min_y,max_y+1,1):
-                cell = [x,y]
+                #cell = [x,y]
+                cell = '%s,%s' %(x,y)
                 clusterCells.append(cell)
                 
         return clusterCells
@@ -308,7 +309,20 @@ class MapTools():
                                                                 bounds['right'], bounds['top'])
         
         return poly
-    
+
+
+    #this one needs points in 3758, 900913 or 3857
+    def points_calcPixelDistance(self, pointA, pointB, zoom):
+
+       
+        #calc distance in meters
+        distance_m = math.sqrt( (pointA.x - pointB.x)**2 + (pointA.y - pointB.y)**2 )
+
+        #convert this to pixeldistance
+        res = self.resolution(zoom)
+        distance_p = distance_m / res
+        
+        return int(distance_p)
     
 
 #default is latlng 4326, input srid = output srid!
@@ -318,15 +332,129 @@ class MapClusterer():
 
         self.input_srid = input_srid
         self.maptools = MapTools(mapTileSize)
+        self.valid_operators = ['=','<','>','<=','>=']
 
+
+    #cache: {'filters':{}, 'cellIDs':[], 'zoom':1}, #returns clustercells and filters
+    def compareWithCache(self, request, clustercells, zoom):
+        clustercache = request.session.get('clustercache',{})
+
+        filters = []
+        
+        if CLUSTER_FILTERS:
+                         
+            for key in CLUSTER_FILTERS:
+                value_pre = request.GET.get(key, None)
+
+                if value_pre:
+                    vwop = value_pre.split('_')
+
+                    if len(vwop) == 2:
+                        operator = vwop[0]
+                        value = vwop[1]
+                        
+                        filters.append({'column':key, 'value':value, 'operator':operator})
+                        
+                    else:
+                        value = value_pre
+                        
+                        filters.append({'column':key, 'value':value})
+
+        
+        new_clustercells = []
+
+        use_cache = False
+
+        if clustercache:
+            #clear cache if zoomlevel changed
+            last_zoom = clustercache.get('zoom', None)
+
+            if zoom == last_zoom:
+
+                applied_filters = clustercache.get('filters', {})
+            
+                if filters == applied_filters:
+                    
+                    use_cache = True
+
+        if use_cache:
+            old_cells = clustercache['cellIDs']       
+            new_clustercells = set(clustercells)-old_cells
+            
+            clustered_cells = old_cells.union( new_clustercells )
+            
+        else:
+            clustered_cells = set(clustercells)
+            new_clustercells = clustered_cells
+
+
+        clustercache['cellIDs'] = clustered_cells
+        clustercache['filters'] = filters
+        clustercache['zoom'] = zoom
+
+        request.session['clustercache'] = clustercache
+
+        return new_clustercells, filters
+        
+        
+
+
+    #merge near clusters after kmeans [{'id':z, 'count':y, 'coordinates':x}], very simple method
+    def distanceCluster(self, points, zoom):
+
+        #clusterdistance in pixels, as this is constant on every zoom level
+        c_distance = 50
+
+        current_clist = points #[ point for point in clusters]
+
+        count = len(current_clist)
+
+        if count > 1:
+
+            for c in range(count):
+
+                cluster = current_clist.pop( c )
+
+                #iterate over remaining, grab and remove all in range
+                rcount = len(current_clist)
+
+                remove_points = []
+                
+                for i in range(rcount):
+                    
+                    point = current_clist[i]
+                    
+                    dist = self.maptools.points_calcPixelDistance(cluster.coordinates,point.coordinates, zoom)
+
+                    if dist <= c_distance:
+                        
+                        remove_points.append(i)
+                        cluster.count += point.count
+
+                        count += -1
+                        
+                remove_points.reverse()
+                for r in remove_points:
+                    current_clist.pop(r)
+
+                current_clist.insert(0, cluster)
+
+                if c+1 >= count:
+                    break
+
+
+        return current_clist                 
+    
 
     #defaults to goole srid
     #viewport is {'top':1,'right':2,'bottom':3,'left':4}
-    def gridCluster(self, viewport, zoom, gridSize = 256, **kwargs):
+    def gridCluster(self, request, zoom, gridSize = 256, **kwargs):
 
-        #filters = kwargs.get('filters', None)
+        viewport = request.GET
                 
-        clustercells = self.getClusterCells(viewport, zoom, gridSize)
+        clustercells_pre = self.getClusterCells(viewport, zoom, gridSize)
+
+        clustercells, filters = self.compareWithCache(request, clustercells_pre, zoom)
 
         if DEBUG:
             print('clustercells: %s' %clustercells)
@@ -348,23 +476,32 @@ class MapClusterer():
             Q_filters.add(Q(**{lookup:poly}), Q.AND)
 
             #apply optional filters
-            if cluster_filters:
-                    
-                    
-                            
-                    for key in cluster_filters:
-                    
-                        value = viewport.get(key, None)
+            if filters:
 
-                        if value:
-                            E_filters = Q()
-                            values = value.split('-')
+                    for fltr in filters:
+                        
+                        E_filters = Q()
+                        values = fltr['value'].split('-')
+                        column = fltr['column']
+                        operator = fltr.get('operator', None)
 
-                            for val in values:
-                                lookup = "%s__startswith" %key
-                                E_filters.add(Q(**{lookup:val}), Q.OR)
-                                    
-                            Q_filters.add(E_filters, Q.AND)
+                        for val in values:
+                            if operator:
+                                if operator == '=':
+                                    lookup = "%s =" %column
+                                elif operator == '<':
+                                    lookup = "%s__lt" %column
+                                elif operator == '<=':
+                                    lookup = "%s__lte" %column
+                                elif operator == '>':
+                                    lookup = "%s__gt" %column
+                                elif operator == '>=':
+                                    lookup = "%s__gte" %column
+                            else:
+                                lookup = "%s__startswith" %column
+                            E_filters.add(Q(**{lookup:val}), Q.OR)
+                                
+                        Q_filters.add(E_filters, Q.AND)
             
             pin_count = Gis.objects.filter(Q_filters).count()
 
@@ -395,11 +532,13 @@ class MapClusterer():
         return gridCells
     
 
-    def kmeansCluster(self,viewport, zoom, gridSize=512, **kwargs):
+    def kmeansCluster(self, request, zoom, gridSize=512, **kwargs):
 
-        #filters = kwargs.get('filters', None)
+        viewport = request.GET
         
-        clustercells = self.getClusterCells(viewport, zoom, gridSize)
+        clustercells_pre = self.getClusterCells(viewport, zoom, gridSize)
+
+        clustercells, filters = self.compareWithCache(request, clustercells_pre, zoom)
 
         pins = []
 
@@ -408,43 +547,45 @@ class MapClusterer():
             
             cell_topright, cell_bottomleft, poly, srid_db = self.clusterCellToBounds(cell, gridSize, zoom)
 
-            if cluster_filters is not None:
+            if filters:
 
                 filterstring = ''
 
-                counter = 0
                 
-                for key in cluster_filters:
-                    
-                    value = viewport.get(key, None)
-                    
-                    if value:
+                for fltr in filters:
+                                   
 
-                        #if there are multiple values, they are separated by a comma
-                        values = value.split('-')
+                    #if there are multiple values, they are separated by a comma
+                    values = fltr['value'].split('-')
+                    column = fltr['column']
+                    operator = fltr.get('operator', None)
 
-                        if counter == 0:
-                            filterstring += ' AND ( '
+                    if values:
+                    
+                        filterstring += ' AND ( '
 
                         valcounter = 0
 
                         for val in values:
                             if valcounter > 0:
                                 filterstring += ' OR '
-                            
-                            filterstring += "%s ~ '^%s.*' " %(key, val)
-                            valcounter += 1
-                        
-                        counter += 1
 
-                    if len(filterstring) > 0:
+                            if operator and operator in self.valid_operators:
+                                filterstring += "%s %s '%s' " %(column, operator, val)
+                            else:
+                                filterstring += "%s ~ '^%s.*' " %(column, val)
+                            
+                                
+                                
+                            valcounter += 1
+   
                         filterstring += ')'
 
                 #ST_AsText( ST_MinimumBoundingCircle(ST_Collect(%s),3) ) AS nodes
                 cellpins = Gis.objects.raw(
                         '''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS coordinates
                             FROM (
-                              SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 4) OVER (), %s
+                              SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s
                               FROM %s
                               WHERE ST_Within(%s, ST_GeomFromText('%s',%s) ) %s
                             ) AS ksub
@@ -457,7 +598,7 @@ class MapClusterer():
 
                 cellpins = Gis.objects.raw('''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS coordinates
                             FROM (
-                              SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 4) OVER (), %s
+                              SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s
                               FROM %s
                               WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
                             ) AS ksub
@@ -466,7 +607,11 @@ class MapClusterer():
                         ''' %(geo_column_str,geo_column_str,geo_column_str,geo_column_str, geo_table,geo_column_str, poly, srid_db)
                         )
 
+            #clean the clusters
+            cellpins = self.distanceCluster( list(cellpins), zoom )
 
+            if DEBUG:
+                print('pins after phase2: %s' %cellpins)
 
             for cell in cellpins:
                 point = cell.coordinates
@@ -508,7 +653,7 @@ class MapClusterer():
                 if point.srid != self.input_srid:
                     self.maptools.point_AnyToAny(point, point.srid, self.input_srid)
                 
-                pins.append({'count':cell.count, 'x':point.x, 'y':point.y})
+                pins.append({'count':cell.count, 'center':{'x':point.x, 'y':point.y}})
 
         return pins
         
@@ -637,7 +782,7 @@ class MapClusterer():
 
 '''----------------------------------------------------------------------------------
 
-                                     TILER
+                                     TILER (currently not in use)
 
 the tiler function splits a given rectangle into an amount of subrectangles
 and returns these subrectangles. The root rectangle is sliced into a given number
