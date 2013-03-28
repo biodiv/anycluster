@@ -23,7 +23,17 @@ var Gmap = function (id, callback) {
 	//default
 	this.method = 'grid';
 	
+	//count of total pins in all clusters
+	this.pincount = 0;
+	
+	// filters, the are being set from outside
+	this.filters = {};
+	
+	this.firstLoad = false;
+	
 	var initialize = function(imethod){
+		
+		clusterer.firstLoad = true;
 	
 		var imethod = (typeof imethod === "undefined") ? 'grid' : imethod;
 		
@@ -46,6 +56,7 @@ var Gmap = function (id, callback) {
 		
 		google.maps.event.addListener(clusterer.gmap, 'zoom_changed', function() {
 			 clusterer.removeMarkerCells();
+			 clusterer.pincount = 0;
 		});
       
 	}
@@ -69,10 +80,6 @@ var Gmap = function (id, callback) {
 	};
 	
 	
-	
-	// filters, the are being set from outside
-	this.filters = {};
-	
 	this.clearMarkers = false;
 	
 	//if a filter was added, markers need to be removed
@@ -86,10 +93,19 @@ var Gmap = function (id, callback) {
 		};
 
 		clusterer.clearMarkers = true;
+		clusterer.pincount = 0;
 	};
 	
-	this.removeFilter = function(filter){
-		delete clusterer.filters[filter];
+	this.removeFilters = function(activefilters){
+		
+		for (i=0; i<= activefilters.length; i++){
+		
+			delete clusterer.filters[ activefilters[i] ];
+		}
+		
+		clusterer.clearMarkers = true;
+		clusterer.pincount = 0;
+		
 	};
 	
 	
@@ -271,6 +287,9 @@ var Gmap = function (id, callback) {
 	this.loadStart = function(){
 	};
 	
+	this.loadEnd = function(){
+	};
+	
 	
 	this.cluster = function(gridsize,clustercallback){
 	
@@ -283,6 +302,12 @@ var Gmap = function (id, callback) {
 		var zoom = clusterer.gmap.getZoom();
 		var viewport = clusterer.gmap.getBounds();
 		var viewport_json = {'left':viewport.getSouthWest().lng(), 'top':viewport.getNorthEast().lat(), 'right':viewport.getNorthEast().lng(), 'bottom':viewport.getSouthWest().lat()};
+		
+		//on first load, disable cache
+		if (clusterer.firstLoad === true){
+			viewport_json['cache'] = 'load';
+			clusterer.firstLoad = false;
+		};
 		
 		//if filters are given, add them to GET
 		if (Object.keys(clusterer.filters).length !== 0){
@@ -301,19 +326,19 @@ var Gmap = function (id, callback) {
 			dataType: 'json',
 			success: function(pins){
 			
+				if (clusterer.clearMarkers === true ){
+					clusterer.removeMarkerCells();
+				};
+			
 				if (pins.length > 0) {
-				
-					if (clusterer.clearMarkers === true ){
-						clusterer.removeMarkerCells();
-					};
-					
-					
 					//draw pins
 					for(i=0; i<pins.length; i++) {
 
 						var center = new google.maps.LatLng(pins[i]['center']['y'], pins[i]['center']['x']);
 				
 						var count = pins[i]['count'];
+						
+						clusterer.pincount = clusterer.pincount + parseInt(count);
 						
 						if (clusterer.method == 'grid'){
 							clusterer.drawCell(gridsize,center,count,zoom,i);
@@ -332,6 +357,8 @@ var Gmap = function (id, callback) {
 					
 				
 				};
+				
+				clusterer.loadEnd();
 				
 				
 			},
