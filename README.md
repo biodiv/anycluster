@@ -36,7 +36,7 @@ Demo
 ----
 
 There's a demo at http://www.anymals.org/nx/bigmap/
-Note: This one shows the kmeans clustering.
+Note: This one shows the kmeans clustering. The underlying database contains 6 Million entries.
 
 
 Installation and configuration
