@@ -337,7 +337,10 @@ class MapClusterer():
 
     #cache: {'filters':{}, 'cellIDs':[], 'zoom':1}, #returns clustercells and filters
     def compareWithCache(self, request, clustercells, zoom):
+        
         clustercache = request.session.get('clustercache',{})
+
+        deliver_cache = request.GET.get('cache', None)
 
         filters = []
         
@@ -365,7 +368,9 @@ class MapClusterer():
 
         use_cache = False
 
-        if clustercache:
+        
+
+        if clustercache and not deliver_cache:
             #clear cache if zoomlevel changed
             last_zoom = clustercache.get('zoom', None)
 
@@ -396,8 +401,60 @@ class MapClusterer():
 
         return new_clustercells, filters
         
+    def constructFilterstring(self,filters):
         
+        filterstring = ''
+       
+        for fltr in filters:
+                           
 
+            #if there are multiple values, they are separated by a comma
+            values = fltr['value'].split(',')
+            column = fltr['column']
+            operator = fltr.get('operator', None)
+
+            if values:
+            
+                filterstring += ' AND ( '
+
+                if column == 'time':
+
+                    if operator is not None:
+                        
+                        filterstring += "%s %s TIMESTAMP '%s'" %(column, operator, values[0])
+
+                    else:
+
+                        months = values[0].split('-')
+                        years = values[1].split('-')
+
+                        filterstring += '''EXTRACT(YEAR FROM time) >= %s
+                                            AND EXTRACT(YEAR FROM time) <= %s
+                                            AND EXTRACT(MONTH FROM time) >= %s
+                                            AND EXTRACT(MONTH FROM time) <= %s
+                                            '''%(years[0],years[1],months[0],months[1])
+                    
+                else:
+
+                    valcounter = 0
+
+                    for val in values:
+                        if valcounter > 0:
+                            filterstring += ' OR '
+
+                        if operator and operator in self.valid_operators:
+                            filterstring += "%s %s '%s' " %(column, operator, val)
+                        else:
+                            filterstring += "%s ~ '^%s.*' " %(column, val)
+                        
+                            
+                            
+                        valcounter += 1
+
+                filterstring += ')'
+
+        return filterstring
+        
 
     #merge near clusters after kmeans [{'id':z, 'count':y, 'coordinates':x}], very simple method
     def distanceCluster(self, points, zoom):
@@ -478,12 +535,31 @@ class MapClusterer():
             #apply optional filters
             if filters:
 
-                    for fltr in filters:
-                        
-                        E_filters = Q()
-                        values = fltr['value'].split('-')
-                        column = fltr['column']
-                        operator = fltr.get('operator', None)
+                filterstring = self.constructFilterstring(filters)
+
+                pin_count_pre = Gis.objects.raw(''' SELECT COUNT(*) as id FROM %s WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
+                                                %s                                                
+                                            ''' %(geo_table ,geo_column_str, poly, srid_db, filterstring) )
+
+                pin_count = int(pin_count_pre[0].id)
+                #django orm fails on range of months across years, use raw if filters are applies
+                '''
+                for fltr in filters:
+                    
+                    E_filters = Q()
+                    values = fltr['value'].split(',')
+                    column = fltr['column']
+                    operator = fltr.get('operator', None)
+
+                    if column == 'time':
+
+                        months = values[0].split('-')
+                        years = values[1].split('-')
+
+                                                  
+                        E_filters.add( (Q(time__year__gte = years[0]) & Q(time__year__lte = years[1]) & Q(time__month__gte = months[0]) & Q(time__month__lte = months[1])), Q.AND)
+
+                    else:
 
                         for val in values:
                             if operator:
@@ -500,10 +576,11 @@ class MapClusterer():
                             else:
                                 lookup = "%s__startswith" %column
                             E_filters.add(Q(**{lookup:val}), Q.OR)
-                                
-                        Q_filters.add(E_filters, Q.AND)
-            
-            pin_count = Gis.objects.filter(Q_filters).count()
+                            
+                    Q_filters.add(E_filters, Q.AND)
+            '''
+            else:
+                pin_count = Gis.objects.filter(Q_filters).count()
 
             #transform the polys to output srid if necessary
             if srid_db != self.input_srid:
@@ -549,37 +626,7 @@ class MapClusterer():
 
             if filters:
 
-                filterstring = ''
-
-                
-                for fltr in filters:
-                                   
-
-                    #if there are multiple values, they are separated by a comma
-                    values = fltr['value'].split('-')
-                    column = fltr['column']
-                    operator = fltr.get('operator', None)
-
-                    if values:
-                    
-                        filterstring += ' AND ( '
-
-                        valcounter = 0
-
-                        for val in values:
-                            if valcounter > 0:
-                                filterstring += ' OR '
-
-                            if operator and operator in self.valid_operators:
-                                filterstring += "%s %s '%s' " %(column, operator, val)
-                            else:
-                                filterstring += "%s ~ '^%s.*' " %(column, val)
-                            
-                                
-                                
-                            valcounter += 1
-   
-                        filterstring += ')'
+                filterstring = self.constructFilterstring(filters)
 
                 #ST_AsText( ST_MinimumBoundingCircle(ST_Collect(%s),3) ) AS nodes
                 cellpins = Gis.objects.raw(
