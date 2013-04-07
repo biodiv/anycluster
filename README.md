@@ -19,6 +19,7 @@ And lots of optional customization possibilities:
 - use your own cluster graphics
 - define gridsize and other cluster parameters
 - apply filters to your clusters
+- use different markers if count is 1
 
 
 Requirements
@@ -36,7 +37,7 @@ Demo
 ----
 
 There's a demo at http://www.anymals.org/nx/bigmap/
-Note: This one shows the kmeans clustering. The underlying database contains 6 Million entries.
+Note: This one shows the kmeans clustering. The underlying database contains 5.5 Million entries.
 
 
 Installation and configuration
@@ -67,6 +68,9 @@ __Install anycluster with your Django installation__
 
     ``ANYCLUSTER_FILTERS = ['column1','column2']``
 
+- (optional) if you want to use custom markers if count of pin is 1
+
+    ``ANYCLUSTER_PINCOLUMN = 'my_pincoumn'``
 
 - in your urls.py add the following
 
@@ -91,37 +95,38 @@ You first have to initialize the clusterer class ``Gmap``.
     
 You can then cluster your map with
 
-    googleMap.cluster();
+    googleMap.startClustering();
     
 As the default cluster is a grid, you can change the clustering method:
 
-    googleMap.method = 'kmeans';
-    googleMap.cluster();    
+    googleMap.clustermethod = 'kmeans';
+    googleMap.startClustering();    
     
 
-The clusterer accepts ``GRIDSIZE`` as an integer, e.g. ``googleMap.cluster(256);``. Play around with gridsizes to optimize the clustering for your dataset.
+The clusterer accepts ``GRIDSIZE`` as an integer, e.g. ``googleMap.startClustering(256);``. Play around with gridsizes to optimize the clustering for your dataset.
 
 
 Full Example
 ------------
 
-This example reclusters the map on panning/zooming as the Gmap class receives the clustercommand in the callback function.
+This example reclusters the map (only the new tiles) on panning/zooming, adds a simple filter, assigns something for the last marker and displays the total count of elements in a div
 
     $(document).ready(function() {
 
-        googleMap = new Gmap('bigMapDiv', function(){
-            
-            googleMap.cluster();
-            
-        });
+        googleMap = new Gmap('bigMapDiv');
+        googleMap.clustermethod = 'kmeans';
         
-        googleMap.method = 'kmeans';
+        googleMap.filters = {'is_liked':'=_TRUE'};
         
         googleMap.markerFinalClickFunction = function(marker) {
                 alert('you clicked the final marker');
         };
         
+        googleMap.loadEnd = function(){
+    	    $('#totalcount').html( googleMap.pincount );
+        };
         
+        googleMap.startClustering();
         
     });
 
