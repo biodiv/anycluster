@@ -13,15 +13,20 @@ markerImages = {
 	
 };
 
-
 //dragend zoom_changed will fire new clustering
 
-var Gmap = function (id, callback) {
+var Gmap = function (id, initcallback) {
 
 	var clusterer = this;
 	
+	//overridable clustering workflow, e.g. for determining clustermethod first
+	this.clusterflow = clusterer.cluster;
+	
 	//default
-	this.method = 'grid';
+	this.clustermethod = 'grid';
+	
+	//start of url - in case you want to override the shipped views
+	this.baseurl = '/anycluster/'
 	
 	//count of total pins in all clusters
 	this.pincount = 0;
@@ -31,37 +36,39 @@ var Gmap = function (id, callback) {
 	
 	this.firstLoad = false;
 	
-	var initialize = function(imethod){
+	var initialize = function(){
 		
-		clusterer.firstLoad = true;
-	
-		var imethod = (typeof imethod === "undefined") ? 'grid' : imethod;
-		
-		clusterer.method = imethod;
+		clusterer.firstLoad = true;				
 		
 		var mapOptions = {
 		  minZoom: 2,
 		  zoom: 2,
 		  scrollwheel: false,
 		  center: new google.maps.LatLng(30, 0),
-		  mapTypeId: google.maps.MapTypeId.ROADMAP
+		  mapTypeId: google.maps.MapTypeId.TERRAIN
 		};
 	
 		clusterer.gmap = new google.maps.Map(document.getElementById(id),
 		    mapOptions);
-		
+		    
+		if (typeof initcallback === "function") {
+			initcallback();
+		}
+      
+	}
+	
+	initialize();
+	
+	this.startClustering = function(){
 		google.maps.event.addListener(clusterer.gmap, 'idle', function() {
-			 callback();
+			 clusterer.clusterflow();
 		});
 		
 		google.maps.event.addListener(clusterer.gmap, 'zoom_changed', function() {
 			 clusterer.removeMarkerCells();
 			 clusterer.pincount = 0;
 		});
-      
 	}
-	
-	initialize();
 	
 	//zoom in on big clusters
 	this.markerClickFunction = function(marker) {
@@ -202,11 +209,28 @@ var Gmap = function (id, callback) {
 	}
 	
 	
-	this.drawMarker = function(center, count, zoom){
+	this.drawMarker = function(center, count, zoom, pinimg){
 		var anchor,
-		    icon;
-	
-		if (count <= 5 ){
+		    icon,
+		    label_content;
+		    
+		if (count == 1){
+			//special markerpinselector, quote this out if committing
+			//pinimg = markerPinSelector(pinimg);
+			
+			icon = new google.maps.MarkerImage('/static/anycluster/images/' + pinimg + '.png',
+			    // second line defines the dimensions of the image
+			    new google.maps.Size(24, 39),
+			    // third line defines the origin of the custom icon
+			    new google.maps.Point(0,0),
+			    // and the last line defines the offset for the image
+			    new google.maps.Point(12,39)
+			);
+			anchor = new google.maps.Point(4,9);
+			label_content = '';
+			
+		}
+		else if (count <= 5 ){
 			icon = new google.maps.MarkerImage(markerImages[5],
 			    // second line defines the dimensions of the image
 			    new google.maps.Size(30, 30),
@@ -216,6 +240,7 @@ var Gmap = function (id, callback) {
 			    new google.maps.Point(15, 15)
 			);
 			anchor = new google.maps.Point(4,9);
+			label_content = count;
 		}
 		
 		else if (count < 10) {
@@ -225,6 +250,7 @@ var Gmap = function (id, callback) {
 			    new google.maps.Point(15, 15)
 			);
 			anchor = new google.maps.Point(4,9);
+			label_content = count;
 		
 		}
 		
@@ -235,6 +261,7 @@ var Gmap = function (id, callback) {
 			    new google.maps.Point(20, 20)
 			);
 			anchor = new google.maps.Point(8,9);
+			label_content = count;
 		}
 		
 		else if (count < 1000 ) {
@@ -244,6 +271,7 @@ var Gmap = function (id, callback) {
 			    new google.maps.Point(25, 25)
 			);
 			anchor = new google.maps.Point(12,9);
+			label_content = count;
 		}
 		
 		else {
@@ -253,6 +281,7 @@ var Gmap = function (id, callback) {
 			    new google.maps.Point(30, 30)
 			);
 			anchor = new google.maps.Point(16,9);
+			label_content = count;
 		};
 		
 		
@@ -260,7 +289,7 @@ var Gmap = function (id, callback) {
 		       position: center,
 		       map: clusterer.gmap,
 		       draggable: false,
-		       labelContent: count,
+		       labelContent: label_content,
 		       icon: icon,
 		       labelAnchor: anchor,
 		       labelClass: "clusterlabels", // the CSS class for the label
@@ -320,7 +349,7 @@ var Gmap = function (id, callback) {
 		
 		
 		$.ajax({
-			url: '/anycluster/' + clusterer.method + '/' + zoom + '/' + gridsize + '/',
+			url: clusterer.baseurl + clusterer.clustermethod + '/' + zoom + '/' + gridsize + '/',
 			type: 'GET',
 			data: viewport_json,
 			dataType: 'json',
@@ -338,17 +367,25 @@ var Gmap = function (id, callback) {
 				
 						var count = pins[i]['count'];
 						
+						var pinimg = pins[i]['pinimg'];
+						
 						clusterer.pincount = clusterer.pincount + parseInt(count);
 						
-						if (clusterer.method == 'grid'){
-							clusterer.drawCell(gridsize,center,count,zoom,i);
+						if (clusterer.clustermethod == 'grid'){
+							
+							if ( count == 1) {
+								clusterer.drawMarker(center,count,zoom,pinimg);
+							}
+							else {
+								clusterer.drawCell(gridsize,center,count,zoom,i);
+							}
 						}
 						
-						else if (clusterer.method == 'kmeans'){
-							clusterer.drawMarker(center,count,zoom);
+						else if (clusterer.clustermethod == 'kmeans'){
+							clusterer.drawMarker(center,count,zoom,pinimg);
 						};
 						
-						if (typeof clustercallback !== "undefined") {
+						if (typeof clustercallback === "function") {
 							clustercallback();
 						}
 					
@@ -367,7 +404,31 @@ var Gmap = function (id, callback) {
 		});
 		
 		
-	};
+	}
 	
+	
+	this.getBounds = function(callback){
+	
+		$.ajax({
+			url:  clusterer.baseurl + 'getbounds/',
+			type: 'GET',
+			data: clusterer.filters,
+			dataType: 'json',
+			success: function(bounds){
+				
+				var southwest = new google.maps.LatLng(bounds['bottom'], bounds['left']);
+				var northeast = new google.maps.LatLng(bounds['top'], bounds['right']);
+				
+				var bounds = new google.maps.LatLngBounds(southwest,northeast);
+				clusterer.gmap.fitBounds(bounds);
+				
+				if (typeof callback === "function") {
+					callback();
+				}
+				
+			}
+		});
+		
+	}
     
 }
