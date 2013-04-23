@@ -11,7 +11,7 @@ LICENSE: GPL
 
 ---------------------------------------------------------------------------------------'''
 import math, pyproj
-from django.contrib.gis.gdal import SpatialReference, CoordTransform
+from django.contrib.gis.gdal import SpatialReference, CoordTransform, SRSException
 from django.contrib.gis.geos import Point
 from globalmaptiles import GlobalMercator, GlobalGeodetic #optional for fallback calculations, not included yet
 
@@ -158,7 +158,13 @@ class MapTools():
 
         source_srid = point.srid
         sourcecoord = SpatialReference(source_srid)
-        mercator = SpatialReference("900913")
+        try:
+            mercator = SpatialReference("3857")
+        except SRSException:
+            try:
+                mercator = SpatialReference("900913")
+            except SRSException:
+                mercator = SpatialReference("3785")
         trans = CoordTransform(sourcecoord, mercator)
         
         point.transform(trans)
@@ -576,8 +582,11 @@ class MapClusterer():
                 for i in range(rcount):
                     
                     point = current_clist[i]
+
+                    clustercoords = getattr(cluster,geo_column_str)
+                    pointcoords = getattr(point,geo_column_str)
                     
-                    dist = self.maptools.points_calcPixelDistance(cluster.coordinates,point.coordinates, zoom)
+                    dist = self.maptools.points_calcPixelDistance(clustercoords,pointcoords, zoom)
 
                     if dist <= c_distance:
                         
@@ -634,16 +643,16 @@ class MapClusterer():
                 pin_count = int(pin_count_pre[0].id)
 
                 if PINCOLUMN is not None and pin_count == 1:
-                    pinimg_pre = Gis.objects.raw(''' SELECT %s AS id, %s AS coordinates FROM %s WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
+                    pinimg_pre = Gis.objects.raw(''' SELECT %s AS id, %s AS %s FROM %s WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
                                                 %s                                                
-                                            ''' %(PINCOLUMN, geo_column_str, geo_table ,geo_column_str, poly, srid_db, filterstring) )
+                                            ''' %(PINCOLUMN, geo_column_str, geo_column_str, geo_table ,geo_column_str, poly, srid_db, filterstring) )
 
                     pinimg = pinimg_pre[0].id
-                    coordinates = pinimg_pre[0].coordinates
+                    coordinates = getattr(pinimg_pre[0], geo_column_str)
                 else:
                     pinimg = None
                 
-                #django orm fails on range of months across years, use raw if filters are applies
+                #django orm fails on range of months across years, use raw if filters are applied
                 '''
                 for fltr in filters:
                     
@@ -763,7 +772,7 @@ class MapClusterer():
 
                 #ST_AsText( ST_MinimumBoundingCircle(ST_Collect(%s),3) ) AS nodes
                 cellpins = Gis.objects.raw(
-                        '''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS coordinates %s
+                        '''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS %s %s
                             FROM (
                               SELECT %s kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s
                               FROM %s
@@ -771,12 +780,12 @@ class MapClusterer():
                             ) AS ksub
                             GROUP BY kmeans
                             ORDER BY kmeans;
-                        ''' %(geo_column_str,pin_qry[0],pin_qry[1],geo_column_str,geo_column_str,geo_column_str, geo_table,geo_column_str, poly, srid_db, filterstring)
+                        ''' %(geo_column_str,geo_column_str,pin_qry[0],pin_qry[1],geo_column_str,geo_column_str,geo_column_str, geo_table,geo_column_str, poly, srid_db, filterstring)
                         )
 
             else:
 
-                cellpins = Gis.objects.raw('''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS coordinates %s
+                cellpins = Gis.objects.raw('''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS %s %s
                             FROM (
                               SELECT %s kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s
                               FROM %s
@@ -784,7 +793,7 @@ class MapClusterer():
                             ) AS ksub
                             GROUP BY kmeans
                             ORDER BY kmeans;
-                        ''' %(geo_column_str,pin_qry[0],pin_qry[1],geo_column_str,geo_column_str,geo_column_str, geo_table,geo_column_str, poly, srid_db)
+                        ''' %(geo_column_str,geo_column_str,pin_qry[0],pin_qry[1],geo_column_str,geo_column_str,geo_column_str, geo_table,geo_column_str, poly, srid_db)
                         )
 
             #clean the clusters
@@ -794,7 +803,7 @@ class MapClusterer():
                 print('pins after phase2: %s' %cellpins)
 
             for cell in cellpins:
-                point = cell.coordinates
+                point = getattr(cell,geo_column_str)
 
                 #calculate the radius in METERS
                 '''
