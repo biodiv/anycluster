@@ -873,7 +873,7 @@ class MapClusterer():
         srid_db_objs = Gis.objects.raw(srid_qry)
         
         if len(list(srid_db_objs)) > 0:
-            srid_db_objs[0].st_srid
+            srid_db = srid_db_objs[0].st_srid
         else:
             try:
                 srid_db = settings.ANYCLUSTER_COORDINATES_COLUMN_SRID
