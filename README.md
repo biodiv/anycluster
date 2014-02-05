@@ -63,6 +63,12 @@ __Install anycluster with your Django installation__
 
     ``ANYCLUSTER_GEODJANGO_MODEL = "yourapp.your_geodjango_model"``
     ``ANYCLUSTER_COORDINATES_COLUMN = "your_geometric_column"``
+    
+    if you are on Django 1.6 (maybe on 1.5, too) and you are not using SRID=4326 you have to add:
+    
+    ``ANYCLUSTER_COORDINATES_COLUMN_SRID = sridinteger``
+    
+    with sridinteger being your srid (e.g. 3785). Otherwise it will fall back to 4326
 
 - (optional) if you want to add filters to your clustering you have to add those columns as a list
 
