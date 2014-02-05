@@ -444,7 +444,7 @@ class MapClusterer():
 
 
         if use_cache:
-            old_cells = clustercache['cellIDs']       
+            old_cells = set(clustercache['cellIDs']) #changed for Django1.6 compatibility       
             new_clustercells = set(clustercells)-old_cells
             
             clustered_cells = old_cells.union( new_clustercells )
@@ -454,7 +454,7 @@ class MapClusterer():
             new_clustercells = clustered_cells
 
 
-        clustercache['cellIDs'] = clustered_cells
+        clustercache['cellIDs'] = list(clustered_cells) #changed for Django1.6 compatibility   
         clustercache['filters'] = filters
         clustercache['zoom'] = zoom
 
@@ -870,7 +870,15 @@ class MapClusterer():
 
         #we need bounds according to the srid of the database
         srid_qry = "SELECT id, ST_SRID(%s) FROM %s LIMIT 1;" %(geo_column_str, geo_table)
-        srid_db = Gis.objects.raw(srid_qry)[0].st_srid
+        srid_db_objs = Gis.objects.raw(srid_qry)
+        
+        if len(list(srid_db_objs)) > 0:
+            srid_db_objs[0].st_srid
+        else:
+            try:
+                srid_db = settings.ANYCLUSTER_COORDINATES_COLUMN_SRID
+            except:
+                srid_db = 4326
 
         #if it is not a latlng database, convert the polygons
         if srid_db != 4326:
