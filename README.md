@@ -10,6 +10,7 @@ Features
 This application offers 2 methods of clustering:
 - grid-based clustering
 - clustering based on geometric density of the points (needs PSQL extension)
+- get all elements contained in a cluster
 
 ... and has a builtin caching mechanism: if the user pans a map, only the new areas are processed.
 
