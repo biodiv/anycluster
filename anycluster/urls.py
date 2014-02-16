@@ -10,4 +10,5 @@ urlpatterns = patterns('',
     url(r'^kmeans/(\d+)/(\d+)/$', views.getPins, name='getPins'),
     url(r'^getbounds/$', views.getBounds, name='getBounds'),
     url(r'^getbounds/(\d+)/$', views.getBounds, name='getBounds_wsrid'),
+    url(r'^getClusterContent/(\d+)/(\d+)/$', views.getClusterContent, name='getClusterContent'),
 )
