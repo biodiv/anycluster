@@ -26,7 +26,7 @@ And lots of optional customization possibilities:
 Requirements
 ------------
 
-- Django 1.4.x (others might work, but are untested)
+- Django 1.4.x - 1.6.x (others might work, but are untested)
 - Geodjango
 - PostGis 2.0 (1.5 might work, it is untested)
 - (for kmeans clustering, recommended) kmeans PostgreSQL extension: https://github.com/umitanuki/kmeans-postgresql
