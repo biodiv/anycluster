@@ -72,7 +72,7 @@ var Gmap = function (id, initcallback) {
 	
 	//zoom in on big clusters
 	this.markerClickFunction = function(marker) {
-		
+	
 		clusterer.removeMarkerCells();
 		var zoom = clusterer.gmap.getZoom();
 		zoom = zoom + 3;
@@ -83,7 +83,9 @@ var Gmap = function (id, initcallback) {
 	
 	//on small markers or on final zoom, this function is launched, may set from outside for easier use
 	this.markerFinalClickFunction = function(marker) {
-		alert('final click, override or change Gmap.markerFinalClickFunction for custom behaviour');
+		clusterer.getClusterContent(marker, function(entries){
+			alert(entries);
+		});
 	};
 	
 	
@@ -209,7 +211,7 @@ var Gmap = function (id, initcallback) {
 	}
 	
 	
-	this.drawMarker = function(center, count, zoom, pinimg){
+	this.drawMarker = function(center, count, zoom, pinimg, ids){
 		var anchor,
 		    icon,
 		    label_content;
@@ -294,7 +296,8 @@ var Gmap = function (id, initcallback) {
 		       labelAnchor: anchor,
 		       labelClass: "clusterlabels", // the CSS class for the label
 		       labelInBackground: false,
-		       count: count
+		       count: count,
+		       ids: ids
 		});
 		
 		clusterer.gridCells.push(marker);
@@ -369,12 +372,14 @@ var Gmap = function (id, initcallback) {
 						
 						var pinimg = pins[i]['pinimg'];
 						
+						var ids = pins[i]["ids"];
+						
 						clusterer.pincount = clusterer.pincount + parseInt(count);
 						
 						if (clusterer.clustermethod == 'grid'){
 							
 							if ( count == 1) {
-								clusterer.drawMarker(center,count,zoom,pinimg);
+								clusterer.drawMarker(center,count,zoom,pinimg,ids);
 							}
 							else {
 								clusterer.drawCell(gridsize,center,count,zoom,i);
@@ -382,7 +387,7 @@ var Gmap = function (id, initcallback) {
 						}
 						
 						else if (clusterer.clustermethod == 'kmeans'){
-							clusterer.drawMarker(center,count,zoom,pinimg);
+							clusterer.drawMarker(center,count,zoom,pinimg,ids);
 						};
 						
 						if (typeof clustercallback === "function") {
@@ -409,6 +414,8 @@ var Gmap = function (id, initcallback) {
 	
 	this.getBounds = function(callback){
 	
+		
+	
 		$.ajax({
 			url:  clusterer.baseurl + 'getbounds/',
 			type: 'GET',
@@ -429,6 +436,40 @@ var Gmap = function (id, initcallback) {
 			}
 		});
 		
+	}
+	
+	
+	this.getClusterContent = function(cluster, callback){
+	
+		alert(cluster.ids);
+	
+		var gridsize = (typeof gridsize === "undefined") ? 256 : gridsize;
+
+		var zoom = clusterer.gmap.getZoom();
+	
+		var data_string = "?x=" + cluster.position.lng() + "&y=" + cluster.position.lat();
+		
+		for (var i=0; i<cluster.ids.length; i++){
+			data_string += "&id=" + cluster.ids[i];
+		}
+		
+		for (var key in clusterer.filters){
+			data_string += "&" + key + "=" + clusterer.filters[key];
+		}
+		
+		
+	
+		$.ajax({
+			url:  clusterer.baseurl + 'getClusterContent/' + zoom + '/' + gridsize + '/' + data_string,
+			type: 'GET',
+			dataType: 'json',
+			success: function(entries){
+
+				callback(entries);
+
+			}
+		});
+	
 	}
     
 }
