@@ -177,8 +177,6 @@ class MapTools():
                 #cell = [x,y]
                 cell = '%s,%s' %(x,y)
                 clusterCells.append(cell)
-
-        print 'cells: %s' %clusterCells 
                 
         return clusterCells
 
