@@ -210,8 +210,64 @@ var Gmap = function (id, initcallback) {
 		
 	}
 	
+	this.drawMarker = function(center, count, zoom, pinimg){
+		
+
+    	if (count == 1) {
+            var pinicon = markerPinSelector(pinimg);
+        }
+
+        else if (count > 10000){
+            var pinicon = '10000'
+        }
+
+        else if (count > 1000) {
+            var pinicon = '1000';
+        }
+
+        else if (count > 100) {
+            var pinicon = '100';
+        }
+
+        else if (count > 50) {
+            var pinicon = '50';
+        }
+
+        else if (count > 10) {
+            var pinicon = '10';
+        }
+
+        else {
+            var pinicon = '5';
+        }
+
+        var marker = new google.maps.Marker({
+            position: center,
+            map: clusterer.gmap,
+            count: count,
+            icon: '/static/anycluster/images/' + pinicon + '.png',
+        });
+
+		//alert(pinicon);
+
+        clusterer.gridCells.push(marker);
+		
+		if (zoom >= 13 || count <= 3) {
+			google.maps.event.addListener(marker, 'click', function() {
+				clusterer.markerFinalClickFunction(this);
+			});
+		}
+		
+		else {
+			google.maps.event.addListener(marker, 'click', function() {
+				clusterer.markerClickFunction(this);
+			});
+		}
 	
-	this.drawMarker = function(center, count, zoom, pinimg, ids){
+	}
+	
+	
+	this.drawMarker_broken = function(center, count, zoom, pinimg, ids){
 		var anchor,
 		    icon,
 		    label_content;
