@@ -1,4 +1,4 @@
-from anycluster.clusterer import MapClusterer
+from anycluster.MapClusterer import MapClusterer
 
 
 def getKmeansClusterEntries(request, zoom, gridSize = 512):

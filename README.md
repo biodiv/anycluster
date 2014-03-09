@@ -10,6 +10,7 @@ Features
 This application offers 2 methods of clustering:
 - grid-based clustering
 - clustering based on geometric density of the points (needs PSQL extension)
+- get all elements contained in a cluster
 
 ... and has a builtin caching mechanism: if the user pans a map, only the new areas are processed.
 
@@ -25,7 +26,7 @@ And lots of optional customization possibilities:
 Requirements
 ------------
 
-- Django 1.4.x (others might work, but are untested)
+- Django 1.4.x - 1.6.x (others might work, but are untested)
 - Geodjango
 - PostGis 2.0 (1.5 might work, it is untested)
 - (for kmeans clustering, recommended) kmeans PostgreSQL extension: https://github.com/umitanuki/kmeans-postgresql
