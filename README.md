@@ -139,3 +139,10 @@ This example reclusters the map (only the new tiles) on panning/zooming, adds a 
 
 
 If further documentation is required write me a message. I might contribute something on readthedocs then.
+
+
+Performance Tips
+----------------
+
+- index your GIS database columns correctly
+- usage of a SSD can be 10-20 times faster compared to HDD
