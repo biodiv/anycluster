@@ -166,15 +166,19 @@ class MapTools():
 
     def get_ClusterCells(self, toprightCellID, bottomleftCellID):
         clusterCells = []
-        max_x = toprightCellID[0]
-        max_y = toprightCellID[1]
-        min_x = bottomleftCellID[0]
-        min_y = bottomleftCellID[1]
+
+        max_x = max(toprightCellID[0],bottomleftCellID[0])
+        max_y = max(toprightCellID[1],bottomleftCellID[1])
+        min_x = min(toprightCellID[0],bottomleftCellID[0])
+        min_y = min(toprightCellID[1],bottomleftCellID[1])
+        
         for x in range(min_x,max_x+1,1):
             for y in range(min_y,max_y+1,1):
                 #cell = [x,y]
                 cell = '%s,%s' %(x,y)
                 clusterCells.append(cell)
+
+        print 'cells: %s' %clusterCells 
                 
         return clusterCells
 
