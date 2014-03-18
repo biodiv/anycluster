@@ -1,0 +1,44 @@
+{% load staticfiles %}
+<html>
+	<head>
+		<script type="text/javascript"
+			  src="https://maps.googleapis.com/maps/api/js?v=3.8&key=AIzaSyC7zFb7ymHd59HbHYcAld46OcF93OkjD9s&sensor=false">
+		</script>
+		<script type="text/javascript" src="{% static 'anycluster/anycluster.js' %}"></script>
+		<script type="text/javascript" src="{% static 'anycluster/infobox_packed.js' %}"></script>
+		<script type="text/javascript" src="{% static 'anycluster/markerwithlabel_packed.js' %}"></script>
+		<script type="text/javascript">
+		
+			var anyclusterSettings = {
+				mapType : "google", // "google" or "osm"
+				gridSize: 256, //integer
+				zoom: 2, //initial zoom
+				center: [49,11], //initial center in lng lat
+				MapTypeId: "TERRAIN", //google only - choose from  ROADMAP,SATELLITE,HYBRID or TERRAIN
+				clusterMethod : "kmeans", //"grid" or "kmeans" or "centroid"
+				iconType: "exact", //"exact" or "simple"
+				singlePinImages: {
+					'dbvalue':'/static/path/to/image.png' //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
+				}
+	
+			}
+		
+			window.onload = function(){
+			
+				var googlemap = new Anycluster("gmap", anyclusterSettings);
+			}
+		</script>
+		
+		<style>
+			.clusterlabels {
+				color:#fff;
+				font-weight: bold;
+			}
+		</style>
+		
+	</head>
+	<body>
+		<div id="osmap" style="width:600px; height:300px; border: 1px solid black"></div>
+		<div id="gmap" style="width:600px; height:300px; border: 1px solid black"></div>
+	</body>
+</html>

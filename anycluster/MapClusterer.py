@@ -38,6 +38,7 @@ if DEBUG == False:
     #get the table name
 
 else:
+    Gis = "SIGHTINGS_GIS"
     geo_column_str = 'coordinates'
     geo_table = 'SIGHTINGS_GIS'
 
@@ -127,11 +128,12 @@ World min: 40075016
 '''
 
 if DEBUG:
-    viewport = {'left':-180,'top':89.90729724588122,'right':180,'bottom':-89.33684882403654}
-    viewport2 = {'left':-180,'top':86.18232163314582,'right':180,'bottom':-82.57085949880509}
-    viewport3 = {'left':-175.78124999999775, 'top':84.67351256610502, 'right':175.78124999999775, 'bottom':-84.67351256610502}
-    viewport4 = {'left':22.90021780289203, 'top':40.65626255144421, 'right':23.001498015294374, 'bottom':40.62369765879888} #thessaloniki distance cluster      
-
+    viewport = {'left':-68.37890625,'top':75.8041001126815,'right':68.37890625,'bottom':-49.03257075030672}
+    viewport2 = {'left':161.89453125,'top':77.11983306610325,'right':-61.34765625,'bottom':-45.20731114149848}
+    
+    viewport3 = {'left':136.078125, 'top':76.75037266166416, 'right':107.42578125, 'bottom':2.5914519003430008}
+    viewport4 = {'left':22.90021780289203, 'top':40.65626255144421, 'right':23.001498015294374, 'bottom':40.62369765879888} #thessaloniki distance cluster
+    
 
 class MapClusterer():
 
@@ -141,11 +143,8 @@ class MapClusterer():
         self.zoom = int(zoom)
         self.maptools = MapTools(int(mapTileSize))
         self.valid_operators = ['=','<','>','<=','>=','list','!list']
-        
 
-        if DEBUG == True:
-            self.srid_db = 3785
-        else:
+        if DEBUG == False:
             self.srid_db = self.getDatabaseSRID()
 
     def getDatabaseSRID(self):
@@ -396,7 +395,7 @@ class MapClusterer():
 
     #defaults to goole srid
     #viewport is {'top':1,'right':2,'bottom':3,'left':4}
-    def gridCluster(self, clustercells, filters, zoom, gridSize = 256, **kwargs):
+    def gridCluster(self, clustercells, filters):
 
         if DEBUG:
             print('clustercells: %s' %clustercells)
@@ -574,7 +573,6 @@ class MapClusterer():
         viewport, filters = self.parseRequest(request)
         #get the clustering cells
         clustercells_pre = self.getClusterCells(viewport)
-        
         #clean the cells
         clustercells = self.compareWithCache(request, filters, clustercells_pre)
         
