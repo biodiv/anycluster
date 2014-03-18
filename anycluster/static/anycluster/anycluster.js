@@ -524,11 +524,13 @@ Anycluster.prototype = {
 	selectPinIcon : function(count, pinimg) {
 	
 		if (count == 1) {
+		
 			var pinicon = 'pin_unknown';
 		
 			if (anyclusterSettings.singlePinImages.hasOwnProperty(pinimg)){
 				pinicon = anyclusterSettings.singlePinImages[pinimg];
 			}	
+
 	    }
 
 	    else if (count > 10000){
@@ -555,7 +557,7 @@ Anycluster.prototype = {
 	        var pinicon = '5';
 	    }
 	    
-	    if (this.iconType == "exact"){
+	    if (this.iconType == "exact" && count !== 1){
 	    	var imgurl = "/static/anycluster/images/" + pinicon + "_empty.png"
 	    }
 	    else {
