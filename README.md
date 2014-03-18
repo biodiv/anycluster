@@ -4,6 +4,15 @@ anycluster
 anycluster provides Server-Side clustering of map markers for Geodjango. It is suitable for large amounts of markers. 
 Depending on your server and personal feeling, it works very well with 200.000 to 500.000 markers.
 
+ChangeLog
+---------
+- new javascript file
+- prepared anycluster.js for OSM
+- now works without jQuery
+- added example how to use exact counts (base.html)
+
+
+
 Features
 --------
 
@@ -30,8 +39,6 @@ Requirements
 - Geodjango
 - PostGis 2.0 (1.5 might work, it is untested)
 - (for kmeans clustering, recommended) kmeans PostgreSQL extension: https://github.com/umitanuki/kmeans-postgresql
-
-If you want to use the shipped javascript files you also need JQuery.
 
 
 Demo
@@ -93,49 +100,50 @@ That's it! you are now ready to cluster your map markers.
 
 Usage
 -----
-This example uses jquery and google maps.
+This example uses google maps.
 In JavaScript, do the following when your DOM is ready.
 
-You first have to initialize the clusterer class ``Gmap``.
+You first have to define the settings for your clustering.
+
+    var anyclusterSettings = {
+	    mapType : "google", // "google" or "osm"
+		gridSize: 256, //integer
+		zoom: 2, //initial zoom
+		center: [49,11], //initial center in lng lat
+		MapTypeId: "TERRAIN", //google only - choose from  ROADMAP,SATELLITE,HYBRID or TERRAIN
+		clusterMethod : "kmeans", //"grid" or "kmeans" or "centroid"
+		iconType: "exact", //"exact" (with exact cluster counts) or "simple" (with rounded counts) 
+		singlePinImages: {
+				'dbvalue':'/static/path/to/image.png' //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
+		}
+	
+	}
+	
+	
+
+You then have to initialize the clusterer class ``Anycluster``. Pass the id of the div your map is in as the first argument and the settings as the second argument.
   
-    googleMap = new Gmap('YOUR_MAP_DIV');
     
-You can then cluster your map with
+	var googlemap = new Anycluster("your_divid", anyclusterSettings);
 
-    googleMap.startClustering();
     
-As the default cluster is a grid, you can change the clustering method:
-
-    googleMap.clustermethod = 'kmeans';
-    googleMap.startClustering();    
-    
-
-The clusterer accepts ``GRIDSIZE`` as an integer, e.g. ``googleMap.startClustering(256);``. Play around with gridsizes to optimize the clustering for your dataset.
+Play around with gridsizes to optimize the clustering for your dataset.
 
 
 Full Example
 ------------
 
-This example reclusters the map (only the new tiles) on panning/zooming, adds a simple filter, assigns something for the last marker and displays the total count of elements in a div
+    var anyclusterSettings = {
+	    mapType : "google",
+		gridSize: 256,
+		zoom: 2,
+		center: [49,11],
+		MapTypeId: "TERRAIN",
+		clusterMethod : "kmeans",
+		iconType: "exact"
+	}
+	var googleMap = new Anycluster("gmap", anyclusterSettings);
 
-    $(document).ready(function() {
-
-        googleMap = new Gmap('bigMapDiv');
-        googleMap.clustermethod = 'kmeans';
-        
-        googleMap.filters = {'is_liked':'=_TRUE'};
-        
-        googleMap.markerFinalClickFunction = function(marker) {
-                alert('you clicked the final marker');
-        };
-        
-        googleMap.loadEnd = function(){
-    	    $('#totalcount').html( googleMap.pincount );
-        };
-        
-        googleMap.startClustering();
-        
-    });
 
 
 If further documentation is required write me a message. I might contribute something on readthedocs then.
