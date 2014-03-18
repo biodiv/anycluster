@@ -7,6 +7,7 @@ Depending on your server and personal feeling, it works very well with 200.000 t
 ChangeLog
 ---------
 - new javascript file
+- added marker image for markers with count 1
 - prepared anycluster.js for OSM
 - now works without jQuery
 - added example how to use exact counts (base.html)
