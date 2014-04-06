@@ -1,14 +1,26 @@
+//osm and single markers need image sizes
+var markerImageSizes = {
+	5 : [30,30],
+	10: [30,30],
+	50: [40,40],
+	100: [40,40],
+	1000: [50,50],
+	10000: [60,60],
+	"pin_unknown": [24,39]
+}
+
+
 var Anycluster = function(mapdiv_id, mapOptions){
 
 	var clusterer = this;
 	
-	//defaults
 	this.pincount = 0;
 	this.filters = {};	
 	this.gridCells = [];
 	this.clusterMethod = mapOptions.clusterMethod;
 	this.iconType = mapOptions.iconType;
 	this.gridSize = mapOptions.gridSize;
+	this.mapType = mapOptions.mapType;
 	this.zoom = mapOptions.zoom;
 	this.clearMarkers = false;
 	
@@ -29,15 +41,23 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		
 		}
 	
-		this.drawMarker = function(center, count, pinimg, ids){
+		this.drawMarker = function(cluster){
 		
-			var pinicon = clusterer.selectPinIcon(count,pinimg);
+			var center = new google.maps.LatLng(cluster['center']['y'], cluster['center']['x']);
+			var count = cluster['count'];
+			var pinimg = cluster['pinimg'];
+			var ids = cluster["ids"];
+		
+			var piniconObj = clusterer.selectPinIcon(count,pinimg);
+			
+			var pinicon = piniconObj.url;
 		
 			var marker = new google.maps.Marker({
 		        position: center,
 		        map: clusterer.gmap,
 		        count: count,
 		        icon: pinicon,
+		        ids: ids
 		    });
 
 		    clusterer.gridCells.push(marker);
@@ -56,22 +76,30 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		
 		}
 		
-		this.drawMarkerExactCount = function(center, count, pinimg, ids){
+		this.drawMarkerExactCount = function(cluster){
+		
+			var center = new google.maps.LatLng(cluster['center']['y'], cluster['center']['x']);
+			var count = cluster['count'];
+			var pinimg = cluster['pinimg'];
+			var ids = cluster["ids"];
 		
 			var anchor,
 				icon,
-				pinicon = clusterer.selectPinIcon(count,pinimg),
+				piniconObj = clusterer.selectPinIcon(count,pinimg),
 				label_content;
+				
+			var pinicon = piniconObj.url;
+			var pinsize = piniconObj.size;
 				
 			if (count == 1){
 			
 				icon = new google.maps.MarkerImage(pinicon,
 					// second line defines the dimensions of the image
-					new google.maps.Size(24, 39),
+					new google.maps.Size(pinsize[0], pinsize[2]),
 					// third line defines the origin of the custom icon
 					new google.maps.Point(0,0),
 					// and the last line defines the offset for the image
-					new google.maps.Point(12,39)
+					new google.maps.Point(pinsize[0]/2,pinsize[1])
 				);
 				anchor = new google.maps.Point(4,9);
 				label_content = '';
@@ -79,9 +107,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 			}
 			else if (count > 10000){
 			   icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(60, 60),
+					new google.maps.Size(pinsize[0], pinsize[1]),
 					new google.maps.Point(0,0),
-					new google.maps.Point(30, 30)
+					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
 				);
 				anchor = new google.maps.Point(16,9);
 				label_content = count;
@@ -89,9 +117,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 
 			else if (count > 1000) {
 			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(50, 50),
+					new google.maps.Size(pinsize[0], pinsize[1]),
 					new google.maps.Point(0,0),
-					new google.maps.Point(25, 25)
+					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
 				);
 				anchor = new google.maps.Point(12,9);
 				label_content = count;
@@ -99,9 +127,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 
 			else if (count > 100) {
 			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(40, 40),
+					new google.maps.Size(pinsize[0], pinsize[1]),
 					new google.maps.Point(0,0),
-					new google.maps.Point(20, 20)
+					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
 				);
 				anchor = new google.maps.Point(9,9);
 				label_content = count;
@@ -109,9 +137,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 
 			else if (count > 50) {
 			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(40, 40),
+					new google.maps.Size(pinsize[0], pinsize[1]),
 					new google.maps.Point(0,0),
-					new google.maps.Point(20, 20)
+					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
 				);
 				anchor = new google.maps.Point(6,9);
 				label_content = count;
@@ -119,9 +147,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 
 			else if (count > 10) {
 			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(30, 30),
+					new google.maps.Size(pinsize[0], pinsize[1]),
 					new google.maps.Point(0,0),
-					new google.maps.Point(15, 15)
+					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
 				);
 				anchor = new google.maps.Point(6,9);
 				label_content = count;
@@ -130,11 +158,11 @@ var Anycluster = function(mapdiv_id, mapOptions){
 			else {
 			    icon = new google.maps.MarkerImage(pinicon,
 					// second line defines the dimensions of the image
-					new google.maps.Size(30, 30),
+					new google.maps.Size(pinsize[0], pinsize[1]),
 					// third line defines the origin of the custom icon
 					new google.maps.Point(0,0),
 					// and the last line defines the offset for the image
-					new google.maps.Point(15, 15)
+					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
 				);
 				anchor = new google.maps.Point(4,9);
 				label_content = count;
@@ -171,7 +199,12 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		
 		}
 		
-		this.drawCell = function(center,count,i){
+		this.drawCell = function(cluster,i){
+		
+			var center = new google.maps.LatLng(cluster['center']['y'], cluster['center']['x']);
+			var count = cluster['count'];
+			var pinimg = cluster['pinimg'];
+			var ids = cluster["ids"];
 		
 			if (count > 0) {
 				var labelText = count;
@@ -257,42 +290,7 @@ var Anycluster = function(mapdiv_id, mapOptions){
 			var viewport = clusterer.gmap.getBounds();
 			var viewport_json = {'left':viewport.getSouthWest().lng(), 'top':viewport.getNorthEast().lat(), 'right':viewport.getNorthEast().lng(), 'bottom':viewport.getSouthWest().lat()};
 		
-			clusterer.getClusters(viewport_json, cache, function(clusters){
-			
-				for(i=0; i<clusters.length; i++) {
-					var center = new google.maps.LatLng(clusters[i]['center']['y'], clusters[i]['center']['x']);
-					var count = clusters[i]['count'];
-					var pinimg = clusters[i]['pinimg'];
-					var ids = clusters[i]["ids"];
-					clusterer.pincount = clusterer.pincount + parseInt(count);
-					
-					if (clusterer.clusterMethod == 'grid'){
-							
-						if ( count == 1) {
-							clusterer.drawMarker(center,count,pinimg,ids);
-						}
-						else {
-							clusterer.drawCell(center,count,i);
-						}
-					}
-						
-					else if (clusterer.clusterMethod == 'kmeans'){
-						if (clusterer.iconType == "simple"){
-							clusterer.drawMarker(center,count,pinimg,ids);
-						}
-						else if (clusterer.iconType == "exact"){
-							clusterer.drawMarkerExactCount(center,count,pinimg,ids);
-						} 
-					}
-					
-					clusterer.loadEnd();
-						
-					if (typeof clusteredCB === "function") {
-						clusteredCB();
-					}
-				}
-			
-			});
+			clusterer.getClusters(viewport_json, cache, clusteredCB);
 
 		}
 	
@@ -319,7 +317,8 @@ var Anycluster = function(mapdiv_id, mapOptions){
 				}
 				 
 			});
-		
+			
+			
 			google.maps.event.addListener(clusterer.gmap, 'zoom_changed', function() {
 				 clusterer.removeMarkerCells();
 			});
@@ -334,50 +333,140 @@ var Anycluster = function(mapdiv_id, mapOptions){
 	else if (mapOptions.mapType == "osm"){
 	
 		this.setMap = function(lng,lat){
-		
+
+			var zoom = clusterer.omap.getZoom();
+			zoom = zoom + 3;
+			clusterer.zoom = zoom;
 			
-		
+			var center = new OpenLayers.LonLat(lng, lat).transform(
+				new OpenLayers.Projection("EPSG:4326"),
+				clusterer.omap.getProjectionObject()
+			);
+			
+			clusterer.omap.setCenter(center, zoom);
+
 		}
 	
-		this.drawMarker = function(center, count, pinimg){
+		this.drawMarker = function(cluster){
 		
-			var pinicon = this.selectPinIcon(count);
-
-		    var marker = new google.maps.Marker({
-		        position: center,
-		        map: clusterer.gmap,
-		        count: count,
-		        icon: '/static/anycluster/images/' + pinicon + '.png',
-		    });
-
-			//alert(pinicon);
-
-		    clusterer.gridCells.push(marker);
+			var center = new OpenLayers.LonLat(cluster['center']['x'], cluster['center']['y']).transform(
+				new OpenLayers.Projection("EPSG:4326"),
+				clusterer.omap.getProjectionObject()
+			);
+			var count = cluster['count'];
+			var pinimg = cluster['pinimg'];
 		
-			if (clusterer.zoom >= 13 || count <= 3) {
-				google.maps.event.addListener(marker, 'click', function() {
-					clusterer.markerFinalClickFunction(this);
-				});
+			var piniconObj = clusterer.selectPinIcon(count,pinimg);
+			var pinicon = piniconObj.url;
+			var pinsize = piniconObj.size
+			
+			var size = new OpenLayers.Size(pinsize[0],pinsize[1]);
+			if (cluster.count == 1){
+				var offset = new OpenLayers.Pixel(-(pinsize[0]/2), -size.h);
 			}
-		
 			else {
-				google.maps.event.addListener(marker, 'click', function() {
-					clusterer.markerClickFunction(this);
-				});
+				var offset = new OpenLayers.Pixel(-(pinsize[0]/2), -(pinsize[1]/2));
 			}
-		
+            
+            var icon = new OpenLayers.Icon(pinicon,size,offset);
+            
+            var marker = new OpenLayers.Marker(center,icon);
+            marker.latitude = cluster['center']['y'];
+            marker.longitude = cluster['center']['x'];
+            marker.ids = cluster["ids"];
+            
+            if (clusterer.zoom >= 13 || count <= 3) {
+            
+            	marker.events.register('mousedown', marker, function(evt) {
+            		clusterer.markerFinalClickFunction(this);
+            	});
+			}
+			else {
+			
+				marker.events.register('mousedown', marker, function(evt) {
+            		clusterer.markerClickFunction(this);
+            	});
+			}
+            
+            
+            
+			
+			clusterer.markerLayer.addMarker(marker);
 		}
 		
-		this.drawMarkerExactCount = function(center, count, pinimg, ids){
+		this.drawMarkerExactCount = function(cluster){
 		}
 		
-		this.drawCell = function(center,count,i){
+		this.drawCell = function(cluster,i){
 		}
 	
-		this.cluster = function(clusteredCB){
+		this.cluster = function(cache, clusteredCB){
+			clusterer.zoom = clusterer.omap.getZoom();
+			
+			var viewport = clusterer.omap.getExtent().transform(
+				clusterer.omap.getProjectionObject(),
+				new OpenLayers.Projection("EPSG:4326")
+			).toArray(); //left, bottom, right, top
+			
+			var viewport_json = {'left':viewport[0], 'top':viewport[3], 'right':viewport[2], 'bottom':viewport[1]};
+		
+			clusterer.getClusters(viewport_json, cache, clusteredCB);
 		}
 		
 		this.initialize = function(){
+		
+			clusterer.omap = new OpenLayers.Map({
+		    	div: "osmap",
+		    	projection: "EPSG:900913",
+		    	theme: null,
+		    	layers: [
+		        	new OpenLayers.Layer.OSM("OpenStreetMap"),
+		        	new OpenLayers.Layer.Vector('multiPolygon')
+		    	],
+		    	center: new OpenLayers.LonLat(0, 0),
+		    	zoom: 1
+		  	});
+		  	
+		  	clusterer.markerLayer = new OpenLayers.Layer.Markers( "Markers" );
+            clusterer.omap.addLayer(clusterer.markerLayer);
+			
+			var center = new OpenLayers.LonLat(mapOptions.center[1],mapOptions.center[0]).transform(
+		    	new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
+		    	clusterer.omap.getProjectionObject() // to Spherical Mercator Projection
+		  	);
+			
+			clusterer.omap.setCenter(center,clusterer.zoom);
+			
+			//disable mousehweel
+			var Navigation = new OpenLayers.Control.Navigation({
+				'zoomWheelEnabled': false,
+				'defaultDblClick': function ( event ) { 
+					return; 
+				 }
+			});
+
+			clusterer.omap.addControl(Navigation);
+
+			var NavigationControls = clusterer.omap.getControlsByClass('OpenLayers.Control.Navigation')
+			  , i;
+
+			for ( i = 0; i < NavigationControls.length; i++ ) {
+				NavigationControls[i].disableZoomWheel();
+			}
+			
+			clusterer.omap.events.register("moveend", clusterer.omap, function() {
+				clusterer.cluster(false);
+        	});
+        	
+        	clusterer.omap.zoomToProxy = clusterer.omap.zoomTo;
+			clusterer.omap.zoomTo =  function (zoom,xy){
+				clusterer.removeMarkerCells();
+				clusterer.omap.zoomToProxy(zoom,xy); 
+
+			};
+        	
+        	clusterer.cluster(true);
+		
 		}
 	
 	}
@@ -434,9 +523,14 @@ Anycluster.prototype = {
 	},
 	
 	removeMarkerCells : function(){
-	
-		for (var i=0; i<this.gridCells.length; i+=1){
-			this.gridCells[i].setMap(null);
+		
+		if (this.mapType == "google"){
+			for (var i=0; i<this.gridCells.length; i+=1){
+				this.gridCells[i].setMap(null);
+			}
+		}
+		else if (this.mapType == "osm"){
+			this.markerLayer.clearMarkers();
 		}
 		
 		this.clearMarkers = false;
@@ -444,6 +538,8 @@ Anycluster.prototype = {
 	},
 	
 	getClusters : function(viewport, cache, gotClusters){
+	
+		var clusterer = this;
 	
 		if (cache === true){
 			viewport['cache'] = 'load';
@@ -479,13 +575,41 @@ Anycluster.prototype = {
 		
 		xhr.onreadystatechange = function(){
 			if (xhr.readyState==4 && xhr.status==200) {
-				var data = JSON.parse(xhr.responseText);
+				var clusters = JSON.parse(xhr.responseText);
 				
-				if (this.clearMarkers === true ){
-					this.removeMarkerCells();
+				//route the clusters
+				if (clusterer.clusterMethod == 'grid'){
+					var clusterFunction = clusterer.drawCell;
+				}
+				else if (clusterer.clusterMethod == 'kmeans'){
+					if (clusterer.iconType == "simple"){
+						var clusterFunction = clusterer.drawMarker;
+					}
+					else {
+						var clusterFunction = clusterer.drawMarkerExactCount;
+					} 
 				}
 				
-				gotClusters(data);
+			
+				for(i=0; i<clusters.length; i++) {
+					
+					var cluster = clusters[i];
+					clusterer.pincount = clusterer.pincount + parseInt(cluster.count);
+	
+					if ( cluster.count == 1) {
+						clusterer.drawMarker(cluster);
+					}
+					else {
+						clusterFunction(cluster);
+					}
+					
+					clusterer.loadEnd();
+						
+					if (typeof clusteredCB === "function") {
+						gotClusters();
+					}
+				}
+				
 			}
 		}
 		xhr.open("GET",url,true);
@@ -525,11 +649,11 @@ Anycluster.prototype = {
 	
 		if (count == 1) {
 		
-			var pinicon = 'pin_unknown';
-		
+			var singlePinURL = "/static/anycluster/images/pin_unknown.png";
+			
 			if (anyclusterSettings.singlePinImages.hasOwnProperty(pinimg)){
-				pinicon = anyclusterSettings.singlePinImages[pinimg];
-			}	
+				singlePinURL = anyclusterSettings.singlePinImages[pinimg];
+			}
 
 	    }
 
@@ -557,17 +681,26 @@ Anycluster.prototype = {
 	        var pinicon = '5';
 	    }
 	    
-	    if (this.iconType == "exact" && count !== 1){
-	    	var imgurl = "/static/anycluster/images/" + pinicon + "_empty.png"
+	    if (count == 1){
+	    		var imgurl = singlePinURL;
 	    }
 	    else {
-	    	var imgurl = "/static/anycluster/images/" + pinicon + ".png"
+	    
+			if (this.iconType == "exact"){
+				var imgurl = "/static/anycluster/images/" + pinicon + "_empty.png";
+			}
+			else {
+				var imgurl = "/static/anycluster/images/" + pinicon + ".png";
+			}
 	    }
 	    
-	    return imgurl;
+	    var imgObj = {
+	    	url : imgurl,
+	    	size : markerImageSizes[pinicon]
+	    }
+	    
+	    return imgObj;
 	
 	}
 	
 }
-
-
