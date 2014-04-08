@@ -70,7 +70,7 @@ class MapTools():
         return point
 
 
-    #meters/pixel depending on zoom level, 2**zoom gives the number of tiles in a row/column pre zoom level:
+    #meters/pixel depending on zoom level, 2**zoom gives the number of tiles in a row/column per zoom level:
     # 2^0 = 1 tile, 2^1 = 2 tiles, 2^2 = 4tiles per row...
     def resolution(self, zoom):
         res = (self.init_resolution / (2**zoom) )
@@ -161,24 +161,56 @@ class MapTools():
 
 
     Given the topright and bottom left Cell IDs, for example A(10,2) and B(15,1) calculate all cells spanned by A and B
+
+    Possibility:
+    ---------------
+    |xxxA       xM| 
+    |xxxx       xx|
+    |Lxxx       Bx|
+    ---------------
+
+    convert this into two rectangles AL + MB
     
     '''
 
-    def get_ClusterCells(self, toprightCellID, bottomleftCellID):
+    def calculate_ClusterCells(self, rectangleList):
+
         clusterCells = []
 
-        max_x = max(toprightCellID[0],bottomleftCellID[0])
-        max_y = max(toprightCellID[1],bottomleftCellID[1])
-        min_x = min(toprightCellID[0],bottomleftCellID[0])
-        min_y = min(toprightCellID[1],bottomleftCellID[1])
+        for rect in rectangleList:
+            
+            max_x = max(rect["topright"][0],rect["bottomleft"][0])
+            max_y = max(rect["topright"][1],rect["bottomleft"][1])
+            min_x = min(rect["topright"][0],rect["bottomleft"][0])
+            min_y = min(rect["topright"][1],rect["bottomleft"][1])
+            
+            for x in range(min_x,max_x+1,1):
+                for y in range(min_y,max_y+1,1):
+                    #cell = [x,y]
+                    cell = '%s,%s' %(x,y)
+                    clusterCells.append(cell)
+
+        return clusterCells
         
-        for x in range(min_x,max_x+1,1):
-            for y in range(min_y,max_y+1,1):
-                #cell = [x,y]
-                cell = '%s,%s' %(x,y)
-                clusterCells.append(cell)
+
+    def get_ClusterCells(self, toprightCellID, bottomleftCellID, zoom):
+        
+        
+
+        if toprightCellID[0] >= bottomleftCellID[0]:
+
+            clusterCells = self.calculate_ClusterCells([{"topright":toprightCellID,"bottomleft":bottomleftCellID}])
+
+        else:
+            #topright is left of bottomleft
+            bottomleftEdgeCellID = [0,bottomleftCellID[1]]
+            cellMax = (2**zoom)-1
+            toprightEdgeCellID = [cellMax,toprightCellID[1]]
+
+            clusterCells = self.calculate_ClusterCells([{"topright":toprightCellID,"bottomleft":bottomleftEdgeCellID},{"topright":toprightEdgeCellID,"bottomleft":bottomleftCellID}])
                 
         return clusterCells
+    
 
     #bounds -> points -> poly (5 points as starting and end point are the same)
     def bounds_ToPolyString(self, bounds):

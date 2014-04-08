@@ -778,7 +778,7 @@ class MapClusterer():
         
         
         #get all Cells that need to be clustered
-        clusterCells = self.maptools.get_ClusterCells(toprightCell,bottomleftCell)
+        clusterCells = self.maptools.get_ClusterCells(toprightCell,bottomleftCell, self.zoom)
         
         #from ID-list create list of polygons
         return clusterCells
