@@ -54,6 +54,8 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		
 			var marker = new google.maps.Marker({
 		        position: center,
+		        latitude: center.lat(),
+				longitude: center.lng(),
 		        map: clusterer.gmap,
 		        count: count,
 		        icon: pinicon,
@@ -480,6 +482,7 @@ Anycluster.prototype = {
 
 	//on small markers or on final zoom, this function is launched
 	markerFinalClickFunction : function(marker) {
+	
 		this.getClusterContent(marker, function(entries){
 		
 			/* put your custom final click behaviour here */
