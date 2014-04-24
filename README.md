@@ -136,14 +136,18 @@ Full Example
 ------------
 
     var anyclusterSettings = {
-	    mapType : "google",
-		gridSize: 256,
-		zoom: 2,
-		center: [49,11],
-		MapTypeId: "TERRAIN",
-		clusterMethod : "kmeans",
-		iconType: "exact"
-	}
+				mapType : "google",
+				gridSize: 256,
+				zoom: 3,
+				center: [49,11],
+				MapTypeId: "TERRAIN",
+				clusterMethod : "kmeans",
+				iconType: "exact",
+				onFinalClick : function(entries){
+					openPopup(entries);
+				}
+	
+			}
 	var googleMap = new Anycluster("gmap", anyclusterSettings);
 
 
