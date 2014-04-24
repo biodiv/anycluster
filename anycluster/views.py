@@ -1,7 +1,8 @@
 from django.http import HttpResponse
+from django.shortcuts import render
 from anycluster.MapClusterer import MapClusterer
-from anycluster.scripts import getKmeansClusterEntries
-from django.utils import simplejson
+from anycluster.scripts import getKmeansClusterEntries, getViewportMarkers
+import json
 
 
 def getGrid(request, zoom, gridSize=256):
@@ -11,7 +12,7 @@ def getGrid(request, zoom, gridSize=256):
 
     grid = clusterer.gridCluster(clustercells,filters)
     
-    return HttpResponse(simplejson.dumps(
+    return HttpResponse(json.dumps(
         grid
         ), content_type="application/json")
 
@@ -23,7 +24,7 @@ def getPins(request, zoom, gridSize=512):
 
     markers = clusterer.kmeansCluster(clustercells,filters)
     
-    return HttpResponse(simplejson.dumps(
+    return HttpResponse(json.dumps(
         markers
         ), content_type="application/json")
 
@@ -35,25 +36,24 @@ def getBounds(request,srid=4326):
 
     bounds = clusterer.getBounds(filterstring,srid)
 
-    return HttpResponse(simplejson.dumps(
+    return HttpResponse(json.dumps(
         bounds
         ), content_type="application/json")
 
 
 #eaxmple for getting entries
-def getClusterContent(request, zoom, gridSize=512):
+def getClusterContent(request, zoom, gridSize):
 
-    entries_raw = getKmeansClusterEntries(request,zoom,gridSize)
+    entries_raw = getKmeansClusterEntries(request,zoom,gridSize)   
+
+    return render(request, 'anycluster/clusterPopup.html', {'entries':entries_raw})
 
     
-    entries = []
+#example for gett viewport markers
+def getAllViewPortMarkers(request,zoom,gridSize):
 
-    for e in entries_raw:
-        entries.append(e.id)
-    
+    markers = getViewportMarkers(request,zoom,gridSize)
 
     return HttpResponse(simplejson.dumps(
-        entries
+        markers
         ), content_type="application/json")
-
-    

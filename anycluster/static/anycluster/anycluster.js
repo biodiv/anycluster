@@ -1,18 +1,20 @@
 //osm and single markers need image sizes
 var markerImageSizes = {
+	1: [24,39],
 	5 : [30,30],
 	10: [30,30],
 	50: [40,40],
 	100: [40,40],
 	1000: [50,50],
-	10000: [60,60],
-	"pin_unknown": [24,39]
+	10000: [60,60]
 }
 
 
 var Anycluster = function(mapdiv_id, mapOptions){
 
 	var clusterer = this;
+	
+	this.onFinalClick = mapOptions.onFinalClick;
 	
 	this.pincount = 0;
 	this.filters = {};	
@@ -472,8 +474,7 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		}
 	
 	}
-	
-	
+
 	clusterer.initialize();
 	
 }
@@ -481,15 +482,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 Anycluster.prototype = {
 
 	//on small markers or on final zoom, this function is launched
-	markerFinalClickFunction : function(marker) {
+	markerFinalClickFunction : function(mapmarker) {
 	
-		this.getClusterContent(marker, function(entries){
-		
-			/* put your custom final click behaviour here */
-			alert(JSON.stringify(entries));
-			
-			
-		});
+		this.getClusterContent(mapmarker, this.onFinalClick);
 	},
 
 	markerClickFunction : function(marker) {
@@ -639,8 +634,8 @@ Anycluster.prototype = {
 		
 		xhr.onreadystatechange = function(){
 			if (xhr.readyState==4 && xhr.status==200) {
-				var data = JSON.parse(xhr.responseText);
-				gotClusterContent(data);
+				//var data = JSON.parse(xhr.responseText);
+				gotClusterContent(xhr.responseText);
 			}
 		}
 		xhr.open("GET",url,true);
@@ -686,6 +681,7 @@ Anycluster.prototype = {
 	    
 	    if (count == 1){
 	    		var imgurl = singlePinURL;
+	    		var pinicon = 1;
 	    }
 	    else {
 	    
