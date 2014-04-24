@@ -20,7 +20,10 @@
 				clusterMethod : "kmeans", //"grid" or "kmeans" or "centroid"
 				iconType: "exact", //"exact" (with exact cluster counts) or "simple" (with rounded counts) 
 				singlePinImages: {
-					'dbvalue':'/static/path/to/image.png' //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
+					'imperial':'/static/anycluster/pin_imperial.png', //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
+					'stone':'/static/anycluster/pin_stone.png',
+					'wild':'/static/anycluster/pin_wild.png',
+					'japanese':'/static/anycluster/pin_japan.png'
 				},
 				onFinalClick : function(entries){
 					openPopup(entries);
@@ -42,7 +45,7 @@
 			}
 		
 			window.onload = function(){
-			
+				// do not use both maps simultaneously as this will confuse the cache
 				var googlemap = new Anycluster("gmap", anyclusterSettings);
 				//var osmap = new Anycluster("osmap", anyclusterSettings_osm);
 			}
