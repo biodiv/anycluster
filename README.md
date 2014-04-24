@@ -6,6 +6,7 @@ Depending on your server and personal feeling, it works very well with 200.000 t
 
 ChangeLog
 ---------
+- added demo application (currently without the filter feature)
 - new javascript file
 - added marker image for markers with count 1
 - prepared anycluster.js for OSM
@@ -42,8 +43,8 @@ Requirements
 - (for kmeans clustering, recommended) kmeans PostgreSQL extension: https://github.com/umitanuki/kmeans-postgresql
 
 
-Demo
-----
+Live Example
+------------
 
 There's a demo at http://www.anymals.org/nx/bigmap/
 Note: This one shows the kmeans clustering. The underlying database contains 5.5 Million entries.
@@ -104,50 +105,40 @@ Usage
 This example uses google maps.
 In JavaScript, do the following when your DOM is ready.
 
-You first have to define the settings for your clustering.
-
     var anyclusterSettings = {
-	    mapType : "google", // "google" or "osm"
-		gridSize: 256, //integer
-		zoom: 2, //initial zoom
-		center: [49,11], //initial center in lng lat
-		MapTypeId: "TERRAIN", //google only - choose from  ROADMAP,SATELLITE,HYBRID or TERRAIN
-		clusterMethod : "kmeans", //"grid" or "kmeans" or "centroid"
-		iconType: "exact", //"exact" (with exact cluster counts) or "simple" (with rounded counts) 
-		singlePinImages: {
-				'dbvalue':'/static/path/to/image.png' //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
-		}
+				mapType : "google",
+				gridSize: 256,
+				zoom: 3,
+				center: [49,11],
+				MapTypeId: "TERRAIN",
+				clusterMethod : "kmeans",
+				iconType: "exact",
+				onFinalClick : function(entries){
+					openPopup(entries);
+				}
 	
-	}
-	
-	
-
-You then have to initialize the clusterer class ``Anycluster``. Pass the id of the div your map is in as the first argument and the settings as the second argument.
-  
-    
-	var googlemap = new Anycluster("your_divid", anyclusterSettings);
-
-    
-Play around with gridsizes to optimize the clustering for your dataset.
-
-
-Full Example
-------------
-
-    var anyclusterSettings = {
-	    mapType : "google",
-		gridSize: 256,
-		zoom: 2,
-		center: [49,11],
-		MapTypeId: "TERRAIN",
-		clusterMethod : "kmeans",
-		iconType: "exact"
-	}
+			}
 	var googleMap = new Anycluster("gmap", anyclusterSettings);
 
 
 
 If further documentation is required write me a message. I might contribute something on readthedocs then.
+
+
+Using the Demo
+--------------
+
+To use the demo, follow these steps: 
+
+- install ``Django 1.6`` correctly
+- copy the demo folder to your system and include the anycluster folder as a django app.
+- modify the database connection in ``settings.py`` according to your setup
+- remember to create the kmeans function as described above
+- from within the demo folder, run ``python manage.py syncdb``
+- from within the demo folder, run ``python manage.py filldemodb 50000`` to fill the database with 50000 points
+- be patient, as this process is not very effective
+- from within the demo folder, run ``python manage.py runserver 8080``
+- open your browser and enter ``localhost:8080``
 
 
 Performance Tips
