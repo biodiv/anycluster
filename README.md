@@ -6,6 +6,7 @@ Depending on your server and personal feeling, it works very well with 200.000 t
 
 ChangeLog
 ---------
+- added demo application (currently without the filter feature)
 - new javascript file
 - added marker image for markers with count 1
 - prepared anycluster.js for OSM
@@ -148,6 +149,22 @@ Full Example
 
 
 If further documentation is required write me a message. I might contribute something on readthedocs then.
+
+
+Using the Demo
+--------------
+
+To use the demo, follow these steps: 
+
+- install ``Django 1.6`` correctly
+- copy the demo folder to your system and include the anycluster folder as a django app.
+- modify the database connection in ``settings.py`` according to your setup
+- remember to create the kmeans function as described above
+- from within the demo folder, run ``python manage.py syncdb``
+- from within the demo folder, run ``python manage.py filldemodb 50000`` to fill the database with 50000 points
+- be patient, as this process is not very effective
+- from within the demo folder, run ``python manage.py runserver 8080``
+- open your browser and enter `localhost:8080``
 
 
 Performance Tips
