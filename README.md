@@ -164,7 +164,7 @@ To use the demo, follow these steps:
 - from within the demo folder, run ``python manage.py filldemodb 50000`` to fill the database with 50000 points
 - be patient, as this process is not very effective
 - from within the demo folder, run ``python manage.py runserver 8080``
-- open your browser and enter `localhost:8080``
+- open your browser and enter ``localhost:8080``
 
 
 Performance Tips
