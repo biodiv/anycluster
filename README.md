@@ -43,8 +43,8 @@ Requirements
 - (for kmeans clustering, recommended) kmeans PostgreSQL extension: https://github.com/umitanuki/kmeans-postgresql
 
 
-Demo
-----
+Lice Example
+------------
 
 There's a demo at http://www.anymals.org/nx/bigmap/
 Note: This one shows the kmeans clustering. The underlying database contains 5.5 Million entries.
