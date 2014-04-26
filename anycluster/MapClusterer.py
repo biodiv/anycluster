@@ -68,6 +68,7 @@ LICENSE: GPL
 from MapTools import MapTools
 from django.contrib.gis.geos import Point, GEOSGeometry
 
+# Debugging prints out statements in console. Use it from python, not a browser.
 DEBUG = False
 
 if DEBUG is False:
@@ -78,10 +79,16 @@ if DEBUG is False:
     # get the model as defined in settings
     geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
     geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
+
+    # Columns that can be used for filtering markers
     CLUSTER_FILTERS = getattr(settings, 'ANYCLUSTER_FILTERS', None)
+
+    # column for determining the pin image for pins with count 1
     PINCOLUMN = getattr(settings, 'ANYCLUSTER_PINCOLUMN', None)
 
+    # raw sql for getting pin column value
     if PINCOLUMN:
+        
         pin_qry = [', MIN(%s) AS pinimg' % (PINCOLUMN), PINCOLUMN + ',']
     else:
         pin_qry = ['', '']
@@ -127,7 +134,7 @@ class MapClusterer():
         if DEBUG is False:
             self.srid_db = self.getDatabaseSRID()
 
-    # read the srid of the database
+    # read the srid of the database. 
     def getDatabaseSRID(self):
 
         srid_qry = "SELECT id, ST_SRID(%s) FROM %s LIMIT 1;" % (
@@ -686,10 +693,16 @@ class MapClusterer():
                     cell_bottomleft, self.srid_db, self.input_srid)
 
             # construct a square for grid nodes
-            x = 'x'
-            y = 'y'
-            nodes = [{x: cell_topright.x, y: cell_topright.y}, {x: cell_topright.x, y: cell_bottomleft.y},
-                     {x: cell_bottomleft.x, y: cell_bottomleft.y}, {x: cell_bottomleft.x, y: cell_topright.y}]
+            nodes = {
+                "left": cell_bottomleft.x,
+                "top": cell_topright.y,
+                "right": cell_topright.x,
+                "bottom": cell_bottomleft.y
+                #"topRight":[cell_topright.x, cell_topright.y],
+                #{x: cell_topright.x, y: cell_bottomleft.y},
+                #"bottomLeft": [cell_bottomleft.x, cell_bottomleft.y]
+                #, {x: cell_bottomleft.x, y: cell_topright.y}
+            }
 
             if int(pin_count) == 1 and PINCOLUMN is not None:
                 center_pre = Point(
@@ -706,7 +719,7 @@ class MapClusterer():
                 center_x = (cell_topright.x + cell_bottomleft.x) / 2
                 center_y = (cell_topright.y + cell_bottomleft.y) / 2
 
-            center = {x: center_x, y: center_y}
+            center = {"x": center_x, "y": center_y}
 
             cellobj = {'cell': nodes, 'count': pin_count,
                        'center': center, 'pinimg': pinimg}
@@ -758,32 +771,6 @@ class MapClusterer():
         )
 
         return entries
-
-
-    def getViewportMarkers(self, request):
-
-        postclustering = bool(int(request.GET.get("postclustering",0)))
-        
-        if postclustering:
-            a=b
-
-        else:
-            viewport, filters = self.parseRequest(request)
-
-            if filters:
-                filterstring = self.constructFilterstring(filters)
-
-            else:
-                filterstring = ""
-            
-            polystring = GEOSGeometry(clusterer.maptools.bounds_ToPolyString(viewport), srid=self.input_srid)
-            polystring.transform(self.srid_db)
-        
-            markers = Gis.objects.raw(
-                "SELECT * FROM %s WHERE WHERE ST_WITHIN(%s, ST_GeomFromText('%s',%s) ) %s;" % (geo_table, polystring, self.srid_db, filterstring)
-            )
-
-        return markers
 
 
     def getBounds(self, filterstring, output_srid=4326):

@@ -1,8 +1,18 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 from anycluster.MapClusterer import MapClusterer
-from anycluster.scripts import getKmeansClusterEntries, getViewportMarkers
+from django.conf import settings
+from django.db.models.loading import get_model
+from django.contrib.gis.geos import GEOSGeometry
+
 import json
+
+
+#load the gis
+geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
+geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
+Gis = get_model(geoapp, geomodel)
+geo_table = Gis._meta.db_table
 
 
 def getGrid(request, zoom, gridSize=256):
@@ -17,7 +27,7 @@ def getGrid(request, zoom, gridSize=256):
         ), content_type="application/json")
 
 
-def getPins(request, zoom, gridSize=512):
+def getPins(request, zoom, gridSize):
 
     clusterer = MapClusterer(zoom, gridSize)
     clustercells, filters = clusterer.getClusterParameters(request)
@@ -41,19 +51,43 @@ def getBounds(request,srid=4326):
         ), content_type="application/json")
 
 
-#eaxmple for getting entries
 def getClusterContent(request, zoom, gridSize):
 
-    entries_raw = getKmeansClusterEntries(request,zoom,gridSize)   
+    clusterer = MapClusterer(zoom, gridSize)
+    filters = clusterer.parseFilters(request)
 
-    return render(request, 'anycluster/clusterPopup.html', {'entries':entries_raw})
+    clusterIDs = request.GET.getlist("id",[])
+    x = float(request.GET["x"])
+    y = float(request.GET["y"])
+
+    entries = clusterer.getKmeansClusterContent(x,y, clusterIDs, filters)
+
+    return render(request, 'anycluster/clusterPopup.html', {'entries':entries})
 
     
-#example for gett viewport markers
-def getAllViewPortMarkers(request,zoom,gridSize):
+def getAreaMarkers(request, zoom, gridSize):
 
-    markers = getViewportMarkers(request,zoom,gridSize)
+    clusterer = MapClusterer(zoom, gridSize)
 
-    return HttpResponse(simplejson.dumps(
-        markers
-        ), content_type="application/json")
+    postclustering = bool(int(request.GET.get("postclustering",0)))
+    
+    if postclustering:
+        a=b
+
+    else:
+        viewport, filters = clusterer.parseRequest(request)
+
+        if filters:
+            filterstring = clusterer.constructFilterstring(filters)
+
+        else:
+            filterstring = ""
+        
+        polystring = GEOSGeometry(clusterer.maptools.bounds_ToPolyString(viewport), srid=clusterer.input_srid)
+        polystring.transform(clusterer.srid_db)
+    
+        markers = Gis.objects.raw(
+            "SELECT * FROM %s WHERE ST_WITHIN(%s, ST_GeomFromText('%s',%s) ) %s;" % (geo_table, geo_column_str, polystring, clusterer.srid_db, filterstring)
+        )
+
+    return render(request, 'anycluster/clusterPopup.html', {'entries':markers})

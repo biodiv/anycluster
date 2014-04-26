@@ -1,4 +1,4 @@
-//osm and single markers need image sizes
+//set marker sizes according to your images for correct display
 var markerImageSizes = {
 	1: [24,39],
 	5 : [30,30],
@@ -25,10 +25,6 @@ var Anycluster = function(mapdiv_id, mapOptions){
 	this.mapType = mapOptions.mapType;
 	this.zoom = mapOptions.zoom;
 	this.clearMarkers = false;
-	
-	//overridable start/end functions, e.g. for showing a loading spinner
-	this.loadStart = function(){};
-	this.loadEnd = function(){};
 	
 	if (mapOptions.mapType == "google"){
 	
@@ -208,7 +204,6 @@ var Anycluster = function(mapdiv_id, mapOptions){
 			var center = new google.maps.LatLng(cluster['center']['y'], cluster['center']['x']);
 			var count = cluster['count'];
 			var pinimg = cluster['pinimg'];
-			var ids = cluster["ids"];
 		
 			if (count > 0) {
 				var labelText = count;
@@ -219,6 +214,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 				boxText.style.cssText = "border: none;background: none;";
 				boxText.innerHTML = count;
 				boxText.count = count;
+				boxText.latitude = center.lat();
+				boxText.longitude = center.lng();
+				boxText.cell = cluster['cell'];
 					
 				//set opacity according to count
 				var opacity;
@@ -246,24 +244,24 @@ var Anycluster = function(mapdiv_id, mapOptions){
 				var offset = -clusterer.gridSize/2;
 
 				var myOptions = {
-					 content: boxText
-					,boxStyle: {
-					   border: "none"
-					  ,background: "rgba(200, 54, 54," + opacity + ")"
-					  ,textAlign: "center"
-					  ,fontSize: "12pt"
-					  ,fontWeight: "bold"
-					  ,width: "" + clusterer.gridSize-2 +'px'
-					  ,height: "" + clusterer.gridSize-2 +'px'
-					  ,lineHeight: "" + clusterer.gridSize-2 +'px'
-					 }
-					,disableAutoPan: true
-					,pixelOffset: new google.maps.Size(offset,offset)
-					,position: center
-					,closeBoxURL: ""
-					,isHidden: false
-					,pane: "floatPane"
-					,enableEventPropagation: true
+					content: boxText,
+					boxStyle: {
+						border: "none",
+						background: "rgba(200, 54, 54," + opacity + ")",
+						textAlign: "center",
+						fontSize: "12pt",
+						fontWeight: "bold",
+						width: "" + clusterer.gridSize-2 +'px',
+						height: "" + clusterer.gridSize-2 +'px',
+						lineHeight: "" + clusterer.gridSize-2 +'px',
+					},
+					disableAutoPan: true,
+					pixelOffset: new google.maps.Size(offset,offset),
+					position: center,
+					closeBoxURL: "",
+					isHidden: false,
+					pane: "floatPane",
+					enableEventPropagation: true
 				};
 
 				var gridLabel = new InfoBox(myOptions);
@@ -484,7 +482,12 @@ Anycluster.prototype = {
 	//on small markers or on final zoom, this function is launched
 	markerFinalClickFunction : function(mapmarker) {
 	
-		this.getClusterContent(mapmarker, this.onFinalClick);
+		if (this.clusterMethod == "kmeans") {
+			this.getClusterContent(mapmarker, this.onFinalClick);
+		}
+		else if (this.clusterMethod = "grid"){
+			this.getAreaContent(mapmarker.cell, this.onFinalClick);
+		}
 	},
 
 	markerClickFunction : function(marker) {
@@ -545,19 +548,9 @@ Anycluster.prototype = {
 	
 		this.loadStart();
 		
-		var url = '/anycluster/' + this.clusterMethod + '/' + this.zoom + '/' + this.gridSize + '/?';
+		var urlParams = this.urlizeObject(viewport);
 		
-		var first = true;
-		for (var key in viewport){
-		
-			if (first == true){
-				first = false;
-				url = url + key + "=" + viewport[key];
-			}
-			else {
-				url = url + "&" + key + "=" + viewport[key];
-			}
-		}
+		var url = '/anycluster/' + this.clusterMethod + '/' + this.zoom + '/' + this.gridSize + '/' + urlParams;
 		
 		//if filters are given, add them to GET
 		if (Object.keys(this.filters).length !== 0){
@@ -643,6 +636,26 @@ Anycluster.prototype = {
 	
 	},
 	
+	getAreaContent : function(area, gotAreaContent){
+		
+		var params = this.urlizeObject(area);
+		var url = "/anycluster/getAreaMarkers/" + this.zoom + '/' + this.gridSize + '/' +  params;
+			
+		url = encodeURI(url);
+		var xhr = new XMLHttpRequest();
+	
+		xhr.onreadystatechange = function(){
+			if (xhr.readyState==4 && xhr.status==200) {
+				
+				gotAreaContent(xhr.responseText);
+
+			}
+		}
+		xhr.open("GET",url,true);
+		xhr.send();
+	
+	},
+	
 	selectPinIcon : function(count, pinimg) {
 	
 		if (count == 1) {
@@ -700,6 +713,28 @@ Anycluster.prototype = {
 	    
 	    return imgObj;
 	
-	}
+	},
+	
+	urlizeObject: function(obj){
+		var urlParams = "?";
+		var first = true;
+		for (var key in obj){
+		
+			if (first == true){
+				first = false;
+				urlParams = urlParams + key + "=" + obj[key];
+			}
+			else {
+				urlParams = urlParams + "&" + key + "=" + obj[key];
+			}
+		}
+		
+		return urlParams
+		
+	},
+	
+	//overridable start/end functions, e.g. for showing a loading spinner
+	loadStart : function(){},
+	loadEnd : function(){}
 	
 }
