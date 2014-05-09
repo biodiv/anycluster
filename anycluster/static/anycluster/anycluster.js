@@ -289,11 +289,15 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		this.cluster = function(cache, clusteredCB){
 		
 			clusterer.zoom = clusterer.gmap.getZoom();
-			var viewport = clusterer.gmap.getBounds();
-			var viewport_json = {'left':viewport.getSouthWest().lng(), 'top':viewport.getNorthEast().lat(), 'right':viewport.getNorthEast().lng(), 'bottom':viewport.getSouthWest().lat()};
-		
+			var viewport_json = this.getViewport();	
 			clusterer.getClusters(viewport_json, cache, clusteredCB);
 
+		}
+
+		this.getViewport = function(){
+			var viewport = clusterer.gmap.getBounds();
+			var viewport_json = {'left':viewport.getSouthWest().lng(), 'top':viewport.getNorthEast().lat(), 'right':viewport.getNorthEast().lng(), 'bottom':viewport.getSouthWest().lat()};
+			return viewport_json
 		}
 	
 		this.initialize = function(){
@@ -486,7 +490,8 @@ Anycluster.prototype = {
 			this.getClusterContent(mapmarker, this.onFinalClick);
 		}
 		else if (this.clusterMethod = "grid"){
-			this.getAreaContent(mapmarker.cell, this.onFinalClick);
+			var geoJson = this.quadToGeoJson(mapmarker.cell);
+			this.getAreaContent(geoJson, "getAreaMarkers", this.onFinalClick);
 		}
 	},
 
@@ -542,22 +547,19 @@ Anycluster.prototype = {
 	
 		var clusterer = this;
 	
-		if (cache === true){
-			viewport['cache'] = 'load';
-		}
-	
 		this.loadStart();
 		
-		var urlParams = this.urlizeObject(viewport);
-		
-		var url = '/anycluster/' + this.clusterMethod + '/' + this.zoom + '/' + this.gridSize + '/' + urlParams;
-		
-		//if filters are given, add them to GET
-		if (Object.keys(this.filters).length !== 0){
-		
-			for (var key in this.filters) {
-				url = url + "&" + key + "=" + this.filters[key];
-			}
+		var url = '/anycluster/' + this.clusterMethod + '/' + this.zoom + '/' + this.gridSize + '/'; // + urlParams;
+
+		geoJson_viewport = this.quadToGeoJson(viewport);
+
+		postParams = {
+			'geojson' : geoJson_viewport,
+			'filters': this.filters
+		}
+
+		if (cache === true){
+			postParams['cache'] = 'load';
 		}
 		
 		//send the ajax request
@@ -603,43 +605,62 @@ Anycluster.prototype = {
 				
 			}
 		}
-		xhr.open("GET",url,true);
-		xhr.send();
+		xhr.open("POST",url,true);
+		
+		var csrftoken = getCookieValue('csrftoken');
+    		xhr.setRequestHeader("X-CSRFToken", csrftoken);
+
+		xhr.send(JSON.stringify(postParams));
 		
 	},
 	
 	getClusterContent : function(cluster, gotClusterContent){
-	
-		var data_string = "?x=" + cluster.longitude + "&y=" + cluster.latitude;
-		
-		for (var i=0; i<cluster.ids.length; i++){
-			data_string += "&id=" + cluster.ids[i];
-		}
-		
-		for (var key in this.filters){
-			data_string += "&" + key + "=" + this.filters[key];
+
+		var postParams = {
+			"x": cluster.longitude,
+			"y": cluster.latitude,
+			"ids":cluster.ids,
+			"filters": this.filters
 		}
 		
 		
-		var url = encodeURI('/anycluster/getClusterContent/' + this.zoom + '/' + this.gridSize + '/' + data_string);
+		var url = encodeURI('/anycluster/getClusterContent/' + this.zoom + '/' + this.gridSize + '/');
 		
 		var xhr = new XMLHttpRequest();
 		
 		xhr.onreadystatechange = function(){
 			if (xhr.readyState==4 && xhr.status==200) {
-				//var data = JSON.parse(xhr.responseText);
 				gotClusterContent(xhr.responseText);
 			}
 		}
-		xhr.open("GET",url,true);
-		xhr.send();
+
+		
+		xhr.open("POST",url,true);
+
+		var csrftoken = getCookieValue('csrftoken');
+    		xhr.setRequestHeader("X-CSRFToken", csrftoken);
+
+		xhr.send(JSON.stringify(postParams));
 	
 	},
-	
-	getAreaContent : function(area, gotAreaContent){
+
+	getViewportContent : function(gotViewportContent){
+		var viewport_json = this.getViewport();
+		var geoJson = this.quadToGeoJson(viewport_json);
 		
-		var params = this.urlizeObject(area);
-		var url = "/anycluster/getAreaMarkers/" + this.zoom + '/' + this.gridSize + '/' +  params;
+		this.getAreaContent(geoJson, "getViewportMarkers", gotViewportContent);
+		
+	},
+	
+	getAreaContent : function(geoJson, urlpart, gotAreaContent){
+
+		var postParams = {
+			"geojson":geoJson,
+			"filters":this.filters
+		}
+		
+
+		var url = "/anycluster/" + urlpart + "/" + this.zoom + '/' + this.gridSize + '/'
 			
 		url = encodeURI(url);
 		var xhr = new XMLHttpRequest();
@@ -651,9 +672,32 @@ Anycluster.prototype = {
 
 			}
 		}
-		xhr.open("GET",url,true);
-		xhr.send();
+		xhr.open("POST",url,true);
+
+		var csrftoken = getCookieValue('csrftoken');
+    		xhr.setRequestHeader("X-CSRFToken", csrftoken);
+
+		xhr.send(JSON.stringify(postParams));
 	
+	},
+
+	quadToGeoJson : function(quad){
+		var geoJson = {
+			"type": "Feature",
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [ [
+					[ quad["left"], quad["top"] ], 
+					[ quad["right"], quad["top"] ],
+					[ quad["right"], quad["bottom"] ],
+					[ quad["left"], quad["bottom"] ],
+					[ quad["left"], quad["top"] ]
+				]]
+			}
+		}
+
+		return geoJson
+
 	},
 	
 	selectPinIcon : function(count, pinimg) {

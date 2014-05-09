@@ -12,4 +12,5 @@ urlpatterns = patterns('',
     url(r'^getbounds/(\d+)/$', views.getBounds, name='getBounds_wsrid'),
     url(r'^getClusterContent/(\d+)/(\d+)/$', views.getClusterContent, name='getClusterContent'),
     url(r'^getAreaMarkers/(\d+)/(\d+)/$', views.getAreaMarkers, name='getAreaMarkers'),
+    url(r'^getViewportMarkers/(\d+)/(\d+)/$', views.getViewportMarkers, name='getViewportMarkers'),
 )

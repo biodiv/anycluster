@@ -6,6 +6,7 @@
 			  src="https://maps.googleapis.com/maps/api/js?v=3.8&key=AIzaSyC7zFb7ymHd59HbHYcAld46OcF93OkjD9s&sensor=false">
 		</script>
 		<script type="text/javascript" src="{% static 'anycluster/anycluster.js' %}"></script>
+		<script type="text/javascript" src="{% static 'anycluster/django_ajax_csrf.js' %}"></script>
 		<script type="text/javascript" src="{% static 'anycluster/infobox_packed.js' %}"></script>
 		<script type="text/javascript" src="{% static 'anycluster/markerwithlabel_packed.js' %}"></script>
 		<script type="text/javascript">
@@ -17,7 +18,7 @@
 				zoom: 3, //initial zoom
 				center: [49,11], //initial center in lng lat
 				MapTypeId: "TERRAIN", //google only - choose from  ROADMAP,SATELLITE,HYBRID or TERRAIN
-				clusterMethod : "kmeans", //"grid" or "kmeans" or "centroid"
+				clusterMethod : "grid", //"grid" or "kmeans" or "centroid"
 				iconType: "exact", //"exact" (with exact cluster counts) or "simple" (with rounded counts) 
 				singlePinImages: {
 					'imperial':'/static/anycluster/pin_imperial.png', //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
@@ -47,7 +48,7 @@
 		
 			window.onload = function(){
 				// do not use both maps simultaneously as this will confuse the cache
-				var googlemap = new Anycluster("gmap", anyclusterSettings);
+				clustermap = new Anycluster("gmap", anyclusterSettings);
 				//var osmap = new Anycluster("osmap", anyclusterSettings_osm);
 			}
 		</script>
@@ -63,6 +64,17 @@
 			function closePopup(){
 				document.getElementById('clustererPopup').style.display = "none";
 			}
+		</script>
+
+		<script type="text/javascript">
+			//example script for getting viewport markers
+			
+			function loadViewportMarkers(){
+				clustermap.getViewportContent(function(html){
+					document.getElementById('markerList').innerHTML = html;
+				});
+			}
+
 		</script>
 		
 		<style>
@@ -108,5 +120,11 @@
 			<div id="clusterContentPopup"></div>
 			<div style="text-align:center; margin-top: 20px;"><button onclick="closePopup();">close</button></div>
 		</div>
+		<div style="margin-top:30px;">
+			<div><button onclick="loadViewportMarkers();">Load all markers on the map as list</button></div>
+			<div id="markerList"></div>
+		</div>
+		<!-- needed for ajax POST requests -->
+		{% csrf_token %}
 	</body>
 </html>

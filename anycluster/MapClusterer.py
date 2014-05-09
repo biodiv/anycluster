@@ -64,8 +64,8 @@ LICENSE: GPL
 
 ---------------------------------------------------------------------------------------'''
 
-
-from MapTools import MapTools
+import json
+from anycluster.MapTools import MapTools
 from django.contrib.gis.geos import Point, GEOSGeometry
 
 # Debugging prints out statements in console. Use it from python, not a browser.
@@ -156,19 +156,37 @@ class MapClusterer():
         PARSING THE AJAX INPUT
 
         - The variables and filters coming from the ajax request are transformed into python-usables like lists and dictionaries
+        - anycluster receives a json object containing geojson and filters
     ---------------------------------------------------------------------------------------------------------------------------'''   
+    def loadJson(self, request):
+        json_str = request.body.decode(encoding='UTF-8')
+        params = json.loads(json_str)
+        return params
     
     def parseRequest(self, request):
-        viewport = self.parseViewport(request)
+
+        params = self.loadJson(request)
+        
+        viewport = self.parseViewport(params['geojson'])
         filters = self.parseFilters(request)
-        return viewport, filters
 
-    def parseViewport(self, request):
+        if 'cache' in params:
+            deliver_cache = params["cache"]
 
-        viewport = {'left': float(request.GET['left']), 'top': float(request.GET['top']),
-                    'right': float(request.GET['right']), 'bottom': float(request.GET['bottom'])}
+        else:
+            deliver_cache = False
+            
+        return viewport, filters, deliver_cache
+
+    def parseViewport(self, geojson):
+
+        linearString = geojson['geometry']['coordinates'][0]
+
+        viewport = {'left': linearString[0][0], 'top': linearString[0][1], 'right':linearString[1][0], 'bottom':linearString[2][1]}
+        
         return viewport
-
+    
+    # rewrite this directly using json
     def parseFilters(self, request):
 
         filters = []
@@ -310,11 +328,9 @@ class MapClusterer():
 
     ---------------------------------------------------------------------------------------------------------------------------------'''
 
-    def compareWithCache(self, request, filters, clustercells):
+    def compareWithCache(self, request, deliver_cache, filters, clustercells):
 
         clustercache = request.session.get('clustercache', {})
-
-        deliver_cache = request.GET.get('cache', None)
 
         new_clustercells = []
 
@@ -360,12 +376,12 @@ class MapClusterer():
         
     def getClusterParameters(self, request):
 
-        viewport, filters = self.parseRequest(request)
+        viewport, filters, deliver_cache = self.parseRequest(request)
         # get the clustering cells
         clustercells_pre = self.getClusterCells(viewport)
         # clean the cells
         clustercells = self.compareWithCache(
-            request, filters, clustercells_pre)
+            request, deliver_cache, filters, clustercells_pre)
 
         return clustercells, filters
 
@@ -623,7 +639,7 @@ class MapClusterer():
                                                   'bottom': cell_bottomleft.y, 'left': cell_bottomleft.x})
 
         if DEBUG:
-            print '%s' % poly
+            print('%s' % poly)
 
         return cell_topright, cell_bottomleft, poly
     

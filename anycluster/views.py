@@ -56,38 +56,46 @@ def getClusterContent(request, zoom, gridSize):
     clusterer = MapClusterer(zoom, gridSize)
     filters = clusterer.parseFilters(request)
 
-    clusterIDs = request.GET.getlist("id",[])
-    x = float(request.GET["x"])
-    y = float(request.GET["y"])
+    params = clusterer.loadJson(request)
 
-    entries = clusterer.getKmeansClusterContent(x,y, clusterIDs, filters)
+    entries = clusterer.getKmeansClusterContent(params["x"],params["y"], params["ids"], filters)
 
     return render(request, 'anycluster/clusterPopup.html', {'entries':entries})
 
-    
-def getAreaMarkers(request, zoom, gridSize):
+# function used by severeal views for offering the possibility to select a template
+def loadAreaContent(request, zoom, gridSize):
 
     clusterer = MapClusterer(zoom, gridSize)
-
-    postclustering = bool(int(request.GET.get("postclustering",0)))
     
-    if postclustering:
-        a=b
+    viewport, filters, deliver_cache = clusterer.parseRequest(request)
+
+    params = clusterer.loadJson(request)
+
+    if filters:
+        filterstring = clusterer.constructFilterstring(filters)
 
     else:
-        viewport, filters = clusterer.parseRequest(request)
+        filterstring = ""
 
-        if filters:
-            filterstring = clusterer.constructFilterstring(filters)
+    geometry = GEOSGeometry(json.dumps(params["geojson"]["geometry"]), srid=clusterer.input_srid)
+    geometry.transform(clusterer.srid_db)
 
-        else:
-            filterstring = ""
-        
-        polystring = GEOSGeometry(clusterer.maptools.bounds_ToPolyString(viewport), srid=clusterer.input_srid)
-        polystring.transform(clusterer.srid_db)
+    markers = Gis.objects.raw(
+        "SELECT * FROM %s WHERE ST_WITHIN(%s, ST_GeomFromText('%s',%s) ) %s;" % (geo_table, geo_column_str, geometry, clusterer.srid_db, filterstring)
+    )
+
+    return markers
     
-        markers = Gis.objects.raw(
-            "SELECT * FROM %s WHERE ST_WITHIN(%s, ST_GeomFromText('%s',%s) ) %s;" % (geo_table, geo_column_str, polystring, clusterer.srid_db, filterstring)
-        )
+
+def getAreaMarkers(request, zoom, gridSize):
+
+    markers = loadAreaContent(request, zoom, gridSize)
 
     return render(request, 'anycluster/clusterPopup.html', {'entries':markers})
+
+
+def getViewportMarkers(request, zoom, gridSize):
+
+    markers = loadAreaContent(request, zoom, gridSize)
+
+    return render(request, 'anycluster/viewportMarkerList.html', {'entries':markers})
