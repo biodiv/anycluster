@@ -6,7 +6,7 @@ Depending on your server and personal feeling, it works very well with 200.000 t
 
 ChangeLog
 ---------
-- you now need to add {% csrf_token % } somewhere in you template
+- you now need to add {% csrf_token % } somewhere in your template
 - started implementing GEOJSON
 - added fetching all Markers on the viewport as list
 - now also works with python3
