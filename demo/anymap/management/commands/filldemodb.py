@@ -18,11 +18,11 @@ class Command(BaseCommand):
 
         markerAmount = int(markerAmount)
 
-        print "creating demo with %s markers" % markerAmount
+        print ("creating demo with %s markers" % markerAmount)
 
         for x in range(0,markerAmount):
 
-            print "%s" % (markerAmount-x)
+            print ("%s" % (markerAmount-x))
 
             lat = random.uniform(-84,84)
             lon = random.uniform(-179,179)
@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
             garden.save()
 
-        print "done. Remember to index your geometric column with a gist index - and to use btree_gist!"
+        print ("done. Remember to index your geometric column with a gist index - and to use btree_gist!")
 
 
 
