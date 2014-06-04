@@ -168,7 +168,7 @@ class MapClusterer():
         params = self.loadJson(request)
         
         viewport = self.parseViewport(params['geojson'])
-        filters = self.parseFilters(request)
+        filters = self.parseFilters(params.get("filters"))
 
         if 'cache' in params:
             deliver_cache = params["cache"]
@@ -186,15 +186,14 @@ class MapClusterer():
         
         return viewport
     
-    # rewrite this directly using json
-    def parseFilters(self, request):
+    def parseFilters(self, query_filters):
 
         filters = []
 
         if CLUSTER_FILTERS:
             for key in CLUSTER_FILTERS:
                 if key != "id":
-                    value_pre = request.GET.get(key, None)
+                    value_pre = query_filters.get(key, None)
                     if value_pre:
                         vwop = value_pre.split('_')
 
@@ -787,36 +786,3 @@ class MapClusterer():
         )
 
         return entries
-
-
-    def getBounds(self, filterstring, output_srid=4326):
-
-        if filterstring:
-            filterstring = filterstring.lstrip(' AND ( ').replace(')', '', 1)
-            filterstring = ' WHERE ' + filterstring
-
-        # get the minimum bounding box. django cant handle Box() geometries, so
-        # we use ST_xmaxmin isntead of ST_Extent
-        envelope = Gis.objects.raw('''SELECT ST_xMin(ST_Collect(%s)) AS id, ST_xMax(ST_Collect(%s)) as xmax,
-                                        ST_yMin(ST_Collect(%s)) as ymin, ST_yMax(ST_Collect(%s)) as ymax FROM %s %s;''' % (geo_column_str, geo_column_str,
-                                                                                                                           geo_column_str, geo_column_str,
-                                                                                                                           geo_table, filterstring))
-
-        xmin = envelope[0].id
-        xmax = envelope[0].xmax
-        ymin = envelope[0].ymin
-        ymax = envelope[0].ymax
-
-        # convert bounds to wanted srid
-        bottomleft = Point(xmin, ymin, srid=self.srid_db)
-        topright = Point(xmax, ymax, srid=self.srid_db)
-        self.maptools.point_AnyToAny(bottomleft, self.srid_db, output_srid)
-        self.maptools.point_AnyToAny(topright, self.srid_db, output_srid)
-
-        # google maps has fitbounds for bottomleft (sw) topright(ne) bounds
-        # openlayers has getZoomForExtent, so zoom/center calculation is not needed, bounds are enough
-        # furthermore, the clusterer should be able to display on all maps, so including tilesizes etc here
-        # would limit compatibility
-
-        return {'left': bottomleft.x, 'top': topright.y, 'right': topright.x, 'bottom': bottomleft.y}
- 

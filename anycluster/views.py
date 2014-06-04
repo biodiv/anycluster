@@ -39,24 +39,12 @@ def getPins(request, zoom, gridSize):
         ), content_type="application/json")
 
 
-def getBounds(request,srid=4326):
-    clusterer = MapClusterer()
-    filters = clusterer.parseFilters(request)
-    filterstring = clusterer.constructFilterstring(filters)
-
-    bounds = clusterer.getBounds(filterstring,srid)
-
-    return HttpResponse(json.dumps(
-        bounds
-        ), content_type="application/json")
-
-
 def getClusterContent(request, zoom, gridSize):
 
     clusterer = MapClusterer(zoom, gridSize)
-    filters = clusterer.parseFilters(request)
-
+    
     params = clusterer.loadJson(request)
+    filters = clusterer.parseFilters(params.get("filters"))
 
     entries = clusterer.getKmeansClusterContent(params["x"],params["y"], params["ids"], filters)
 
