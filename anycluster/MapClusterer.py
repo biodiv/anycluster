@@ -168,7 +168,7 @@ class MapClusterer():
         params = self.loadJson(request)
         
         viewport = self.parseViewport(params['geojson'])
-        filters = self.parseFilters(request)
+        filters = self.parseFilters(params.get("filters"))
 
         if 'cache' in params:
             deliver_cache = params["cache"]
@@ -186,15 +186,14 @@ class MapClusterer():
         
         return viewport
     
-    # rewrite this directly using json
-    def parseFilters(self, request):
+    def parseFilters(self, query_filters):
 
         filters = []
 
         if CLUSTER_FILTERS:
             for key in CLUSTER_FILTERS:
                 if key != "id":
-                    value_pre = request.GET.get(key, None)
+                    value_pre = query_filters.get(key, None)
                     if value_pre:
                         vwop = value_pre.split('_')
 
