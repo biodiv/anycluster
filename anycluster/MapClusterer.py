@@ -166,6 +166,9 @@ class MapClusterer():
     def parseRequest(self, request):
 
         params = self.loadJson(request)
+
+        # store geojson in viewport
+        request.session['geojson'] = params['geojson']
         
         viewport = self.parseViewport(params['geojson'])
         filters = self.parseFilters(params.get("filters"))
