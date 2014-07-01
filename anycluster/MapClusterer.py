@@ -137,7 +137,7 @@ class MapClusterer():
     # read the srid of the database. 
     def getDatabaseSRID(self):
 
-        srid_qry = "SELECT id, ST_SRID(%s) FROM %s LIMIT 1;" % (
+        srid_qry = 'SELECT id, ST_SRID(%s) FROM "%s" LIMIT 1;' % (
             geo_column_str, geo_table)
         srid_db_objs = Gis.objects.raw(srid_qry)
 
@@ -576,7 +576,7 @@ class MapClusterer():
                 '''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS %s %s
                             FROM (
                               SELECT %s kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s
-                              FROM %s
+                              FROM "%s"
                               WHERE ST_Within(%s, ST_GeomFromText('%s',%s) ) %s
                             ) AS ksub
                             GROUP BY kmeans
@@ -672,14 +672,14 @@ class MapClusterer():
 
                 filterstring = self.constructFilterstring(filters)
 
-                pin_count_pre = Gis.objects.raw(''' SELECT COUNT(*) AS id FROM %s WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
+                pin_count_pre = Gis.objects.raw(''' SELECT COUNT(*) AS id FROM "%s" WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
                                                 %s
                                             ''' % (geo_table, geo_column_str, poly, self.srid_db, filterstring))
 
                 pin_count = int(pin_count_pre[0].id)
 
                 if PINCOLUMN is not None and pin_count == 1:
-                    pinimg_pre = Gis.objects.raw(''' SELECT %s AS id, %s AS %s FROM %s WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
+                    pinimg_pre = Gis.objects.raw(''' SELECT %s AS id, %s AS %s FROM "%s" WHERE ST_Within(%s, ST_GeomFromText('%s',%s) )
                                                 %s
                                             ''' % (PINCOLUMN, geo_column_str, geo_column_str, geo_table, geo_column_str, poly, self.srid_db, filterstring))
 
@@ -781,7 +781,7 @@ class MapClusterer():
         entries = Gis.objects.raw('''SELECT *
                         FROM (
                           SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s.*
-                          FROM %s
+                          FROM "%s"
                           WHERE ST_Within(%s, ST_GeomFromText('%s',%s) ) %s
                         ) AS ksub
                         WHERE kmeans IN (%s);

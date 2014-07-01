@@ -13,6 +13,8 @@ var markerImageSizes = {
 var Anycluster = function(mapdiv_id, mapOptions){
 
 	var clusterer = this;
+
+	this.settings = mapOptions;
 	
 	this.onFinalClick = mapOptions.onFinalClick;
 	
@@ -82,107 +84,9 @@ var Anycluster = function(mapdiv_id, mapOptions){
 			var count = cluster['count'];
 			var pinimg = cluster['pinimg'];
 			var ids = cluster["ids"];
-		
-			var anchor,
-				icon,
-				piniconObj = clusterer.selectPinIcon(count,pinimg),
-				label_content;
-				
-			var pinicon = piniconObj.url;
-			var pinsize = piniconObj.size;
-				
-			if (count == 1){
 			
-				icon = new google.maps.MarkerImage(pinicon,
-					// second line defines the dimensions of the image
-					new google.maps.Size(pinsize[0], pinsize[2]),
-					// third line defines the origin of the custom icon
-					new google.maps.Point(0,0),
-					// and the last line defines the offset for the image
-					new google.maps.Point(pinsize[0]/2,pinsize[1])
-				);
-				anchor = new google.maps.Point(4,9);
-				label_content = '';
-			
-			}
-			else if (count > 10000){
-			   icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(pinsize[0], pinsize[1]),
-					new google.maps.Point(0,0),
-					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
-				);
-				anchor = new google.maps.Point(16,9);
-				label_content = count;
-			}
+			var marker = new clusterMarker(center, count, clusterer.gmap, ids);
 
-			else if (count > 1000) {
-			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(pinsize[0], pinsize[1]),
-					new google.maps.Point(0,0),
-					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
-				);
-				anchor = new google.maps.Point(12,9);
-				label_content = count;
-			}
-
-			else if (count > 100) {
-			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(pinsize[0], pinsize[1]),
-					new google.maps.Point(0,0),
-					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
-				);
-				anchor = new google.maps.Point(9,9);
-				label_content = count;
-			}
-
-			else if (count > 50) {
-			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(pinsize[0], pinsize[1]),
-					new google.maps.Point(0,0),
-					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
-				);
-				anchor = new google.maps.Point(6,9);
-				label_content = count;
-			}
-
-			else if (count > 10) {
-			    icon = new google.maps.MarkerImage(pinicon,
-					new google.maps.Size(pinsize[0], pinsize[1]),
-					new google.maps.Point(0,0),
-					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
-				);
-				anchor = new google.maps.Point(6,9);
-				label_content = count;
-			}
-
-			else {
-			    icon = new google.maps.MarkerImage(pinicon,
-					// second line defines the dimensions of the image
-					new google.maps.Size(pinsize[0], pinsize[1]),
-					// third line defines the origin of the custom icon
-					new google.maps.Point(0,0),
-					// and the last line defines the offset for the image
-					new google.maps.Point(pinsize[0]/2, pinsize[1]/2)
-				);
-				anchor = new google.maps.Point(4,9);
-				label_content = count;
-			}
-			
-			var marker = new MarkerWithLabel({
-				   position: center,
-				   latitude: center.lat(),
-				   longitude: center.lng(),
-				   map: clusterer.gmap,
-				   draggable: false,
-				   labelContent: label_content,
-				   icon: icon,
-				   labelAnchor: anchor,
-				   labelClass: "clusterlabels", // the CSS class for the label
-				   labelInBackground: false,
-				   count: count,
-				   ids: ids
-			});
-		
 			clusterer.gridCells.push(marker);
 		
 			if (clusterer.zoom >= 13 || count <= 3) {
@@ -498,7 +402,7 @@ Anycluster.prototype = {
 	markerClickFunction : function(marker) {
 	
 		this.removeMarkerCells();
-		this.setMap(marker.longitude, marker.latitude);
+		this.setMap(marker.center.lng(), marker.center.lat());
 		
 	},
 
@@ -706,8 +610,8 @@ Anycluster.prototype = {
 		
 			var singlePinURL = "/static/anycluster/images/pin_unknown.png";
 			
-			if (anyclusterSettings.singlePinImages.hasOwnProperty(pinimg)){
-				singlePinURL = anyclusterSettings.singlePinImages[pinimg];
+			if (this.settings.singlePinImages.hasOwnProperty(pinimg)){
+				singlePinURL = this.settings.singlePinImages[pinimg];
 			}
 
 	    }
