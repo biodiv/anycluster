@@ -14,6 +14,8 @@ function clusterMarker(latlng, count, map, ids) {
 
 	// Initialize all properties.
 	this.center = latlng;
+	this.longitude = latlng.lng();
+	this.latitude = latlng.lat();
 	this.ids = ids;
 	this.count_ = count;
 	this.rounded_count_ = this.roundMarkerCount(count);

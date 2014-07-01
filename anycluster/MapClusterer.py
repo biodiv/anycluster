@@ -491,62 +491,40 @@ class MapClusterer():
 
         - if the geometric centroids are too close to each other after the kmeans algorithm (e.g. overlap), they are merged to one cluster
         - used by kmeansCluster as phase 2
+        - uses pixels for calculation as this is constant on every zoom level
+        - transforms cluster.id into a list
     ---------------------------------------------------------------------------------------------------------------------------------'''
 
     # this is currently broken
-    def distanceCluster(self, points, c_distance=30):
+    def distanceCluster(self, clusters, c_distance=30):
 
-        # clusterdistance in pixels, as this is constant on every zoom level
+        clusters_processed = []
 
-        current_clist = []
+        for cluster in clusters:
+            clustercoords = getattr(cluster, geo_column_str)
 
-        for point in points:
-            point.id = [point.id]
-            current_clist.append(point)
+            added = False
 
-        # hack
-        return current_clist
+            for processed_cluster in clusters_processed:
+                processed_coords = getattr(processed_cluster, geo_column_str)
+                pixel_distance = self.maptools.points_calcPixelDistance(clustercoords, processed_coords, self.zoom)
+                
+                if pixel_distance <= c_distance:
+                    if not type(processed_cluster.id) == list:
+                        processed_cluster.id = [processed_cluster.id]
 
-        count = len(current_clist)
-
-        if count > 1:
-
-            for c in range(count):
-
-                cluster = current_clist.pop(c)
-
-                # iterate over remaining, grab and remove all in range
-                rcount = len(current_clist)
-
-                remove_points = []
-
-                for i in range(rcount):
-
-                    point = current_clist[i]
-
-                    clustercoords = getattr(cluster, geo_column_str)
-                    pointcoords = getattr(point, geo_column_str)
-
-                    dist = self.maptools.points_calcPixelDistance(clustercoords, pointcoords, self.zoom)
-
-                    if dist <= c_distance:
-
-                        remove_points.append(i)
-                        cluster.count += point.count
-                        cluster.id += point.id
-
-                        count += -1
-
-                remove_points.reverse()
-                for r in remove_points:
-                    current_clist.pop(r)
-
-                current_clist.insert(0, cluster)
-
-                if c + 1 >= count:
+                    processed_cluster.id.append(cluster.id)
+                    processed_cluster.count += cluster.count
+                    added = True
                     break
 
-        return current_clist
+            if not added:
+                if not type(cluster.id) == list:
+                    cluster.id = [cluster.id]
+                clusters_processed.append(cluster)
+
+        
+        return clusters_processed
 
     
     '''---------------------------------------------------------------------------------------------------------------------------------
@@ -557,7 +535,8 @@ class MapClusterer():
 
     def kmeansCluster(self, clustercells, filters):
 
-        pins = []
+        # the actual map markers that returned to the map
+        markers = []
 
         # kmeans cluster in each cell
         for cell in clustercells:
@@ -572,7 +551,7 @@ class MapClusterer():
 
                 filterstring = ""
 
-            cellpins = Gis.objects.raw(
+            kclusters_queryset = Gis.objects.raw(
                 '''SELECT kmeans AS id, count(*), ST_Centroid(ST_Collect(%s)) AS %s %s
                             FROM (
                               SELECT %s kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s
@@ -587,14 +566,15 @@ class MapClusterer():
                                poly, self.srid_db, filterstring)
             )
 
-            # merge near clusters
-            cellpins = self.distanceCluster(list(cellpins))
+            kclusters = list(kclusters_queryset)
+            
+            kclusters = self.distanceCluster(kclusters)
 
             if DEBUG:
-                print('pins after phase2: %s' % cellpins)
+                print('pins after phase2: %s' % kclusters)
 
-            for cell in cellpins:
-                point = getattr(cell, geo_column_str)
+            for cluster in kclusters:
+                point = getattr(cluster, geo_column_str)
 
                 if point.srid != self.input_srid:
                     self.maptools.point_AnyToAny(point, point.srid, self.input_srid)
@@ -604,10 +584,10 @@ class MapClusterer():
                 else:
                     pinimg = None
 
-                pins.append({'ids': cell.id, 'count': cell.count, 'center': {
+                markers.append({'ids': cluster.id, 'count': cluster.count, 'center': {
                             'x': point.x, 'y': point.y}, 'pinimg': pinimg})
 
-        return pins
+        return markers
 
 
     '''---------------------------------------------------------------------------------------------------------------------------------
@@ -780,7 +760,7 @@ class MapClusterer():
 
         entries = Gis.objects.raw('''SELECT *
                         FROM (
-                          SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), %s.*
+                          SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], 6) OVER (), "%s".*
                           FROM "%s"
                           WHERE ST_Within(%s, ST_GeomFromText('%s',%s) ) %s
                         ) AS ksub

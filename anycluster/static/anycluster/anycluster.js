@@ -10,25 +10,19 @@ var markerImageSizes = {
 }
 
 
-var Anycluster = function(mapdiv_id, mapOptions){
+var Anycluster = function(mapdiv_id, settings_){
+
+	this.loadSettings(settings_);
+
+	settings_ = null;
 
 	var clusterer = this;
 
-	this.settings = mapOptions;
-	
-	this.onFinalClick = mapOptions.onFinalClick;
-	
-	this.pincount = 0;
-	this.filters = {};	
+	this.pincount = 0;	
 	this.gridCells = [];
-	this.clusterMethod = mapOptions.clusterMethod;
-	this.iconType = mapOptions.iconType;
-	this.gridSize = mapOptions.gridSize;
-	this.mapType = mapOptions.mapType;
-	this.zoom = mapOptions.zoom;
 	this.clearMarkers = false;
 	
-	if (mapOptions.mapType == "google"){
+	if (this.mapType == "google"){
 	
 		this.setMap = function(lng,lat){
 		
@@ -207,10 +201,10 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		this.initialize = function(){
 		
 			var googleOptions = {
-				zoom: mapOptions.zoom,
+				zoom: clusterer.zoom,
 				scrollwheel: false,
-				center: new google.maps.LatLng(mapOptions.center[0], mapOptions.center[1]),
-				mapTypeId: google.maps.MapTypeId[mapOptions.MapTypeId]
+				center: new google.maps.LatLng(clusterer.center[0], clusterer.center[1]),
+				mapTypeId: google.maps.MapTypeId[clusterer.MapTypeId]
 			}
 	
 			clusterer.gmap = new google.maps.Map(document.getElementById(mapdiv_id), googleOptions);
@@ -240,7 +234,7 @@ var Anycluster = function(mapdiv_id, mapOptions){
 			
 		}
 	}
-	else if (mapOptions.mapType == "osm"){
+	else if (this.mapType == "leaflet"){
 	
 		this.setMap = function(lng,lat){
 
@@ -298,9 +292,7 @@ var Anycluster = function(mapdiv_id, mapOptions){
             	});
 			}
             
-            
-            
-			
+
 			clusterer.markerLayer.addMarker(marker);
 		}
 		
@@ -340,7 +332,7 @@ var Anycluster = function(mapdiv_id, mapOptions){
 		  	clusterer.markerLayer = new OpenLayers.Layer.Markers( "Markers" );
             clusterer.omap.addLayer(clusterer.markerLayer);
 			
-			var center = new OpenLayers.LonLat(mapOptions.center[1],mapOptions.center[0]).transform(
+			var center = new OpenLayers.LonLat(settings.center[1],settings.center[0]).transform(
 		    	new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
 		    	clusterer.omap.getProjectionObject() // to Spherical Mercator Projection
 		  	);
@@ -387,6 +379,21 @@ var Anycluster = function(mapdiv_id, mapOptions){
 
 Anycluster.prototype = {
 
+	loadSettings : function(settings_) {
+
+		this.filters = {};
+		this.center = settings_.center;
+		this.clusterMethod = settings_.clusterMethod || "grid";
+		this.iconType = settings_.iconType;
+		this.gridSize = settings_.gridSize || 256;
+		this.mapType = settings_.mapType;
+		this.mapTypeId = settings_.mapTypeId;
+		this.zoom = settings_.zoom || 1;
+		this.singlePinImages = settings_.singlePinImages ? settings_.singlePinImages : {};
+		this.onFinalClick = settings_.onFinalClick;
+
+	},
+
 	//on small markers or on final zoom, this function is launched
 	markerFinalClickFunction : function(mapmarker) {
 	
@@ -402,7 +409,7 @@ Anycluster.prototype = {
 	markerClickFunction : function(marker) {
 	
 		this.removeMarkerCells();
-		this.setMap(marker.center.lng(), marker.center.lat());
+		this.setMap(marker.longitude, marker.latitude);
 		
 	},
 
@@ -610,8 +617,8 @@ Anycluster.prototype = {
 		
 			var singlePinURL = "/static/anycluster/images/pin_unknown.png";
 			
-			if (this.settings.singlePinImages.hasOwnProperty(pinimg)){
-				singlePinURL = this.settings.singlePinImages[pinimg];
+			if (this.singlePinImages.hasOwnProperty(pinimg)){
+				singlePinURL = this.singlePinImages[pinimg];
 			}
 
 	    }
@@ -679,6 +686,12 @@ Anycluster.prototype = {
 		
 		return urlParams
 		
+	},
+
+	filter: function(filter){
+	},
+
+	addFilter: function(filter){
 	},
 	
 	//overridable start/end functions, e.g. for showing a loading spinner
