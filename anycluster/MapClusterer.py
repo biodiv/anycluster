@@ -568,92 +568,7 @@ class MapClusterer():
             filterstring += ')'
 
         return filterstring
-        
 
-        for fltr in filters:
-
-            # there can be multiple values
-            values = fltr['values']
-            column = fltr['column']
-            operator = fltr.get('operator', None)
-
-            if values:
-
-                filterstring += ' AND ( '
-
-                if column == 'time':
-
-                    if operator is None or operator == 'seq':
-                        days = values[0].split('-')
-                        months = values[1].split('-')
-                        years = values[2].split('-')
-
-                    if operator is not None:
-
-                        if operator in self.valid_operators:
-
-                            filterstring += "%s %s TIMESTAMP '%s'" % (
-                                column, operator, values[0])
-
-                        elif operator == 'range':
-                            filterstring += "%s >= TIMESTAMP '%s' AND %s <= TIMESTAMP '%s' " % (
-                                column, values[0], column, values[1])
-
-                        elif operator == 'seq':
-
-                            filterstring += '''EXTRACT(YEAR FROM time) >= %s
-                                            AND EXTRACT(YEAR FROM time) <= %s
-                                            AND EXTRACT(MONTH FROM time) >= %s
-                                            AND EXTRACT(MONTH FROM time) <= %s
-                                            ''' % (years[0], years[1], months[0], months[1])
-
-                    else:
-
-                        filterstring += '''EXTRACT(YEAR FROM time) >= %s
-                                            AND EXTRACT(YEAR FROM time) <= %s
-                                            AND EXTRACT(MONTH FROM time) >= %s
-                                            AND EXTRACT(MONTH FROM time) <= %s
-                                            ''' % (years[0], years[1], months[0], months[1])
-
-                else:
-
-                    if operator == 'list' or operator == '!list':
-                        if operator == 'list':
-                            operator = 'IN'
-                        else:
-                            operator = 'NOT IN'
-
-                        filterstring += ' %s %s (' % (column, operator)
-
-                        first = True
-                        for val in values:
-                            if first:
-                                filterstring += "'%s'" % val
-                                first = False
-                            else:
-                                filterstring += ",'%s'" % val
-
-                        filterstring += ')'
-
-                    else:
-
-                        valcounter = 0
-
-                        for val in values:
-                            if valcounter > 0:
-                                filterstring += ' OR '
-
-                            if operator and operator in self.valid_operators:
-                                filterstring += "%s %s '%s' " % (column,
-                                                                 operator, val)
-                            else:
-                                filterstring += "%s ~ '^%s.*' " % (column, val)
-
-                            valcounter += 1
-
-                filterstring += ')'
-
-        return filterstring
 
 
     '''---------------------------------------------------------------------------------------------------------------------------------
@@ -744,7 +659,7 @@ class MapClusterer():
                         self.maptools.point_AnyToAny(point, point.srid, self.input_srid)
 
                     if PINCOLUMN:
-                        pinimg = cluster.pinimg
+                        pinimg = cell.pinimg
                     else:
                         pinimg = None
 
