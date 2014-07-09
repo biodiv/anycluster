@@ -37,10 +37,7 @@ http://anycluster.readthedocs.org/en/latest/
 Live Example
 ------------
 
-There's a demo at http://www.anymals.org/nx/bigmap/
-Note: This one shows the kmeans clustering. The underlying database contains 5.5 Million entries.
-
-
+There's a demo at https://www.anymals.org/nx/bigmap/.
 
 Using the Demo
 --------------
