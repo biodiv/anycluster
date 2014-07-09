@@ -7,16 +7,6 @@ Depending on your server and personal feeling, it works very well with 200.000 t
 ChangeLog
 ---------
 - you now need to add {% csrf_token % } somewhere in your template
-- started implementing GEOJSON
-- added fetching all Markers on the viewport as list
-- now also works with python3
-- added demo application (currently without the filter feature)
-- new javascript file
-- added marker image for markers with count 1
-- prepared anycluster.js for OSM
-- now works without jQuery
-- added example how to use exact counts (base.html)
-
 
 
 Features
