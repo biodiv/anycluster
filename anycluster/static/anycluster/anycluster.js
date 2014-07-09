@@ -68,6 +68,7 @@ var Anycluster = function(mapdiv_id, settings_, mapInitCallback){
 		        map: clusterer.gmap,
 		        count: count,
 		        icon: pinicon,
+				geojson: cluster.geojson,
 		        ids: ids
 		    });
 
@@ -367,8 +368,10 @@ Anycluster.prototype = {
 			this.getClusterContent(mapmarker, this.onFinalClick);
 		}
 		else if (this.clusterMethod = "grid"){
-			var geoJson = this.quadToGeoJson(mapmarker.cell);
-			this.getAreaContent(geoJson, this.onFinalClick);
+			var geojson = { type: "Feature",
+				geometry: JSON.parse(mapmarker["geojson"])
+			};
+			this.getAreaContent(geojson, this.onFinalClick);
 		}
 	},
 
@@ -704,7 +707,6 @@ Anycluster.prototype = {
 		return totalCount
 	},
 
-	//overridable start/end functions, e.g. for showing a loading spinner
 	loadStart : function(){},
 	loadEnd : function(){}
 	
