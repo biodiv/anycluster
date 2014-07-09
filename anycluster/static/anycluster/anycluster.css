@@ -2,6 +2,7 @@
 	font-size: 11px;
 	color: #fff;
 	font-weight: bold;
+	text-align: center;
 }
 
 .cluster-5 {
@@ -20,4 +21,8 @@
 }
 
 .cluster-10000 {
+}
+
+.googleMapContainer img {
+    max-width: none !important;
 }

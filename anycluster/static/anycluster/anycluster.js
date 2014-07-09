@@ -1,3 +1,12 @@
+var gridColorValues = {
+	5: "pink",
+	10: "lightcoral",
+	50: "coral",
+	100: "orange",
+	1000: "orangered",
+	10000: "red"
+}
+
 //set marker sizes according to your images for correct display
 var markerImageSizes = {
 	1: [24,39],
@@ -10,7 +19,13 @@ var markerImageSizes = {
 }
 
 
-var Anycluster = function(mapdiv_id, settings_){
+var Anycluster = function(mapdiv_id, settings_, mapInitCallback){
+
+
+	if (typeof mapInitCallback === "function") {
+		google.maps.event.addDomListener(window, 'load', mapInitCallback);
+	}
+
 
 	this.loadSettings(settings_);
 
@@ -18,8 +33,8 @@ var Anycluster = function(mapdiv_id, settings_){
 
 	var clusterer = this;
 
-	this.pincount = 0;	
-	this.gridCells = [];
+	this.viewportMarkerCount = 0;	
+	this.markerList = [];
 	this.clearMarkers = false;
 	
 	if (this.mapType == "google"){
@@ -56,7 +71,7 @@ var Anycluster = function(mapdiv_id, settings_){
 		        ids: ids
 		    });
 
-		    clusterer.gridCells.push(marker);
+		    clusterer.markerList.push(marker);
 		
 			if (clusterer.zoom >= 13 || count <= 3) {
 				google.maps.event.addListener(marker, 'click', function() {
@@ -81,7 +96,7 @@ var Anycluster = function(mapdiv_id, settings_){
 			
 			var marker = new clusterMarker(center, count, clusterer.gmap, ids);
 
-			clusterer.gridCells.push(marker);
+			clusterer.markerList.push(marker);
 		
 			if (clusterer.zoom >= 13 || count <= 3) {
 				google.maps.event.addListener(marker, 'click', function() {
@@ -98,97 +113,45 @@ var Anycluster = function(mapdiv_id, settings_){
 		}
 		
 		this.drawCell = function(cluster,i){
-		
-			var center = new google.maps.LatLng(cluster['center']['y'], cluster['center']['x']);
-			var count = cluster['count'];
-			var pinimg = cluster['pinimg'];
-		
-			if (count > 0) {
-				var labelText = count;
-								
-				var boxText = document.createElement("div");
-				boxText.id = "c" + i;
-				boxText.position = center;
-				boxText.style.cssText = "border: none;background: none;";
-				boxText.innerHTML = count;
-				boxText.count = count;
-				boxText.latitude = center.lat();
-				boxText.longitude = center.lng();
-				boxText.cell = cluster['cell'];
-					
-				//set opacity according to count
-				var opacity;
-		
-				if (count <= 5 ){
-					opacity = 0.2;
-				}
-		
-				else if (count < 10) {
-					opacity = 0.3;
-				}
-		
-				else if (count < 100 ) {
-					opacity = 0.4;
-				}
-		
-				else if (count < 1000 ) {
-					opacity = 0.6;
-				}
-		
-				else {
-					opacity = 0.7;
-				};
 			
-				var offset = -clusterer.gridSize/2;
-
-				var myOptions = {
-					content: boxText,
-					boxStyle: {
-						border: "none",
-						background: "rgba(200, 54, 54," + opacity + ")",
-						textAlign: "center",
-						fontSize: "12pt",
-						fontWeight: "bold",
-						width: "" + clusterer.gridSize-2 +'px',
-						height: "" + clusterer.gridSize-2 +'px',
-						lineHeight: "" + clusterer.gridSize-2 +'px',
-					},
-					disableAutoPan: true,
-					pixelOffset: new google.maps.Size(offset,offset),
-					position: center,
-					closeBoxURL: "",
-					isHidden: false,
-					pane: "floatPane",
-					enableEventPropagation: true
-				};
-
-				var gridLabel = new InfoBox(myOptions);
-				gridLabel.open(clusterer.gmap);
-			
-				clusterer.gridCells.push(gridLabel);
-			
-				if (clusterer.zoom >= 13 || count <= 3) {
-						
-					google.maps.event.addDomListener(gridLabel.content_,'click', function() {
-						  clusterer.markerFinalClickFunction(this);
-						}
-					);
-				}
-			
-				else {
-					google.maps.event.addDomListener(gridLabel.content_, 'click', function() {
-						clusterer.markerClickFunction(this);
-					});
-				};
+			var geojson = {
+				"type": "Feature",
+				"count": cluster.count,
+				"geometry": JSON.parse(cluster.geojson),
+				"properties": {"count": cluster.count}
 			}
+
+			clusterer.gmap.data.addGeoJson(geojson);
 		
-		}
+		},
+
+		this.paintGridColors = function(){
+
+			var setColorStyleFn = function(feature) {
+
+				var count = feature.getProperty('count');
+				var rounded_count = roundMarkerCount(count);				
+
+			  	return {
+				      fillColor: gridColorValues[rounded_count],
+				      strokeWeight: 0
+				}
+
+			}
+			
+			clusterer.gmap.data.setStyle(setColorStyleFn);
+			
+		},
+
+		this.getZoom = function(){
+			return clusterer.gmap.getZoom();
+		},
 	
 		this.cluster = function(cache, clusteredCB){
 		
-			clusterer.zoom = clusterer.gmap.getZoom();
 			var viewport_json = this.getViewport();	
-			clusterer.getClusters(viewport_json, cache, clusteredCB);
+			var geoJson_viewport = this.quadToGeoJson(viewport_json);
+			clusterer.getClusters(geoJson_viewport, "viewport", clusteredCB, cache);
 
 		}
 
@@ -197,18 +160,8 @@ var Anycluster = function(mapdiv_id, settings_){
 			var viewport_json = {'left':viewport.getSouthWest().lng(), 'top':viewport.getNorthEast().lat(), 'right':viewport.getNorthEast().lng(), 'bottom':viewport.getSouthWest().lat()};
 			return viewport_json
 		}
-	
-		this.initialize = function(){
-		
-			var googleOptions = {
-				zoom: clusterer.zoom,
-				scrollwheel: false,
-				center: new google.maps.LatLng(clusterer.center[0], clusterer.center[1]),
-				mapTypeId: google.maps.MapTypeId[clusterer.MapTypeId]
-			}
-	
-			clusterer.gmap = new google.maps.Map(document.getElementById(mapdiv_id), googleOptions);
-			
+
+		this.startClustering = function(){
 			var firstLoad = true;
 			google.maps.event.addListener(clusterer.gmap, 'idle', function() {
 				
@@ -224,17 +177,28 @@ var Anycluster = function(mapdiv_id, settings_){
 			
 			
 			google.maps.event.addListener(clusterer.gmap, 'zoom_changed', function() {
-				 clusterer.removeMarkerCells();
+				 clusterer.removeAllMarkers();
 			});
+		}
+	
+		this.initialize = function(){
+		
+			var googleOptions = {
+				zoom: clusterer.zoom,
+				scrollwheel: false,
+				center: new google.maps.LatLng(clusterer.center[0], clusterer.center[1]),
+				mapTypeId: google.maps.MapTypeId[clusterer.MapTypeId]
+			}
+	
+			clusterer.gmap = new google.maps.Map(document.getElementById(mapdiv_id), googleOptions);
 			
-				
-			if (typeof initcallback === "function") {
-				initcallback();
+			if (clusterer.autostart == true){
+				clusterer.startClustering();
 			}
 			
 		}
 	}
-	else if (this.mapType == "leaflet"){
+	else if (this.mapType == "openlayers"){
 	
 		this.setMap = function(lng,lat){
 
@@ -303,7 +267,6 @@ var Anycluster = function(mapdiv_id, settings_){
 		}
 	
 		this.cluster = function(cache, clusteredCB){
-			clusterer.zoom = clusterer.omap.getZoom();
 			
 			var viewport = clusterer.omap.getExtent().transform(
 				clusterer.omap.getProjectionObject(),
@@ -312,7 +275,7 @@ var Anycluster = function(mapdiv_id, settings_){
 			
 			var viewport_json = {'left':viewport[0], 'top':viewport[3], 'right':viewport[2], 'bottom':viewport[1]};
 		
-			clusterer.getClusters(viewport_json, cache, clusteredCB);
+			clusterer.getClusters(viewport_json, "viewport", clusteredCB, cache);
 		}
 		
 		this.initialize = function(){
@@ -362,7 +325,7 @@ var Anycluster = function(mapdiv_id, settings_){
         	
         	clusterer.omap.zoomToProxy = clusterer.omap.zoomTo;
 			clusterer.omap.zoomTo =  function (zoom,xy){
-				clusterer.removeMarkerCells();
+				clusterer.removeAllMarkers();
 				clusterer.omap.zoomToProxy(zoom,xy); 
 
 			};
@@ -381,16 +344,19 @@ Anycluster.prototype = {
 
 	loadSettings : function(settings_) {
 
-		this.filters = {};
-		this.center = settings_.center;
+		this.autostart = typeof(settings_.autostart) == "boolean" ? settings_.autostart : true;
+		this.filters = settings_.filters || {};
+		this.center = settings_.center || [0,0];
 		this.clusterMethod = settings_.clusterMethod || "grid";
-		this.iconType = settings_.iconType;
+		this.iconType = settings_.iconType || "exact";
 		this.gridSize = settings_.gridSize || 256;
 		this.mapType = settings_.mapType;
-		this.mapTypeId = settings_.mapTypeId;
-		this.zoom = settings_.zoom || 1;
+		this.mapTypeId = settings_.mapTypeId || "HYBRID";
+		this.zoom = settings_.zoom || 3;
 		this.singlePinImages = settings_.singlePinImages ? settings_.singlePinImages : {};
-		this.onFinalClick = settings_.onFinalClick;
+		this.onFinalClick = settings_.onFinalClick || this.onFinalClick;
+		this.loadEnd = settings_.loadEnd || this.loadEnd;
+		this.loadStart = settings_.loadStart || this.loadStart;
 
 	},
 
@@ -402,28 +368,35 @@ Anycluster.prototype = {
 		}
 		else if (this.clusterMethod = "grid"){
 			var geoJson = this.quadToGeoJson(mapmarker.cell);
-			this.getAreaContent(geoJson, "getAreaMarkers", this.onFinalClick);
+			this.getAreaContent(geoJson, this.onFinalClick);
 		}
+	},
+
+	onFinalClick: function(entries_html){
+		alert(entries_html);
 	},
 
 	markerClickFunction : function(marker) {
 	
-		this.removeMarkerCells();
+		this.removeAllMarkers();
 		this.setMap(marker.longitude, marker.latitude);
 		
 	},
 
+	filter: function(filterObj){
+		this.filters = filterObj;
+		this.clearMarkers = true;
+		this.cluster();	
+	},
+
 	addFilters: function(newfilters){
 	
-		for (var key in newfilters){
+		for (var f=0; f<newfilters.length; f++){
 			
-			if (newfilters.hasOwnProperty(key)) {
-			    this.filters[key] = newfilters[key];
-			}
+			this.filters.push(newfilters[f]);
 		}
 
 		this.clearMarkers = true;
-		this.pincount = 0;
 		
 	},
 	
@@ -435,26 +408,33 @@ Anycluster.prototype = {
 		}
 		
 		this.clearMarkers = true;
-		this.pincount = 0;
 		
 	},
 	
-	removeMarkerCells : function(){
+	removeAllMarkers : function(){
+
+		var clusterer = this;
 		
 		if (this.mapType == "google"){
-			for (var i=0; i<this.gridCells.length; i+=1){
-				this.gridCells[i].setMap(null);
+			for (var i=0; i<this.markerList.length; i+=1){
+				this.markerList[i].setMap(null);
 			}
+			this.gmap.data.forEach(function(feature){
+				clusterer.gmap.data.remove(feature);
+			});
 		}
 		else if (this.mapType == "osm"){
 			this.markerLayer.clearMarkers();
 		}
 		
 		this.clearMarkers = false;
+		this.markerList.length = 0;
 		
 	},
 	
-	getClusters : function(viewport, cache, gotClusters){
+	getClusters : function(geoJson, geometry_type, gotClusters, cache){
+
+		this.zoom = this.getZoom();
 	
 		var clusterer = this;
 	
@@ -462,11 +442,10 @@ Anycluster.prototype = {
 		
 		var url = '/anycluster/' + this.clusterMethod + '/' + this.zoom + '/' + this.gridSize + '/'; // + urlParams;
 
-		geoJson_viewport = this.quadToGeoJson(viewport);
-
 		postParams = {
-			'geojson' : geoJson_viewport,
-			'filters': this.filters
+			'geojson' : geoJson,
+			'filters': this.filters,
+			'geometry_type': geometry_type
 		}
 
 		if (cache === true){
@@ -479,6 +458,12 @@ Anycluster.prototype = {
 		
 		xhr.onreadystatechange = function(){
 			if (xhr.readyState==4 && xhr.status==200) {
+
+
+				if (clusterer.clearMarkers == true){
+					clusterer.removeAllMarkers();
+				}
+
 				var clusters = JSON.parse(xhr.responseText);
 				
 				//route the clusters
@@ -493,12 +478,15 @@ Anycluster.prototype = {
 						var clusterFunction = clusterer.drawMarkerExactCount;
 					} 
 				}
-				
-			
+
+				if (clusters.length > 0 && geometry_type == "strict"){
+
+					clusterer.removeAllMarkers();
+				}
+
 				for(i=0; i<clusters.length; i++) {
 					
 					var cluster = clusters[i];
-					clusterer.pincount = clusterer.pincount + parseInt(cluster.count);
 	
 					if ( cluster.count == 1) {
 						clusterer.drawMarker(cluster);
@@ -507,16 +495,24 @@ Anycluster.prototype = {
 						clusterFunction(cluster);
 					}
 					
-					clusterer.loadEnd();
+				}
+				
+				if (clusterer.clusterMethod == 'grid'){
+					clusterer.paintGridColors();
+				}
+
+				//update totalcount
+				clusterer.viewportMarkerCount = clusterer.getViewportMarkerCount();
+
+				clusterer.loadEnd();
 						
-					if (typeof clusteredCB === "function") {
-						gotClusters();
-					}
+				if (typeof clusteredCB === "function") {
+					gotClusters();
 				}
 				
 			}
 		}
-		xhr.open("POST",url,true);
+		xhr.open("POST", url, true);
 		
 		var csrftoken = getCookieValue('csrftoken');
     		xhr.setRequestHeader("X-CSRFToken", csrftoken);
@@ -559,11 +555,13 @@ Anycluster.prototype = {
 		var viewport_json = this.getViewport();
 		var geoJson = this.quadToGeoJson(viewport_json);
 		
-		this.getAreaContent(geoJson, "getViewportMarkers", gotViewportContent);
+		this.getAreaContent(geoJson, gotViewportContent);
 		
 	},
 	
-	getAreaContent : function(geoJson, urlpart, gotAreaContent){
+	getAreaContent : function(geoJson, gotAreaContent){
+
+		this.zoom = this.getZoom();
 
 		var postParams = {
 			"geojson":geoJson,
@@ -571,7 +569,7 @@ Anycluster.prototype = {
 		}
 		
 
-		var url = "/anycluster/" + urlpart + "/" + this.zoom + '/' + this.gridSize + '/'
+		var url = "/anycluster/getAreaContent/" + this.zoom + '/' + this.gridSize + '/'
 			
 		url = encodeURI(url);
 		var xhr = new XMLHttpRequest();
@@ -616,9 +614,15 @@ Anycluster.prototype = {
 		if (count == 1) {
 		
 			var singlePinURL = "/static/anycluster/images/pin_unknown.png";
+
+			if( typeof(this.singlePinImages) == "function"){
+				singlePinURL = this.singlePinImages(pinimg);
+			}
+			else {
 			
-			if (this.singlePinImages.hasOwnProperty(pinimg)){
-				singlePinURL = this.singlePinImages[pinimg];
+				if (this.singlePinImages.hasOwnProperty(pinimg)){
+					singlePinURL = this.singlePinImages[pinimg];
+				}
 			}
 
 	    }
@@ -688,14 +692,47 @@ Anycluster.prototype = {
 		
 	},
 
-	filter: function(filter){
+	getViewportMarkerCount: function(){
+		var viewport = this.getViewport();
+		var totalCount = 0;
+		for (var i=0; i<this.markerList.length; i++){
+			var marker = this.markerList[i];
+			if (viewport["right"] > marker.longitude && viewport["left"] < marker.longitude && viewport["top"] > marker.latitude && viewport["bottom"] < marker.latitude){
+				totalCount += marker.count;
+			}
+		}
+		return totalCount
 	},
 
-	addFilter: function(filter){
-	},
-	
 	//overridable start/end functions, e.g. for showing a loading spinner
 	loadStart : function(){},
 	loadEnd : function(){}
 	
+}
+
+function roundMarkerCount(count){
+
+	if (count == 1){
+		count = 1;
+	}
+	else if (count <= 5) {
+		count = 5;
+	}
+	else if (count <= 10) {
+		count = 10;
+	}
+	else if (count <= 50) {
+		count = 50;
+	}
+	else if (count <= 100) {
+		count = 100;
+	}
+	else if (count <= 1000) {
+		count = 1000;
+	}
+	else {
+		count = 10000
+	}
+
+	return count;
 }

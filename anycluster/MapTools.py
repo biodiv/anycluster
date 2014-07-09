@@ -45,10 +45,9 @@ class MapTools():
         return point
 
     def point_ToLatLng(self, point):
-        source_srid = point.srid
-        sourcecoord = SpatialReference(source_srid)
+        source_srid = SpatialReference(point.srid)
         wsg84 = SpatialReference("4326")
-        trans = CoordTransform(sourcecoord, wsg84)
+        trans = CoordTransform(source_srid, wsg84)
 
         point.transform(trans)
 
@@ -134,10 +133,13 @@ class MapTools():
             print('cellX: %s' % cellX)
 
         return [cellX, cellY]
+    
 
     # returns tile bounds in pixels
     def cellIDToTileBounds(self, cellID, gridSize):
-        x, y = cellID.split(',')
+        # x, y = cellID.split(',')
+        x = cellID[0]
+        y = cellID[1]
         left = int(x) * gridSize  # minx
         bottom = int(y) * gridSize  # miny
         right = (int(x) + 1) * gridSize  # maxx
@@ -189,11 +191,12 @@ class MapTools():
 
             for x in range(min_x, max_x + 1, 1):
                 for y in range(min_y, max_y + 1, 1):
-                    # cell = [x,y]
-                    cell = '%s,%s' % (x, y)
+                    cell = (x,y)
+                    # cell = '%s,%s' % (x, y)
                     clusterCells.append(cell)
 
         return clusterCells
+
 
     def get_ClusterCells(self, toprightCellID, bottomleftCellID, zoom):
 
@@ -242,9 +245,9 @@ class MapTools():
 
         return int(distance_p)
 
-    def getCellIDForPoint(self, point_root, zoom, gridSize):
+    def getCellIDForPoint(self, point_lnglat, zoom, gridSize):
 
-        point_mercator = self.point_ToMercator(point_root)
+        point_mercator = self.point_ToMercator(point_lnglat)
         point_world = self.point_MercatorToWorld(point_mercator)
         point_pixels = self.point_WorldToPixels(point_world, zoom)
         cellid = self.point_PixelToCellID(point_pixels, gridSize)

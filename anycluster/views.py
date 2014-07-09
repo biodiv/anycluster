@@ -18,9 +18,8 @@ geo_table = Gis._meta.db_table
 def getGrid(request, zoom, gridSize=256):
 
     clusterer = MapClusterer(zoom, gridSize)
-    clustercells, filters = clusterer.getClusterParameters(request)
 
-    grid = clusterer.gridCluster(clustercells,filters)
+    grid = clusterer.gridCluster(request)
     
     return HttpResponse(json.dumps(
         grid
@@ -30,9 +29,8 @@ def getGrid(request, zoom, gridSize=256):
 def getPins(request, zoom, gridSize):
 
     clusterer = MapClusterer(zoom, gridSize)
-    clustercells, filters = clusterer.getClusterParameters(request)
 
-    markers = clusterer.kmeansCluster(clustercells,filters)
+    markers = clusterer.kmeansCluster(request)
     
     return HttpResponse(json.dumps(
         markers
@@ -42,48 +40,47 @@ def getPins(request, zoom, gridSize):
 def getClusterContent(request, zoom, gridSize):
 
     clusterer = MapClusterer(zoom, gridSize)
-    
-    params = clusterer.loadJson(request)
-    filters = clusterer.parseFilters(params.get("filters"))
 
-    entries = clusterer.getKmeansClusterContent(params["x"],params["y"], params["ids"], filters)
+    entries = clusterer.getKmeansClusterContent(request)
 
     return render(request, 'anycluster/clusterPopup.html', {'entries':entries})
 
-# function used by severeal views for offering the possibility to select a template
+
+
 def loadAreaContent(request, zoom, gridSize):
 
     clusterer = MapClusterer(zoom, gridSize)
-    
-    viewport, filters, deliver_cache = clusterer.parseRequest(request)
 
     params = clusterer.loadJson(request)
 
-    if filters:
-        filterstring = clusterer.constructFilterstring(filters)
+    filterstring = clusterer.constructFilterstring(params["filters"])
 
-    else:
-        filterstring = ""
+    geojson = params["geojson"]
 
-    geometry = GEOSGeometry(json.dumps(params["geojson"]["geometry"]), srid=clusterer.input_srid)
-    geometry.transform(clusterer.srid_db)
+    markers = []
 
-    markers = Gis.objects.raw(
-        "SELECT * FROM %s WHERE ST_WITHIN(%s, ST_GeomFromText('%s',%s) ) %s;" % (geo_table, geo_column_str, geometry, clusterer.srid_db, filterstring)
-    )
+    if geojson["type"] == "Feature":
+        features = [params["geojson"]]
+
+    elif geojson["type"] == "FeatureCollection":
+        features = geojson["features"]
+        
+        
+    for feature in features:
+        geometry = GEOSGeometry(json.dumps(feature["geometry"]), srid=clusterer.input_srid)
+        geometry.transform(clusterer.srid_db)
+        markers_qry = Gis.objects.raw(
+            '''SELECT * FROM "%s" WHERE ST_Intersects(%s, ST_GeomFromText('%s',%s) ) %s;''' % (geo_table, geo_column_str, geometry, clusterer.srid_db, filterstring)
+        )
+
+        markers += list(markers_qry)
+    
 
     return markers
     
 
-def getAreaMarkers(request, zoom, gridSize):
+def getAreaContent(request, zoom, gridSize):
 
     markers = loadAreaContent(request, zoom, gridSize)
 
     return render(request, 'anycluster/clusterPopup.html', {'entries':markers})
-
-
-def getViewportMarkers(request, zoom, gridSize):
-
-    markers = loadAreaContent(request, zoom, gridSize)
-
-    return render(request, 'anycluster/viewportMarkerList.html', {'entries':markers})

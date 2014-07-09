@@ -17,8 +17,8 @@ function clusterMarker(latlng, count, map, ids) {
 	this.longitude = latlng.lng();
 	this.latitude = latlng.lat();
 	this.ids = ids;
-	this.count_ = count;
-	this.rounded_count_ = this.roundMarkerCount(count);
+	this.count = count;
+	this.rounded_count = roundMarkerCount(count);
 	this.map_ = map;
 
 	// Define a property to hold the image's div. We'll
@@ -33,35 +33,6 @@ function clusterMarker(latlng, count, map, ids) {
 
 clusterMarker.prototype = new google.maps.OverlayView();
 
-clusterMarker.prototype.roundMarkerCount = function(){
-	var count;
-
-	if (this.count_ == 1){
-		count = 1;
-	}
-	else if (this.count_ <= 5) {
-		count = 5;
-	}
-	else if (this.count_ <= 10) {
-		count = 10;
-	}
-	else if (this.count_ <= 50) {
-		count = 50;
-	}
-	else if (this.count_ <= 100) {
-		count = 100;
-	}
-	else if (this.count_ <= 1000) {
-		count = 1000;
-	}
-	else {
-		count = 10000
-	}
-
-	return count;
-}
-
-
 /**
  * onAdd is called when the map's panes are ready and the overlay has been
  * added to the map.
@@ -73,17 +44,23 @@ clusterMarker.prototype.onAdd = function() {
 
 	// Create the img element and attach it to the div.
 	var img = document.createElement('img');
-	img.src = anyclusterImages[this.rounded_count_];
+	img.src = anyclusterImages[this.rounded_count];
 	div.appendChild(img);
 
 	var labelDiv = document.createElement('div');
 	labelDiv.style.textAlign = 'center';
 	labelDiv.style.position = 'absolute';
-	labelDiv.style.top = "0px";
-	labelDiv.style.left = "0px";
-	labelDiv.className = "clusterMarkerText cluster-" + this.rounded_count_;
-	labelDiv.textContent = this.count_;
-	div.appendChild(labelDiv)
+
+	var xOffset = div.clientWidth / 2;
+	var yOffset = div.clientHeight / 2;
+
+	labelDiv.style.top = yOffset + "px";
+	labelDiv.style.left = xOffset + "px";
+	labelDiv.className = "clusterMarkerText cluster-" + this.rounded_count;
+	labelDiv.style.width = div.clientWidth + "px";
+	labelDiv.style.lineHeight = div.clientHeight + "px";
+	labelDiv.textContent = this.count;
+	div.appendChild(labelDiv);
 
 	this.div_ = div;
 	this.labelDiv_ = labelDiv;
