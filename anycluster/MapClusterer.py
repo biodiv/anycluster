@@ -659,7 +659,7 @@ class MapClusterer():
                         self.maptools.point_AnyToAny(point, point.srid, self.input_srid)
 
                     if PINCOLUMN:
-                        pinimg = cell.pinimg
+                        pinimg = cluster.pinimg
                     else:
                         pinimg = None
 
