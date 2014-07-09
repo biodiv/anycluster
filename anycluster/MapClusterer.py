@@ -711,6 +711,8 @@ class MapClusterer():
 
         clusterGeometries = self.getClusterGeometries(request, params, "viewport")
 
+        gridCells = []
+
         if clusterGeometries:
 
             filterstring = self.constructFilterstring(params["filters"])
@@ -736,43 +738,18 @@ class MapClusterer():
 
             gridcluster_queryset = '''
                 SELECT count(*) AS count, polygon FROM "%s", temp_clusterareas
-                WHERE coordinates IS NOT NULL AND ST_Intersects(coordinates, polygon)
+                WHERE coordinates IS NOT NULL AND ST_Intersects(coordinates, polygon) %s
                 GROUP BY polygon
-            ''' % geo_table
+            ''' % (geo_table, filterstring)
 
             cursor.execute(gridcluster_queryset)            
 
             gridCells_pre = cursor.fetchall()
 
-            gridCells = []
-
             for cell in gridCells_pre:
 
                 count = cell[0]
 
-                '''
-
-                if int(count) == 1 and PINCOLUMN is not None:
-                    center_pre = Point(coordinates.x, coordinates.y, srid=self.srid_db)
-
-                    if self.srid_db != self.input_srid:
-                        self.maptools.point_AnyToAny(center_pre, self.srid_db, self.input_srid)
-
-                    center_x = center_pre.x
-                    center_y = center_pre.y
-
-                else:
-                    center_x = (cell_topright.x + cell_bottomleft.x) / 2
-                    center_y = (cell_topright.y + cell_bottomleft.y) / 2
-
-                center = {"x": center_x, "y": center_y}
-
-                
-
-                cellobj = {'cell': nodes, 'count': pin_count,
-                           'center': center, 'pinimg': pinimg}
-
-                '''
                 geos = GEOSGeometry(cell[1])
                 geos.transform(self.input_srid)
                 centroid = geos.centroid
@@ -781,7 +758,7 @@ class MapClusterer():
 
                 gridCells.append(cellobj)
                 
-            return gridCells
+        return gridCells
 
 
     
