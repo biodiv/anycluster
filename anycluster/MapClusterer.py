@@ -160,7 +160,8 @@ class MapClusterer():
         json_str = request.body.decode(encoding='UTF-8')
         params = json.loads(json_str)
 
-        request.session['geojson'] = params['geojson']
+        if "geojson" in params:
+            request.session['geojson'] = params['geojson']
         
         return params    
 
@@ -765,43 +766,35 @@ class MapClusterer():
     '''---------------------------------------------------------------------------------------------------------------------------------
         NON-CLUSTERING FUNCTIONS
     ---------------------------------------------------------------------------------------------------------------------------------'''
-    
+    # return all IDs of the pins contained by a cluster
     def getKmeansClusterContent(self, request):
-        # return all IDs of the pins contained by a cluster
-        post_data_str = request.body.decode(encoding='UTF-8')
-        post_data = json.loads(post_data_str)
 
-        x = post_data["x"]
-        y = post_data["y"]
-        kmeansList = post_data["ids"]
+        params = self.loadJson(request)
 
-        filters = post_data["filters"]
+        x = params["x"]
+        y = params["y"]
+        
+        kmeans_list = params["ids"]
+        kmeans_string = (",").join(str(k) for k in kmeans_list)
+
+        filters = params["filters"]
 
         cluster = Point(x, y, srid=self.input_srid)
 
-        cell = self.maptools.getCellIDForPoint(
-            cluster, self.zoom, self.gridSize)
+        cell = self.maptools.getCellIDForPoint(cluster, self.zoom, self.gridSize)
 
         poly = self.clusterCellToBounds(cell)
 
-        kmeans_string = (",").join(str(k) for k in kmeansList)
+        filterstring = self.constructFilterstring(filters)
 
-        if filters:
+        entries_queryset = Gis.objects.raw('''
+                    SELECT * FROM ( 
+                      SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], %s) OVER () AS kmeans, "%s".*
+                      FROM "%s" WHERE %s IS NOT NULL AND ST_Intersects(%s, ST_GeometryFromText('%s', %s) ) %s
+                    ) AS ksub
+                    WHERE kmeans IN (%s)
+                    ''' %(geo_column_str, geo_column_str, BASE_K, geo_table,
+                          geo_table, geo_column_str, geo_column_str, poly, self.srid_db, filterstring,
+                          kmeans_string ))
 
-            filterstring = self.constructFilterstring(filters)
-
-        else:
-
-            filterstring = ""
-
-        entries = Gis.objects.raw('''SELECT *
-                        FROM (
-                          SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], %s) OVER (), "%s".*
-                          FROM "%s"
-                          WHERE ST_Within(%s, ST_GeomFromText('%s',%s) ) %s
-                        ) AS ksub
-                        WHERE kmeans IN (%s);
-                    ''' % (geo_column_str, geo_column_str, BASE_K, geo_table, geo_table, geo_column_str, poly, self.srid_db, filterstring, kmeans_string)
-        )
-
-        return entries
+        return entries_queryset
