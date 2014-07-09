@@ -37,9 +37,7 @@ http://anycluster.readthedocs.org/en/latest/
 Live Example
 ------------
 
-There's a demo at http://lpmt096.biomed.uni-erlangen.de/bigmap/
-Note: While anycluster on this website is up-to-date, the rest is work in progress.
-
+There's a demo at https://www.anymals.org/nx/bigmap/.
 
 Using the Demo
 --------------
