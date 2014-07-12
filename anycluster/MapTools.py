@@ -235,6 +235,14 @@ class MapTools():
     # this one needs points in 3758, 900913 or 3857
     def points_calcPixelDistance(self, pointA, pointB, zoom):
 
+        usable_srids = [3758, 900913, 3857]
+
+        if pointA.srid not in usable_srids:
+            pointA.transform(3857)
+
+        if pointB.srid not in usable_srids:
+            pointB.transform(3857)
+
         # calc distance in meters
         distance_m = math.sqrt(
             (pointA.x - pointB.x) ** 2 + (pointA.y - pointB.y) ** 2)
@@ -244,6 +252,7 @@ class MapTools():
         distance_p = distance_m / res
 
         return int(distance_p)
+
 
     def getCellIDForPoint(self, point_lnglat, zoom, gridSize):
 
