@@ -4,6 +4,9 @@ anycluster (POSTGIS version)
 anycluster provides Server-Side clustering of map markers for Geodjango. It is suitable for large amounts of markers. 
 Depending on your server and personal feeling, it works very well with 200.000 to 500.000 markers.
 
+The postgis version is recommended. There is a mysql version with limited functionality: https://github.com/biodiv/anycluster-mysql
+
+
 ChangeLog
 ---------
 - you now need to add {% csrf_token % } somewhere in your template
