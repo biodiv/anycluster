@@ -9,6 +9,9 @@ var anyclusterImages = {
 }
 
 
+var imageSizes = {5:30,10:30,50:40,100:40,1000:50,10000:60};
+
+
 /** @constructor */
 function clusterMarker(latlng, count, map, ids) {
 
@@ -20,6 +23,7 @@ function clusterMarker(latlng, count, map, ids) {
 	this.count = count;
 	this.rounded_count = roundMarkerCount(count);
 	this.map_ = map;
+	this.size = imageSizes[this.rounded_count];
 
 	// Define a property to hold the image's div. We'll
 	// actually create this div upon receipt of the onAdd()
@@ -41,24 +45,15 @@ clusterMarker.prototype.onAdd = function() {
 
 	var div = document.createElement('div');
 	div.style.position = 'absolute';
+	div.style.width = this.size  + "px";
+	div.style.height = this.size + "px";
+	div.style.textAlign = "center";
+	div.style.lineHeight = this.size + "px";
+	div.style.background = "url('" + anyclusterImages[this.rounded_count] + "')";
 
-	// Create the img element and attach it to the div.
-	var img = document.createElement('img');
-	img.src = anyclusterImages[this.rounded_count];
-	div.appendChild(img);
 
 	var labelDiv = document.createElement('div');
-	labelDiv.style.textAlign = 'center';
-	labelDiv.style.position = 'absolute';
-
-	var xOffset = div.clientWidth / 2;
-	var yOffset = div.clientHeight / 2;
-
-	labelDiv.style.top = yOffset + "px";
-	labelDiv.style.left = xOffset + "px";
 	labelDiv.className = "clusterMarkerText cluster-" + this.rounded_count;
-	labelDiv.style.width = div.clientWidth + "px";
-	labelDiv.style.lineHeight = div.clientHeight + "px";
 	labelDiv.textContent = this.count;
 	div.appendChild(labelDiv);
 
@@ -84,7 +79,7 @@ clusterMarker.prototype.onAdd = function() {
 
 clusterMarker.prototype.draw = function() {
 
-	// We use the south-west and north-east
+	// We use center minus offsets
 	// coordinates of the overlay to peg it to the correct position and size.
 	// To do this, we need to retrieve the projection from the overlay.
 	var overlayProjection = this.getProjection();
@@ -95,18 +90,14 @@ clusterMarker.prototype.draw = function() {
 	// Resize the image's div to fit the indicated dimensions.
 	var div = this.div_;
 
-	var xOffset = this.div_.clientWidth / 2;
-	var yOffset = this.div_.clientHeight / 2;
+	var xOffset = this.size/2;
+	var yOffset = this.size/2;
 
 	var x = pos.x - xOffset;
 	var y = pos.y - yOffset
 
 	div.style.left = x + 'px';
 	div.style.top = y + 'px';
-	
-	var labelDiv = this.labelDiv_;
-	labelDiv.style.width = div.clientWidth + "px";
-	labelDiv.style.lineHeight = div.clientHeight + "px";
 
 };
 
