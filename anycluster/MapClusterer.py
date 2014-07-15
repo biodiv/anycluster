@@ -64,7 +64,7 @@ LICENSE: GPL
 
 ---------------------------------------------------------------------------------------'''
 
-import json, math
+import json, math, numbers, decimal
 from anycluster.MapTools import MapTools
 from django.contrib.gis.geos import Point, GEOSGeometry
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
@@ -84,9 +84,6 @@ if DEBUG is False:
     # get the model as defined in settings
     geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
     geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
-
-    # Columns that can be used for filtering markers
-    CLUSTER_FILTERS = getattr(settings, 'ANYCLUSTER_FILTERS', None)
 
     # column for determining the pin image for pins with count 1
     PINCOLUMN = getattr(settings, 'ANYCLUSTER_PINCOLUMN', None)
@@ -490,23 +487,28 @@ class MapClusterer():
     ---------------------------------------------------------------------------------------------------------------------------------'''
     def parseFilterValue(self, operator, value):
 
-        if operator == "startswith":
-            return "'^%s.*' " % value
+        if type(value) == str:
+            if operator == "startswith":
+                return "'^%s.*' " % value
 
-        elif operator == "contains":
-            return "~ '%s'" % value
+            elif operator == "contains":
+                return "'%s.*'" % value
+            
+            else:
+                return "'%s'" % value
 
-        elif value == False:
-            return "FALSE"
+        elif type(value) == bool:
 
-        elif value == True:
-            return "TRUE"
+            if value == False:
+                return "FALSE"
+
+            else:
+                return "TRUE"
+
+        elif isinstance(value, numbers.Number) or isinstance(value, decimal.Decimal):
+            return value
 
         else:
-
-            if type(value) == str:
-                sql_value = "'%s'" % value
-
             return value
 
 
@@ -616,9 +618,9 @@ class MapClusterer():
         KMEANS CLUSTERING
         - cluster only if 1. the geometry contains a new area or 2. the filters changed
         - perform a raw query on the database, pass the result to phase 2 (distanceCluster) and return the result
-    ---------------------------------------------------------------------------------------------------------------------------------'''       
+    ---------------------------------------------------------------------------------------------------------------------------------'''        
 
-    def kmeansCluster(self, request):
+    def kmeansCluster(self, request, custom_filterstring=""):
 
         params = self.loadJson(request)
 
@@ -628,7 +630,10 @@ class MapClusterer():
 
         if clusterGeometries:
 
+            
             filterstring = self.constructFilterstring(params["filters"])
+
+            filterstring += custom_filterstring
 
             for geometry_dic in clusterGeometries:
 
@@ -767,7 +772,7 @@ class MapClusterer():
         NON-CLUSTERING FUNCTIONS
     ---------------------------------------------------------------------------------------------------------------------------------'''
     # return all IDs of the pins contained by a cluster
-    def getKmeansClusterContent(self, request):
+    def getKmeansClusterContent(self, request, custom_filterstring = ""):
 
         params = self.loadJson(request)
 
@@ -786,6 +791,8 @@ class MapClusterer():
         poly = self.clusterCellToBounds(cell)
 
         filterstring = self.constructFilterstring(filters)
+
+        filterstring += custom_filterstring
 
         entries_queryset = Gis.objects.raw('''
                     SELECT * FROM ( 
