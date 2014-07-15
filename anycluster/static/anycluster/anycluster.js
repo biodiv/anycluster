@@ -345,6 +345,7 @@ Anycluster.prototype = {
 
 	loadSettings : function(settings_) {
 
+		this.baseURL = settings_.baseURL || "/anycluster/"
 		this.autostart = typeof(settings_.autostart) == "boolean" ? settings_.autostart : true;
 		this.filters = settings_.filters || {};
 		this.center = settings_.center || [0,0];
@@ -422,9 +423,11 @@ Anycluster.prototype = {
 			for (var i=0; i<this.markerList.length; i+=1){
 				this.markerList[i].setMap(null);
 			}
-			this.gmap.data.forEach(function(feature){
-				clusterer.gmap.data.remove(feature);
-			});
+			if (typeof(this.gmap.data) == "object"){
+				this.gmap.data.forEach(function(feature){
+					clusterer.gmap.data.remove(feature);
+				});
+			}
 		}
 		else if (this.mapType == "osm"){
 			this.markerLayer.clearMarkers();
@@ -443,7 +446,7 @@ Anycluster.prototype = {
 	
 		this.loadStart();
 		
-		var url = '/anycluster/' + this.clusterMethod + '/' + this.zoom + '/' + this.gridSize + '/'; // + urlParams;
+		var url = this.baseURL + this.clusterMethod + '/' + this.zoom + '/' + this.gridSize + '/'; // + urlParams;
 
 		postParams = {
 			'geojson' : geoJson,
@@ -534,7 +537,7 @@ Anycluster.prototype = {
 		}
 		
 		
-		var url = encodeURI('/anycluster/getClusterContent/' + this.zoom + '/' + this.gridSize + '/');
+		var url = encodeURI(this.baseURL + 'getClusterContent/' + this.zoom + '/' + this.gridSize + '/');
 		
 		var xhr = new XMLHttpRequest();
 		
@@ -572,7 +575,7 @@ Anycluster.prototype = {
 		}
 		
 
-		var url = "/anycluster/getAreaContent/" + this.zoom + '/' + this.gridSize + '/'
+		var url = this.baseURL + "getAreaContent/" + this.zoom + '/' + this.gridSize + '/'
 			
 		url = encodeURI(url);
 		var xhr = new XMLHttpRequest();
