@@ -79,7 +79,7 @@ if DEBUG is False:
     from django.db.models.loading import get_model
 
     BASE_K = getattr(settings, 'ANYCLUSTER_BASE_K', 6)
-    K_CAP = getattr(settings, 'ANYCLUSTER_BASE_K', 30)
+    K_CAP = getattr(settings, 'ANYCLUSTER_K_CAP', 30)
 
     # get the model as defined in settings
     geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
