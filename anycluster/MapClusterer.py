@@ -475,8 +475,8 @@ class MapClusterer():
         if new_k > K_CAP:
             new_k = K_CAP
 
-        if new_k < 1:
-            new_k = 1
+        if new_k < BASE_K:
+            new_k = BASE_K
 
         return int(math.ceil(new_k))
         
