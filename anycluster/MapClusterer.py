@@ -320,7 +320,7 @@ class MapClusterer():
             
             if clustercache:
                 cached_areas = clustercache.get('clusterAreas', None)
-                if geometry != cached_areas:
+                if geometry != cached_areas or filters != clustercache.get('filters',[]):
                     perform_clustering = True
 
             if int(self.zoom) != int(last_zoom):

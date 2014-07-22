@@ -149,10 +149,17 @@ var Anycluster = function(mapdiv_id, settings_, mapInitCallback){
 		},
 	
 		this.cluster = function(cache, clusteredCB){
-		
-			var viewport_json = this.getViewport();	
-			var geoJson_viewport = this.quadToGeoJson(viewport_json);
-			clusterer.getClusters(geoJson_viewport, "viewport", clusteredCB, cache);
+
+			if (clusterer.clusterArea == false){
+				var viewport_json = this.getViewport();	
+				var geoJson = this.viewportToGeoJson(viewport_json);
+				var geometry_type = "viewport";
+			}
+			else {
+				var geoJson = clusterer.clusterArea;
+				var geometry_type = "strict";
+			}
+			clusterer.getClusters(geoJson, geometry_type, clusteredCB, cache);
 
 		}
 
@@ -359,6 +366,7 @@ Anycluster.prototype = {
 		this.onFinalClick = settings_.onFinalClick || this.onFinalClick;
 		this.loadEnd = settings_.loadEnd || this.loadEnd;
 		this.loadStart = settings_.loadStart || this.loadStart;
+		this.clusterArea = settings_.clusterArea || false;
 
 	},
 
@@ -559,7 +567,7 @@ Anycluster.prototype = {
 
 	getViewportContent : function(gotViewportContent){
 		var viewport_json = this.getViewport();
-		var geoJson = this.quadToGeoJson(viewport_json);
+		var geoJson = this.viewportToGeoJson(viewport_json);
 		
 		this.getAreaContent(geoJson, gotViewportContent);
 		
@@ -596,17 +604,17 @@ Anycluster.prototype = {
 	
 	},
 
-	quadToGeoJson : function(quad){
+	viewportToGeoJson : function(viewport){
 		var geoJson = {
 			"type": "Feature",
 			"geometry": {
 				"type": "Polygon",
 				"coordinates": [ [
-					[ quad["left"], quad["top"] ], 
-					[ quad["right"], quad["top"] ],
-					[ quad["right"], quad["bottom"] ],
-					[ quad["left"], quad["bottom"] ],
-					[ quad["left"], quad["top"] ]
+					[ viewport["left"], viewport["top"] ], 
+					[ viewport["right"], viewport["top"] ],
+					[ viewport["right"], viewport["bottom"] ],
+					[ viewport["left"], viewport["bottom"] ],
+					[ viewport["left"], viewport["top"] ]
 				]]
 			}
 		}
