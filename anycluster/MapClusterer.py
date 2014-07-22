@@ -475,7 +475,10 @@ class MapClusterer():
         if new_k > K_CAP:
             new_k = K_CAP
 
-        return math.ceil(new_k)
+        if new_k < 1:
+            new_k = 1
+
+        return int(math.ceil(new_k))
         
 
     '''---------------------------------------------------------------------------------------------------------------------------------
@@ -638,7 +641,7 @@ class MapClusterer():
             for geometry_dic in clusterGeometries:
 
                 geos_geometry = geometry_dic["geos"]
-                k = geometry_dic.get("k", self.calculateK(geos_geometry)) 
+                k = geometry_dic["k"]
    
                 kclusters_queryset = Gis.objects.raw('''
                     SELECT kmeans AS id, count(*), ST_AsText(ST_Centroid(ST_Collect(%s))) AS %s %s
