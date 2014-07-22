@@ -638,7 +638,7 @@ class MapClusterer():
             for geometry_dic in clusterGeometries:
 
                 geos_geometry = geometry_dic["geos"]
-                k = geometry_dic["k"]
+                k = geometry_dic.get("k", self.calculateK(geos_geometry)) 
    
                 kclusters_queryset = Gis.objects.raw('''
                     SELECT kmeans AS id, count(*), ST_AsText(ST_Centroid(ST_Collect(%s))) AS %s %s
