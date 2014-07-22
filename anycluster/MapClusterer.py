@@ -411,8 +411,15 @@ class MapClusterer():
         clusterGeometries = []
 
         if geometry_type == "viewport":
-            linearString = geojson['geometry']['coordinates'][0]
-            viewport = {'left': linearString[0][0], 'top': linearString[0][1], 'right':linearString[1][0], 'bottom':linearString[2][1]}
+            if geojson["geometry"]["type"] == "Polygon":
+                linearString = geojson['geometry']['coordinates'][0]
+                viewport = {'left': linearString[0][0], 'top': linearString[0][1], 'right':linearString[1][0], 'bottom':linearString[2][1]}
+            else:
+                #Multipolygon when spanning edge
+                linearString = geojson['geometry']['coordinates'][0]
+                linearString_2 = geojson['geometry']['coordinates'][1]
+                viewport = {'left': linearString[0][0], 'top': linearString[0][1], 'right':linearString_2[1][0], 'bottom':linearString[2][1]}
+                
             clustercells_pre = self.getClusterCells(viewport)
 
             clusterGeometries_pre = self.compareWithCache(request, clustercells_pre, geometry_type, params["filters"], deliver_cache)

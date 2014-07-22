@@ -605,17 +605,42 @@ Anycluster.prototype = {
 	},
 
 	viewportToGeoJson : function(viewport){
+
+		//check if the viewport spans the edges of coordinate system
+		
+		if (viewport["left"] > viewport["right"]) {
+			var geomtype = "MultiPolygon";
+			var coordinates = [ [
+					[ viewport["left"], viewport["top"] ],
+					[ 179, viewport["top"] ],
+					[ 179, viewport["bottom"] ],
+					[ viewport["left"], viewport["bottom"] ],
+					[ viewport["left"], viewport["top"] ]
+			],
+			[
+					[ -179, viewport["top"] ],
+					[ viewport["right"], viewport["top"] ],
+					[ viewport["right"], viewport["bottom"] ],
+					[ -179, viewport["bottom"] ],
+					[ -179, viewport["top"] ]
+			]];
+		}
+		else {
+			var geomtype = "Polygon";
+			var coordinates = [ [
+				[ viewport["left"], viewport["top"] ], 
+				[ viewport["right"], viewport["top"] ],
+				[ viewport["right"], viewport["bottom"] ],
+				[ viewport["left"], viewport["bottom"] ],
+				[ viewport["left"], viewport["top"] ]
+			]];
+		}
+
 		var geoJson = {
 			"type": "Feature",
 			"geometry": {
-				"type": "Polygon",
-				"coordinates": [ [
-					[ viewport["left"], viewport["top"] ], 
-					[ viewport["right"], viewport["top"] ],
-					[ viewport["right"], viewport["bottom"] ],
-					[ viewport["left"], viewport["bottom"] ],
-					[ viewport["left"], viewport["top"] ]
-				]]
+				"type": geomtype,
+				"coordinates": coordinates
 			}
 		}
 
@@ -706,13 +731,33 @@ Anycluster.prototype = {
 		
 	},
 
+	markerIsInRectangle: function(marker, rectangle){
+		if (rectangle["right"] > marker.longitude && rectangle["left"] < marker.longitude && rectangle["top"] > marker.latitude && rectangle["bottom"] < marker.latitude) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	},
+
 	getViewportMarkerCount: function(){
 		var viewport = this.getViewport();
 		var totalCount = 0;
 		for (var i=0; i<this.markerList.length; i++){
 			var marker = this.markerList[i];
-			if (viewport["right"] > marker.longitude && viewport["left"] < marker.longitude && viewport["top"] > marker.latitude && viewport["bottom"] < marker.latitude){
-				totalCount += marker.count;
+			if (viewport["left"] > viewport["right"]) {
+				
+				var viewport_part1 = {"left": viewport["left"], "top": viewport["top"], "right": 180, "bottom": viewport["bottom"]},
+					viewport_part2 = {"left": -180, "top": viewport["top"], "right": viewport["right"], "bottom": viewport["bottom"]};
+
+				if ( this.markerIsInRectangle(marker, viewport_part1) || this.markerIsInRectangle(marker, viewport_part2) ){
+					totalCount += marker.count;
+				}
+			}
+			else {
+				if ( this.markerIsInRectangle(marker, viewport) ){
+					totalCount += marker.count;
+				}
 			}
 		}
 		return totalCount
