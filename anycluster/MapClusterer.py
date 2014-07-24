@@ -451,12 +451,32 @@ class MapClusterer():
 
                 elif clusterGeometries_geojson["type"] == "Feature":
 
-                    geos = self.convertGeojsonFeatureToGEOS(clusterGeometries_geojson)
+                    if clusterGeometries_geojson["geometry"]["type"] == "MultiPolygon":
 
-                    if geos:
-                        k = self.calculateK(geos)
-                        
-                        clusterGeometries = [{"geos": geos, "k":k}]
+
+                        properties = clusterGeometries_geojson.get("properties", {})
+
+                        for polygon in clusterGeometries_geojson["geometry"]["coordinates"][0]:
+
+                            geom = {"type": "Feature", "geometry": { "type": "Polygon", "coordinates": [polygon] }, "properties": properties }
+
+                            geos = self.convertGeojsonFeatureToGEOS(geom)
+
+                            if geos:
+
+                                k = self.calculateK(geos)
+                            
+                                clusterGeometries.append({"geos": geos, "k":k})
+
+                    else:
+
+                        geos = self.convertGeojsonFeatureToGEOS(clusterGeometries_geojson)
+
+                        if geos:
+                            
+                            k = self.calculateK(geos)
+                            
+                            clusterGeometries = [{"geos": geos, "k":k}]
 
 
         return clusterGeometries
