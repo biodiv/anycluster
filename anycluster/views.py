@@ -47,7 +47,7 @@ def getClusterContent(request, zoom, gridSize):
 
 
 
-def loadAreaContent(request, zoom, gridSize):
+def loadAreaContent(request, zoom=1, gridSize=256):
 
     clusterer = MapClusterer(zoom, gridSize)
 
@@ -55,28 +55,17 @@ def loadAreaContent(request, zoom, gridSize):
 
     filterstring = clusterer.constructFilterstring(params["filters"])
 
-    geojson = params["geojson"]
+    geojson = params.get("geojson", None)
 
-    markers = []
+    geomfilterstring = clusterer.getGeomFilterstring(geojson)
 
-    if geojson["type"] == "Feature":
-        features = [params["geojson"]]
 
-    elif geojson["type"] == "FeatureCollection":
-        features = geojson["features"]
-        
-        
-    for feature in features:
-        geometry = GEOSGeometry(json.dumps(feature["geometry"]), srid=clusterer.input_srid)
-        geometry.transform(clusterer.srid_db)
-        markers_qry = Gis.objects.raw(
-            '''SELECT * FROM "%s" WHERE ST_Intersects(%s, ST_GeomFromText('%s',%s) ) %s;''' % (geo_table, geo_column_str, geometry, clusterer.srid_db, filterstring)
-        )
-
-        markers += list(markers_qry)
+    markers_qryset = Gis.objects.raw(
+        '''SELECT * FROM "%s" WHERE %s %s;''' % (geo_table, geomfilterstring, filterstring)
+    )
     
 
-    return markers
+    return markers_qryset
     
 
 def getAreaContent(request, zoom, gridSize):

@@ -369,29 +369,53 @@ class MapClusterer():
 
 
     '''---------------------------------------------------------------------------------------------------------------------------------
-        WRAPPER FUNCTION FOR COMMON TASKS
+        CONVERTING GEOJSON TO GEOS
 
-        wraps parsing, calculating cells and caching in one funtion
-        returns the geometries that should be clustered and the filters as an sql string
+        multipolygon and collections are not supported by ST_Within so they need to be split into several geometries
     ---------------------------------------------------------------------------------------------------------------------------------'''
 
+    # returns a geos_list
     def convertGeojsonFeatureToGEOS(self, feature):
+
+        geos_geometries = []
 
         if "properties" in feature and "srid" in feature["properties"]:
             srid = feature["properties"]["srid"]
         else:
             srid = 4326
 
-        try:
-            geos = GEOSGeometry(json.dumps(feature["geometry"]), srid=srid)
-        except:
-            return None
-        
-        if geos.srid != self.srid_db: 
-            ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.srid_db))
-            geos.transform(ct)
+        if feature["geometry"]["type"] == "MultiPolygon":
 
-        return geos
+            for polygon in feature["geometry"]["coordinates"][0]:
+
+                geom = { "type": "Polygon", "coordinates": [polygon] }
+
+                geos = GEOSGeometry(json.dumps(geom), srid=srid)
+                
+                if geos.srid != self.srid_db: 
+                    ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.srid_db))
+                    geos.transform(ct)
+
+                geos_geometries.append(geos)
+                
+
+        else:
+            
+            try:
+                geos = GEOSGeometry(json.dumps(feature["geometry"]), srid=srid)
+            except:
+                return None
+
+            if geos:
+
+                if geos.srid != self.srid_db: 
+                    ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.srid_db))
+                    geos.transform(ct)
+                
+                geos_geometries.append(geos)
+                
+
+        return geos_geometries
         
 
     # returns GEOS instances
@@ -439,48 +463,35 @@ class MapClusterer():
             if clusterGeometries_geojson:
 
                 if clusterGeometries_geojson["type"] == "FeatureCollection":
+
+                    geos_geometries = []
+                    
                     for feature in clusterGeometries_geojson["features"]:
 
-                        geos = self.convertGeojsonFeatureToGEOS(feature)
+                        geos_geometries += self.convertGeojsonFeatureToGEOS(feature)
                         
-                        if geos:
-                            k = self.calculateK(geos)
-                            
-                            clusterGeometries.append({"geos": geos, "k":k})
                         
 
                 elif clusterGeometries_geojson["type"] == "Feature":
 
-                    if clusterGeometries_geojson["geometry"]["type"] == "MultiPolygon":
+                        geos_geometries = self.convertGeojsonFeatureToGEOS(clusterGeometries_geojson)
 
 
-                        properties = clusterGeometries_geojson.get("properties", {})
-
-                        for polygon in clusterGeometries_geojson["geometry"]["coordinates"][0]:
-
-                            geom = {"type": "Feature", "geometry": { "type": "Polygon", "coordinates": [polygon] }, "properties": properties }
-
-                            geos = self.convertGeojsonFeatureToGEOS(geom)
-
-                            if geos:
-
-                                k = self.calculateK(geos)
-                            
-                                clusterGeometries.append({"geos": geos, "k":k})
-
-                    else:
-
-                        geos = self.convertGeojsonFeatureToGEOS(clusterGeometries_geojson)
-
-                        if geos:
-                            
-                            k = self.calculateK(geos)
-                            
-                            clusterGeometries = [{"geos": geos, "k":k}]
+                for geos in geos_geometries:
+                    k = self.calculateK(geos)
+                                    
+                    clusterGeometries.append({"geos": geos, "k":k})
 
 
         return clusterGeometries
 
+
+    '''---------------------------------------------------------------------------------------------------------------------------------
+        K Calculation
+
+        this is only used for strict geometries, such as drawn polygons or drawn circles
+        based on the BASE_K in the settings (defaults to 6) it increases the k if one draws a big shape
+    ---------------------------------------------------------------------------------------------------------------------------------'''
     # k calculation has to be done on square-pixel areas
     def calculateK(self, geos_geometry):
 
@@ -835,3 +846,54 @@ class MapClusterer():
                           kmeans_string ))
 
         return entries_queryset
+
+
+    '''---------------------------------------------------------------------------------------------------------------------------------
+        COSTRUCT A FILTERSTRING FOR GEOMETRIES
+
+        multipolygon and collections are not supported by ST_Within so they need to be split into several geometries
+        this function converts geometries into a string usable as a raw sql query
+        if no request is given, it will take the geometry from the cache
+
+        first, the geojson is converted to a list of GEOS
+        second, the list is converted to a string
+    ---------------------------------------------------------------------------------------------------------------------------------'''
+
+    def getGeomFilterstring(self, geojson=None):
+
+        geomfilterstring = ""
+
+        if not geojson:
+            geojson = request.session.get('geojson', None)
+
+
+        if geojson:
+            
+            if geojson["type"] == "FeatureCollection":
+
+                geos_geometries = []
+                
+                for feature in geojson["features"]:
+
+                    geos_geometries += self.convertGeojsonFeatureToGEOS(feature)
+                    
+                    
+
+            elif geojson["type"] == "Feature":
+
+                    geos_geometries = self.convertGeojsonFeatureToGEOS(geojson)
+
+
+            geomfilterstring += "("
+            
+            for counter, geos in enumerate(geos_geometries):
+                if counter > 0:
+                    geomfilterstring += " OR "
+                geomfilterstring += " ST_Intersects(%s, ST_GeometryFromText('%s', %s) ) " %(geo_column_str, geos.wkt, self.srid_db)
+
+            geomfilterstring += ")"
+            
+
+        return geomfilterstring
+            
+        
