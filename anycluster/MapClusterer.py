@@ -386,9 +386,9 @@ class MapClusterer():
 
         if feature["geometry"]["type"] == "MultiPolygon":
 
-            for polygon in feature["geometry"]["coordinates"][0]:
+            for polygon in feature["geometry"]["coordinates"]:
 
-                geom = { "type": "Polygon", "coordinates": [polygon] }
+                geom = { "type": "Polygon", "coordinates": [polygon[0]] }
 
                 geos = GEOSGeometry(json.dumps(geom), srid=srid)
                 
