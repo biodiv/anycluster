@@ -47,8 +47,24 @@
 		
 			window.onload = function(){
 				// do not use both maps simultaneously as this will confuse the cache
-				clustermap = new Anycluster("gmap", anyclusterSettings);
+				anycluster = new Anycluster("gmap", anyclusterSettings);
 				//var osmap = new Anycluster("osmap", anyclusterSettings_osm);
+
+				var gridRadio = document.getElementById("clusterGrid");
+				gridRadio.addEventListener("change", function(){
+					anycluster.gridSize = 64;
+					anycluster.clusterMethod = "grid";
+					anycluster.clearMarkers = true;
+					anycluster.cluster(true);
+				});
+
+				var kmeansRadio = document.getElementById("clusterKmeans");
+				kmeansRadio.addEventListener("change", function(){
+					anycluster.gridSize = 256;
+					anycluster.clusterMethod = "kmeans";
+					anycluster.clearMarkers = true;
+					anycluster.cluster(true);
+				});
 			}
 		</script>
 		
@@ -69,7 +85,7 @@
 			//example script for getting viewport markers
 			
 			function loadViewportMarkers(){
-				clustermap.getViewportContent(function(html){
+				anycluster.getViewportContent(function(html){
 					document.getElementById('markerList').innerHTML = html;
 				});
 			}
@@ -124,6 +140,8 @@
 			<div id="markerList"></div>
 		</div>
 		<!-- needed for ajax POST requests -->
-		{% csrf_token %}
+		{% csrf_token %}<br><br>
+		<input type="radio" name="clusterstyle" value="grid" id="clusterGrid"><label for="clusterGrid">Grid</label>
+		<input type="radio" name="clusterstyle" value="kmeans" id="clusterKmeans" checked><label for="clusterKmeans">Bubble</label>
 	</body>
 </html>

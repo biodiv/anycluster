@@ -70,52 +70,39 @@ from django.contrib.gis.geos import Point, GEOSGeometry
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from django.db import connections
 
-# Debugging prints out statements in console. Use it from python, not a browser.
-DEBUG = False
+from django.conf import settings
+from django.db.models import Q, Min
+from django.db.models.loading import get_model
 
-if DEBUG is False:
-    from django.conf import settings
-    from django.db.models import Q, Min
-    from django.db.models.loading import get_model
+BASE_K = getattr(settings, 'ANYCLUSTER_BASE_K', 6)
+K_CAP = getattr(settings, 'ANYCLUSTER_K_CAP', 30)
 
-    BASE_K = getattr(settings, 'ANYCLUSTER_BASE_K', 6)
-    K_CAP = getattr(settings, 'ANYCLUSTER_K_CAP', 30)
+# get the model as defined in settings
+geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
+geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
 
-    # get the model as defined in settings
-    geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
-    geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
+# column for determining the pin image for pins with count 1
+PINCOLUMN = getattr(settings, 'ANYCLUSTER_PINCOLUMN', None)
 
-    # column for determining the pin image for pins with count 1
-    PINCOLUMN = getattr(settings, 'ANYCLUSTER_PINCOLUMN', None)
+# raw sql for getting pin column value
+if PINCOLUMN:
+    pin_qry = [', MIN(%s) AS pinimg' % (PINCOLUMN), PINCOLUMN + ',']
+else:
+    pin_qry = ['', '']
 
-    # raw sql for getting pin column value
-    if PINCOLUMN:
-        pin_qry = [', MIN(%s) AS pinimg' % (PINCOLUMN), PINCOLUMN + ',']
-    else:
-        pin_qry = ['', '']
+Gis = get_model(geoapp, geomodel)
 
-    Gis = get_model(geoapp, geomodel)
-
-    geo_table = Gis._meta.db_table
-    
-
-if DEBUG:
-    # some viewports for debugging using the python shell
-    viewport = {'left': -68.37890625, 'top': 75.8041001126815,
-                'right': 68.37890625, 'bottom': -49.03257075030672}
-    viewport2 = {'left': 161.89453125, 'top': 77.11983306610325,
-                 'right': -61.34765625, 'bottom': -45.20731114149848}
-
-    viewport3 = {'left': 136.078125, 'top': 76.75037266166416,
-                 'right': 107.42578125, 'bottom': 2.5914519003430008}
+geo_table = Gis._meta.db_table
 
 
 class MapClusterer():
 
-    def __init__(self, zoom=1, gridSize=256, input_srid=4326, mapTileSize=256):
+    def __init__(self, request, zoom=1, gridSize=256, input_srid=4326, mapTileSize=256):
         
         # the srid of the coordinates coming from javascript. input_srid = output_srid
         self.input_srid = int(input_srid)
+        # the srid of the database, falls back to 4326
+        self.db_srid = self.getDatabaseSRID()
 
         # the size of the grid in pixels. each grid cell gets its own kmeans clustering
         self.gridSize = int(gridSize)
@@ -126,25 +113,26 @@ class MapClusterer():
         # filter operators
         self.valid_operators = ['=', '<', '>', '<=', '>=', 'list', '!list']
 
-        self.srid_db = self.getDatabaseSRID()
-        
+        self.request = request
+        self.params = self.loadJson(request)
+        self.cache = request.session.get("clustercache", {})
 
     # read the srid of the database. 
     def getDatabaseSRID(self):
 
         srid_qry = 'SELECT id, ST_SRID(%s) FROM "%s" LIMIT 1;' % (
             geo_column_str, geo_table)
-        srid_db_objs = Gis.objects.raw(srid_qry)
+        db_srid_objs = Gis.objects.raw(srid_qry)
 
-        if len(list(srid_db_objs)) > 0:
-            srid_db = srid_db_objs[0].st_srid
+        if len(list(db_srid_objs)) > 0:
+            db_srid = db_srid_objs[0].st_srid
         else:
             try:
-                srid_db = settings.ANYCLUSTER_COORDINATES_COLUMN_SRID
+                db_srid = settings.ANYCLUSTER_COORDINATES_COLUMN_SRID
             except:
-                srid_db = 4326
+                db_srid = 4326
 
-        return srid_db
+        return db_srid
 
     
     '''---------------------------------------------------------------------------------------------------------------------------
@@ -161,6 +149,165 @@ class MapClusterer():
             request.session['geojson'] = params['geojson']
         
         return params    
+
+
+    '''---------------------------------------------------------------------------------------------------------------------------------
+        CONVERTING QUADKEY CELLS TO POSTGIS USABLE POLYGONS
+
+        - ST_Collect(geom)
+        - create a geometry collection to reduce the database queries to 1
+        - this is not yet working
+    ---------------------------------------------------------------------------------------------------------------------------------'''
+    def convertCellsToGEOS(self,cells):
+
+        #ST_Collect(ST_GeomFromText('POINT(1 2)'),ST_GeomFromText('POINT(-2 3)') )
+
+        query_collection = "ST_Collect(ARRAY["
+
+        for counter, cell in enumerate(cells):
+            
+            poly = self.clusterCellToBounds(cell)
+                
+            if counter > 0:
+                query_collection += ","
+
+            # ST_GeomFromText('POLYGON((0 0, 10000 0, 10000 10000, 0 10000, 0 0))',3857)
+            query_collection += "ST_GeomFromText('%s', %s)" % (poly, self.db_srid)
+
+        query_collection += "])"
+
+        return query_collection
+                
+
+
+    '''---------------------------------------------------------------------------------------------------------------------------------
+        CONVERTING GEOJSON TO GEOS
+
+        multipolygon and collections are not supported by ST_Within so they need to be split into several geometries
+    ---------------------------------------------------------------------------------------------------------------------------------'''
+
+    # returns a list of polygons in GEOS format and db_srid
+    def convertGeojsonFeatureToGEOS(self, feature):
+
+        geos_geometries = []
+
+        if "properties" in feature and "srid" in feature["properties"]:
+            srid = feature["properties"]["srid"]
+        else:
+            srid = 4326
+
+        if feature["geometry"]["type"] == "MultiPolygon":
+
+            for polygon in feature["geometry"]["coordinates"]:
+
+                geom = { "type": "Polygon", "coordinates": [polygon[0]] }
+
+                geos = GEOSGeometry(json.dumps(geom), srid=srid)
+                
+                if geos.srid != self.db_srid: 
+                    ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.db_srid))
+                    geos.transform(ct)
+
+                geos_geometries.append(geos)
+                
+
+        else:
+            
+            try:
+                geos = GEOSGeometry(json.dumps(feature["geometry"]), srid=srid)
+            except:
+                raise TypeError("Invalid GEOJSON geometry for cluster area. Use Polygon or Multipolygon")
+
+            if geos:
+
+                if geos.srid != self.db_srid: 
+                    ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.db_srid))
+                    geos.transform(ct)
+                
+                geos_geometries.append(geos)
+                
+
+        return geos_geometries
+
+    '''--------------------------------------------------------------------------------------------------------------
+        GET CLUSTER GEOMETRIES AND CACHING MECHANISM
+
+        The input is always a geojson Polygon or MultiPolygon.
+        1. The envelope of this MP is calculated
+        2. The envelope ist snapped to the grid and split into cells
+        3. if the MP was not a rectangle, each cell is merged with the polygon
+        4. the resulting set of polygons is the clusterGeometry AS GEOS
+
+        compare with cache:
+        - always cluster all cells if zoom has changed
+        - always cluster all cells if filters have changed
+        - only cluster uncached cells if neither zoom nor filter changed
+
+        cache format:
+        dict: {'filters':{}, 'geometries':[geojson,geojson,geojsn], 'zoom':1, 'clustertype': 'grid' or 'kmeans'}
+    --------------------------------------------------------------------------------------------------------------'''
+    def getClusterGeometries(self, clustertype):
+
+        geojson_feature = self.params['geojson']
+
+        # list of polygons
+        geos_geometries = self.convertGeojsonFeatureToGEOS(geojson_feature)
+
+        clusterGeometries = []
+        remove_cached_geometries = True
+        new_cache = {
+            "geometries":[],
+            "clustertype":clustertype,
+            "zoom":self.zoom,
+            "filters":json.dumps(self.params["filters"])
+        }
+        
+        if self.zoom != self.cache.get("zoom",-1):
+            remove_cached_geometries = False
+        elif bool(self.params.get("deliver_cache",False)) == True:
+            remove_cached_geometries = False
+        elif self.params.get("filters", {}) != json.loads(self.cache.get("filters","{}")):
+            remove_cached_geometries = False
+        elif clustertype != self.cache.get("clustertype", None):
+            remove_cached_geometries = False
+        
+
+        for geos in geos_geometries:
+            envelope = geos.envelope
+            
+            cells = self.rectangleToClusterCells(envelope)
+
+            for cell in cells:
+
+                # check if geos is rectangular, better check needed
+                if geos.equals(envelope) == True:
+
+                    cell_wk = {"geos":cell, "k":BASE_K}
+
+                    if remove_cached_geometries == True:
+                        if cell.geojson not in self.cache["geometries"]:
+                            clusterGeometries.append(cell_wk)
+                    else:
+                        clusterGeometries.append(cell_wk)
+
+                    new_cache["geometries"].append(cell.geojson)
+                else:
+                    if cell.intersects(geos):
+                        intersection = cell.intersection(geos)
+
+                        intersection_wk = {"geos":intersection, "k":BASE_K}
+                        if remove_cached_geometries == True:
+                            if intersection.geojson not in self.cache["geometries"]:
+                                clusterGeometries.append(intersection_wk)
+                        else:
+                            clusterGeometries.append(intersection_wk)
+
+                        new_cache["geometries"].append(intersection.geojson)
+
+        self.request.session["clustercache"] = new_cache
+        
+        return clusterGeometries
+
 
     '''---------------------------------------------------------------------------------------------------------------------------------
         CALCULATE CELL-IDs ACCORDING TO VIEWPORT
@@ -191,332 +338,43 @@ class MapClusterer():
         
     ---------------------------------------------------------------------------------------------------------------------------------'''
 
-    def getClusterCells(self, viewport):
 
-        if DEBUG:
-            print('VIEWPORT(wgs84datum, 4326, longlat): %s' %viewport)
 
-        # create points according to input srid
-        topright = Point(
-            viewport['right'], viewport['top'], srid=self.input_srid)
-        
-        bottomleft = Point(
-            viewport['left'], viewport['bottom'], srid=self.input_srid)
+    '''
+        Expands an envelope (=rectangle) to the fixed world grid
+        Splits the grid into cells of defined size
+    '''
+    def rectangleToClusterCells(self, geos_envelope):
+        linearRing = geos_envelope[0]
+                
+        left = linearRing[0][0]
+        bottom = linearRing[0][1]
+        right = linearRing[1][0]
+        top = linearRing[2][1]
 
-        if self.input_srid != 4326:
-            topright = self.maptools.point_ToLatLng(topright)
-            bottomleft = self.maptools.point_ToLatLng(bottomleft)
-
-        # Polar areas with abs(latitude) bigger then 85.05112878 are clipped off as google does.
-        if topright.y > 85.0:
-            topright.y = 85.0
-
-        if topright.x > 179.9999:
-            topright.x = 179.9999
-
-        if bottomleft.y < -85:
-            bottomleft.y = -85
-
-        if bottomleft.x < -179.9999:
-            bottomleft.x = -179.9999
-
-        if DEBUG:
-            print('4326, longlat: topright: (%s,%s) | bottomleft: (%s,%s)' %
-                  (topright.x, topright.y, bottomleft.x, bottomleft.y))
+        topright = Point(right, top, srid=self.db_srid)
+        bottomleft = Point(left, bottom, srid=self.db_srid)
 
         # project points to mercator 3875, plane coordinates
         self.maptools.point_ToMercator(topright)
         self.maptools.point_ToMercator(bottomleft)
 
-        if DEBUG:
-            print('MERCATOR: topright: (%s,%s) | bottomleft: (%s,%s)' %
-                  (topright.x, topright.y, bottomleft.x, bottomleft.y))
-
         # shift origin
         self.maptools.point_MercatorToWorld(topright)
         self.maptools.point_MercatorToWorld(bottomleft)
-
-        if DEBUG:
-            print('WORLD: topright: (%s,%s) | bottomleft: (%s,%s)' %
-                  (topright.x, topright.y, bottomleft.x, bottomleft.y))
 
         # calculate pixelcoords from world coords depending on zoom
         self.maptools.point_WorldToPixels(topright, self.zoom)
         self.maptools.point_WorldToPixels(bottomleft, self.zoom)
 
-        if DEBUG:
-            print('PIXELS: topright: (%s,%s) | bottomleft: (%s,%s)' %
-                  (topright.x, topright.y, bottomleft.x, bottomleft.y))
-
         # get topright and bottom left cellID, e.g. (03,01)
         toprightCell = self.maptools.point_PixelToCellID(topright, self.gridSize)
         bottomleftCell = self.maptools.point_PixelToCellID(bottomleft, self.gridSize)
 
-        if DEBUG:
-            print('CELLID: toprightCell: %s  |  bottomleftCell: %s' %
-                  (toprightCell, bottomleftCell))
+        # get all Cells that need to be clustered, as quadKey
+        clusterCells = self.maptools.getClusterCellsAsPolyList(toprightCell, bottomleftCell, self.zoom, self.gridSize, self.db_srid)
 
-        # get all Cells that need to be clustered
-        clusterCells = self.maptools.get_ClusterCells(
-            toprightCell, bottomleftCell, self.zoom)
-
-        # from ID-list create list of polygons
         return clusterCells
-
-
-    '''---------------------------------------------------------------------------------------------------------------------------------
-        CACHING MECHANISM
-
-        Filters, zoomlevel and cellIDs are stored in the django session. If the map is panned,
-        only those cells that are new to the viewport are being clustered and returned.
-
-        If the map is zoomed, the cache is cleared.
-        
-        dict: {'filters':{}, 'cellIDs':[], 'zoom':1}
-
-    ---------------------------------------------------------------------------------------------------------------------------------'''
-
-    def compareWithCache(self, request, geometry, geometry_type, filters, deliver_cache):
-        
-        clustercache = request.session.get('clustercache', {})
-
-        new_cluster_geometry = []
-        last_zoom = clustercache.get('zoom', -1)
-                       
-        if geometry_type == "viewport":
-
-            compare_geometry_with_cache = False
-
-            # check if we need to compare with the cache or if the cache can be omitted
-            if clustercache and not deliver_cache:
-
-                if int(self.zoom) == int(last_zoom):
-                    last_filters = clustercache.get('filters', [])
-                    if filters == last_filters:
-                        compare_geometry_with_cache = True
-            
-            if compare_geometry_with_cache:
-                # in this case, geometry is a set of cells
-                cached_cells = set([tuple(cell) for cell in clustercache['clusterAreas']])
-                new_clustercells = set(geometry) - cached_cells
-
-                new_cells_for_cache = cached_cells.union(new_clustercells)
-
-            else:
-                new_cells_for_cache = set(geometry)
-                new_clustercells = new_cells_for_cache
-
-
-            clustercache['clusterAreas'] = list(new_cells_for_cache)
-
-            # convert new_clustercells into a postgis geometry collection
-            if new_clustercells:
-                # new_cluster_geometry = self.convertCellsToGEOS(new_clustercells)
-                new_cluster_geometry = new_clustercells
-
-        elif geometry_type == "strict":
-
-            perform_clustering = False
-            
-            if clustercache:
-                cached_areas = clustercache.get('clusterAreas', None)
-                if geometry != cached_areas or filters != clustercache.get('filters',[]):
-                    perform_clustering = True
-
-            if int(self.zoom) != int(last_zoom):
-                perform_clustering = True
-
-            if perform_clustering:
-                clustercache['clusterAreas'] = geometry
-
-                new_cluster_geometry = geometry
-
-        
-        clustercache['filters'] = filters
-        clustercache['zoom'] = self.zoom
-
-        request.session['clustercache'] = clustercache
-
-        return new_cluster_geometry
-
-    '''---------------------------------------------------------------------------------------------------------------------------------
-        CONVERTING QUADKEY CELLS TO POSTGIS USABLE POLYGONS
-
-        - ST_Collect(geom)
-        - create a geometry collection to reduce the database queries to 1
-        - this is not yet working
-    ---------------------------------------------------------------------------------------------------------------------------------'''
-    def convertCellsToGEOS(self,cells):
-
-        #ST_Collect(ST_GeomFromText('POINT(1 2)'),ST_GeomFromText('POINT(-2 3)') )
-
-        query_collection = "ST_Collect(ARRAY["
-
-        for counter, cell in enumerate(cells):
-            
-            poly = self.clusterCellToBounds(cell)
-                
-            if counter > 0:
-                query_collection += ","
-
-            # ST_GeomFromText('POLYGON((0 0, 10000 0, 10000 10000, 0 10000, 0 0))',3857)
-            query_collection += "ST_GeomFromText('%s', %s)" % (poly, self.srid_db)
-
-        query_collection += "])"
-
-        return query_collection
-                
-
-
-    '''---------------------------------------------------------------------------------------------------------------------------------
-        CONVERTING GEOJSON TO GEOS
-
-        multipolygon and collections are not supported by ST_Within so they need to be split into several geometries
-    ---------------------------------------------------------------------------------------------------------------------------------'''
-
-    # returns a geos_list
-    def convertGeojsonFeatureToGEOS(self, feature):
-
-        geos_geometries = []
-
-        if "properties" in feature and "srid" in feature["properties"]:
-            srid = feature["properties"]["srid"]
-        else:
-            srid = 4326
-
-        if feature["geometry"]["type"] == "MultiPolygon":
-
-            for polygon in feature["geometry"]["coordinates"]:
-
-                geom = { "type": "Polygon", "coordinates": [polygon[0]] }
-
-                geos = GEOSGeometry(json.dumps(geom), srid=srid)
-                
-                if geos.srid != self.srid_db: 
-                    ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.srid_db))
-                    geos.transform(ct)
-
-                geos_geometries.append(geos)
-                
-
-        else:
-            
-            try:
-                geos = GEOSGeometry(json.dumps(feature["geometry"]), srid=srid)
-            except:
-                return None
-
-            if geos:
-
-                if geos.srid != self.srid_db: 
-                    ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.srid_db))
-                    geos.transform(ct)
-                
-                geos_geometries.append(geos)
-                
-
-        return geos_geometries
-        
-
-    # returns GEOS instances
-    def getClusterGeometries(self, request, params, clustertype):
-
-        geojson = params['geojson']
-
-        geometry_type = params["geometry_type"]
-            
-        deliver_cache = bool(params.get("cache", False))
-
-        '''
-            There are two geometrytypes: "viewport" and "geometry". "viewport" is a rectangle which is expanded to a zoom-level
-            dependant fixed grid. "geometry" just clusters within the given geometry
-        '''
-
-        clusterGeometries = []
-
-        if geometry_type == "viewport":
-            if geojson["geometry"]["type"] == "Polygon":
-                linearString = geojson['geometry']['coordinates'][0]
-                viewport = {'left': linearString[0][0], 'top': linearString[0][1], 'right':linearString[1][0], 'bottom':linearString[2][1]}
-            else:
-                #Multipolygon when spanning edge
-                linearString = geojson['geometry']['coordinates'][0]
-                linearString_2 = geojson['geometry']['coordinates'][1]
-                viewport = {'left': linearString[0][0], 'top': linearString[0][1], 'right':linearString_2[1][0], 'bottom':linearString[2][1]}
-                
-            clustercells_pre = self.getClusterCells(viewport)
-
-            clusterGeometries_pre = self.compareWithCache(request, clustercells_pre, geometry_type, params["filters"], deliver_cache)
-            
-            for cell in clusterGeometries_pre:
-                poly = self.clusterCellToBounds(cell)
-                cell_geos = GEOSGeometry(poly, srid = self.srid_db)
-                clusterGeometries.append({"geos": cell_geos, "k": BASE_K})
-
-
-        else:
-
-            # geojson or []
-            clusterGeometries_geojson = self.compareWithCache(request, geojson, geometry_type, params["filters"], deliver_cache)
-
-            #convert the geojson into strings usable with postgis
-            if clusterGeometries_geojson:
-
-                if clusterGeometries_geojson["type"] == "FeatureCollection":
-
-                    geos_geometries = []
-                    
-                    for feature in clusterGeometries_geojson["features"]:
-
-                        geos_geometries += self.convertGeojsonFeatureToGEOS(feature)
-                        
-                        
-
-                elif clusterGeometries_geojson["type"] == "Feature":
-
-                        geos_geometries = self.convertGeojsonFeatureToGEOS(clusterGeometries_geojson)
-
-
-                for geos in geos_geometries:
-                    k = self.calculateK(geos)
-                                    
-                    clusterGeometries.append({"geos": geos, "k":k})
-
-
-        return clusterGeometries
-
-
-    '''---------------------------------------------------------------------------------------------------------------------------------
-        K Calculation
-
-        this is only used for strict geometries, such as drawn polygons or drawn circles
-        based on the BASE_K in the settings (defaults to 6) it increases the k if one draws a big shape
-    ---------------------------------------------------------------------------------------------------------------------------------'''
-    # k calculation has to be done on square-pixel areas
-    def calculateK(self, geos_geometry):
-
-        geom_copy = geos_geometry.transform(3857, clone=True)
-        
-        cellarea_pixels = self.gridSize * self.gridSize
-
-        # 1m = ? pixels
-        init_resolution = self.maptools.mapTileSize / (2 * math.pi * 6378137)
-        
-        resolution = init_resolution * (2**self.zoom)
-
-        area_factor = resolution**2
-
-        geom_copy_area_pixels = geom_copy.area * area_factor
-
-        new_k = (BASE_K / cellarea_pixels) * geom_copy_area_pixels
-
-        if new_k > K_CAP:
-            new_k = K_CAP
-
-        if new_k < BASE_K:
-            new_k = BASE_K
-
-        return int(math.ceil(new_k))
         
 
     '''---------------------------------------------------------------------------------------------------------------------------------
@@ -661,18 +519,15 @@ class MapClusterer():
         - perform a raw query on the database, pass the result to phase 2 (distanceCluster) and return the result
     ---------------------------------------------------------------------------------------------------------------------------------'''        
 
-    def kmeansCluster(self, request, custom_filterstring=""):
+    def kmeansCluster(self, custom_filterstring=""):
 
-        params = self.loadJson(request)
-
-        clusterGeometries = self.getClusterGeometries(request, params, "kmeans")
+        clusterGeometries = self.getClusterGeometries("kmeans")
 
         markers = []
 
         if clusterGeometries:
 
-            
-            filterstring = self.constructFilterstring(params["filters"])
+            filterstring = self.constructFilterstring(self.params["filters"])
 
             filterstring += custom_filterstring
 
@@ -680,7 +535,7 @@ class MapClusterer():
 
                 geos_geometry = geometry_dic["geos"]
                 k = geometry_dic["k"]
-   
+                
                 kclusters_queryset = Gis.objects.raw('''
                     SELECT kmeans AS id, count(*), ST_AsText(ST_Centroid(ST_Collect(%s))) AS %s %s
                     FROM ( 
@@ -721,48 +576,17 @@ class MapClusterer():
     '''---------------------------------------------------------------------------------------------------------------------------------
         GRID CLUSTERING 
     ---------------------------------------------------------------------------------------------------------------------------------'''
-
-    def clusterCellToBounds(self, cell):
-
-        bounds = []
-
-        pixelbounds = self.maptools.cellIDToTileBounds(cell, self.gridSize)
-        mercatorbounds = self.maptools.bounds_PixelToMercator(
-            pixelbounds, self.zoom)
-
-        # convert mercatorbounds to latlngbounds
-        cell_topright = Point(
-            mercatorbounds['right'], mercatorbounds['top'], srid=3857)
-        cell_bottomleft = Point(
-            mercatorbounds['left'], mercatorbounds['bottom'], srid=3857)
-        self.maptools.point_ToLatLng(cell_topright)
-        self.maptools.point_ToLatLng(cell_bottomleft)
-
-        # if it is not a latlng database, convert the polygons
-        if self.srid_db != 4326:
-            self.maptools.point_AnyToAny(cell_topright, 4326, self.srid_db)
-            self.maptools.point_AnyToAny(cell_bottomleft, 4326, self.srid_db)
-
-        poly = self.maptools.bounds_ToPolyString({'top': cell_topright.y, 'right': cell_topright.x,
-                                                  'bottom': cell_bottomleft.y, 'left': cell_bottomleft.x})
-
-        if DEBUG:
-            print('%s' % poly)
-
-        return poly
     
     
-    def gridCluster(self, request):
+    def gridCluster(self):
 
-        params = self.loadJson(request)
-
-        clusterGeometries = self.getClusterGeometries(request, params, "viewport")
+        clusterGeometries = self.getClusterGeometries("grid")
 
         gridCells = []
 
         if clusterGeometries:
 
-            filterstring = self.constructFilterstring(params["filters"])
+            filterstring = self.constructFilterstring(self.params["filters"])
 
             cursor = connections['default'].cursor()
 
@@ -813,27 +637,33 @@ class MapClusterer():
         NON-CLUSTERING FUNCTIONS
     ---------------------------------------------------------------------------------------------------------------------------------'''
     # return all IDs of the pins contained by a cluster
-    def getKmeansClusterContent(self, request, custom_filterstring = ""):
+    def getClusterContent(self, custom_filterstring=""):
 
-        params = self.loadJson(request)
-
-        x = params["x"]
-        y = params["y"]
-        
-        kmeans_list = params["ids"]
-        kmeans_string = (",").join(str(k) for k in kmeans_list)
-
-        filters = params["filters"]
+        x = self.params["x"]
+        y = self.params["y"]
 
         cluster = Point(x, y, srid=self.input_srid)
 
-        cell = self.maptools.getCellIDForPoint(cluster, self.zoom, self.gridSize)
+        # request lnglat point
+        cell_geos = self.maptools.getCellForPointAsGeos(cluster, self.zoom, self.gridSize, self.db_srid)
+        
+        cluster.transform(self.db_srid)
 
-        poly = self.clusterCellToBounds(cell)
+        query_geometry = None
+        
+        for geometry in self.cache["geometries"]:
+            geos = GEOSGeometry(geometry)
+            
+            if cluster.within(geos):
+                query_geometry = geos.intersection(cell_geos)
+                break
 
-        filterstring = self.constructFilterstring(filters)
 
+        filterstring = self.constructFilterstring(self.cache["filters"])
         filterstring += custom_filterstring
+
+        kmeans_list = self.params["ids"]
+        kmeans_string = (",").join(str(k) for k in kmeans_list)
 
         entries_queryset = Gis.objects.raw('''
                     SELECT * FROM ( 
@@ -842,8 +672,21 @@ class MapClusterer():
                     ) AS ksub
                     WHERE kmeans IN (%s)
                     ''' %(geo_column_str, geo_column_str, BASE_K, geo_table,
-                          geo_table, geo_column_str, geo_column_str, poly, self.srid_db, filterstring,
+                          geo_table, geo_column_str, geo_column_str, query_geometry.ewkt, self.db_srid, filterstring,
                           kmeans_string ))
+
+                                               
+        return entries_queryset
+
+
+    def getAreaContent(self, custom_filterstring=""):
+
+        geomfilterstring = self.getGeomFilterstring(self.params["geojson"])
+        filterstring = self.constructFilterstring(self.cache["filters"])
+        
+        entries_queryset = Gis.objects.raw(
+            '''SELECT * FROM "%s" WHERE %s %s;''' % (geo_table, geomfilterstring, filterstring)
+            )
 
         return entries_queryset
 
@@ -859,41 +702,67 @@ class MapClusterer():
         second, the list is converted to a string
     ---------------------------------------------------------------------------------------------------------------------------------'''
 
-    def getGeomFilterstring(self, geojson=None):
+    def getGeomFilterstring(self, geojson):
 
         geomfilterstring = ""
-
-        if not geojson:
-            geojson = request.session.get('geojson', None)
-
-
-        if geojson:
             
-            if geojson["type"] == "FeatureCollection":
+        if geojson["type"] == "FeatureCollection":
 
-                geos_geometries = []
+            geos_geometries = []
+            
+            for feature in geojson["features"]:
+
+                geos_geometries += self.convertGeojsonFeatureToGEOS(feature)
                 
-                for feature in geojson["features"]:
+                
 
-                    geos_geometries += self.convertGeojsonFeatureToGEOS(feature)
-                    
-                    
+        elif geojson["type"] == "Feature":
 
-            elif geojson["type"] == "Feature":
-
-                    geos_geometries = self.convertGeojsonFeatureToGEOS(geojson)
+                geos_geometries = self.convertGeojsonFeatureToGEOS(geojson)
 
 
-            geomfilterstring += "("
-            
-            for counter, geos in enumerate(geos_geometries):
-                if counter > 0:
-                    geomfilterstring += " OR "
-                geomfilterstring += " ST_Intersects(%s, ST_GeometryFromText('%s', %s) ) " %(geo_column_str, geos.wkt, self.srid_db)
+        geomfilterstring += "("
+        
+        for counter, geos in enumerate(geos_geometries):
+            if counter > 0:
+                geomfilterstring += " OR "
+            geomfilterstring += " ST_Intersects(%s, ST_GeometryFromText('%s', %s) ) " %(geo_column_str, geos.wkt, self.db_srid)
 
-            geomfilterstring += ")"
+        geomfilterstring += ")"
             
 
         return geomfilterstring
-            
         
+
+            
+    '''---------------------------------------------------------------------------------------------------------------------------------
+        K Calculation
+
+        this is only used for strict geometries, such as drawn polygons or drawn circles
+        based on the BASE_K in the settings (defaults to 6) it increases the k if one draws a big shape
+    ---------------------------------------------------------------------------------------------------------------------------------'''
+    # k calculation has to be done on square-pixel areas
+    def calculateK(self, geos_geometry):
+
+        geom_copy = geos_geometry.transform(3857, clone=True)
+        
+        cellarea_pixels = self.gridSize * self.gridSize
+
+        # 1m = ? pixels
+        init_resolution = self.maptools.mapTileSize / (2 * math.pi * 6378137)
+        
+        resolution = init_resolution * (2**self.zoom)
+
+        area_factor = resolution**2
+
+        geom_copy_area_pixels = geom_copy.area * area_factor
+
+        new_k = (BASE_K / cellarea_pixels) * geom_copy_area_pixels
+
+        if new_k > K_CAP:
+            new_k = K_CAP
+
+        if new_k < BASE_K:
+            new_k = BASE_K
+
+        return int(math.ceil(new_k))

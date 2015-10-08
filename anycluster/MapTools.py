@@ -1,5 +1,5 @@
 from django.contrib.gis.gdal import SpatialReference, CoordTransform, SRSException
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, GEOSGeometry
 import math
 
 
@@ -197,7 +197,7 @@ class MapTools():
         return clusterCells
 
 
-    def get_ClusterCells(self, toprightCellID, bottomleftCellID, zoom):
+    def getClusterCells(self, toprightCellID, bottomleftCellID, zoom):
 
         if toprightCellID[0] >= bottomleftCellID[0]:
 
@@ -214,6 +214,44 @@ class MapTools():
                                                        "topright": toprightEdgeCellID, "bottomleft": bottomleftCellID}])
 
         return clusterCells
+
+
+    def clusterCellToBounds(self, cell, zoom, gridSize, srid):
+
+        bounds = []
+
+        pixelbounds = self.cellIDToTileBounds(cell, gridSize)
+        mercatorbounds = self.bounds_PixelToMercator(pixelbounds, zoom)
+
+        # convert mercatorbounds to latlngbounds
+        cell_topright = Point(mercatorbounds['right'], mercatorbounds['top'], srid=3857)
+        cell_bottomleft = Point(mercatorbounds['left'], mercatorbounds['bottom'], srid=3857)
+
+        # if it is not a latlng database, convert the polygons
+        if srid != 3857:
+            self.point_AnyToAny(cell_topright, 3857, srid)
+            self.point_AnyToAny(cell_bottomleft, 3857, srid)
+
+        poly_string = self.bounds_ToPolyString({'top': cell_topright.y, 'right': cell_topright.x,
+                                                  'bottom': cell_bottomleft.y, 'left': cell_bottomleft.x})
+
+
+        return poly_string
+
+
+    def getClusterCellsAsPolyList(self, toprightCellID, bottomleftCellID, zoom, gridSize, srid):
+
+        cells_as_poly = []
+        
+        cells_as_keys = self.getClusterCells(toprightCellID, bottomleftCellID, zoom)
+
+        for cell in cells_as_keys:
+            poly_string = self.clusterCellToBounds(cell, zoom, gridSize, srid)
+            poly = GEOSGeometry(poly_string, srid=srid)
+            cells_as_poly.append(poly)
+
+        return cells_as_poly
+    
 
     # bounds -> points -> poly (5 points as starting and end point are the
     # same)
@@ -255,9 +293,23 @@ class MapTools():
 
     def getCellIDForPoint(self, point_lnglat, zoom, gridSize):
 
+        if point_lnglat.srid != 4326:
+            point_lnglat.transform(4326)
+
         point_mercator = self.point_ToMercator(point_lnglat)
         point_world = self.point_MercatorToWorld(point_mercator)
         point_pixels = self.point_WorldToPixels(point_world, zoom)
         cellid = self.point_PixelToCellID(point_pixels, gridSize)
 
         return cellid
+
+
+    def getCellForPointAsGeos(self, point, zoom, gridSize, srid):
+        point = point.clone()
+        cell_id = self.getCellIDForPoint(point, zoom, gridSize)
+        poly_string = self.clusterCellToBounds(cell_id, zoom, gridSize, srid)
+        poly = GEOSGeometry(poly_string, srid=srid)
+
+        return poly
+        
+

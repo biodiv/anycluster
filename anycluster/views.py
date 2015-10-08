@@ -17,9 +17,9 @@ geo_table = Gis._meta.db_table
 
 def getGrid(request, zoom, gridSize=256):
 
-    clusterer = MapClusterer(zoom, gridSize)
+    clusterer = MapClusterer(request, zoom, gridSize)
 
-    grid = clusterer.gridCluster(request)
+    grid = clusterer.gridCluster()
     
     return HttpResponse(json.dumps(
         grid
@@ -28,9 +28,9 @@ def getGrid(request, zoom, gridSize=256):
 
 def getPins(request, zoom, gridSize):
 
-    clusterer = MapClusterer(zoom, gridSize)
+    clusterer = MapClusterer(request, zoom, gridSize)
 
-    markers = clusterer.kmeansCluster(request)
+    markers = clusterer.kmeansCluster()
     
     return HttpResponse(json.dumps(
         markers
@@ -39,37 +39,17 @@ def getPins(request, zoom, gridSize):
 
 def getClusterContent(request, zoom, gridSize):
 
-    clusterer = MapClusterer(zoom, gridSize)
+    clusterer = MapClusterer(request, zoom, gridSize)
 
-    entries = clusterer.getKmeansClusterContent(request)
+    entries = clusterer.getClusterContent()
 
     return render(request, 'anycluster/clusterPopup.html', {'entries':entries})
 
 
 
-def loadAreaContent(request, zoom=1, gridSize=256):
-
-    clusterer = MapClusterer(zoom, gridSize)
-
-    params = clusterer.loadJson(request)
-
-    filterstring = clusterer.constructFilterstring(params["filters"])
-
-    geojson = params.get("geojson", None)
-
-    geomfilterstring = clusterer.getGeomFilterstring(geojson)
-
-
-    markers_qryset = Gis.objects.raw(
-        '''SELECT * FROM "%s" WHERE %s %s;''' % (geo_table, geomfilterstring, filterstring)
-    )
-    
-
-    return markers_qryset
-    
-
 def getAreaContent(request, zoom, gridSize):
 
-    markers = loadAreaContent(request, zoom, gridSize)
+    clusterer = MapClusterer(request, zoom, gridSize)
+    entries = clusterer.getAreaContent()
 
-    return render(request, 'anycluster/clusterPopup.html', {'entries':markers})
+    return render(request, 'anycluster/clusterPopup.html', {'entries':entries})
