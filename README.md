@@ -9,6 +9,7 @@ The postgis version is recommended. There is a mysql version with limited functi
 
 ChangeLog
 ---------
+- [08.10.2015] major code improvements
 - you now need to add {% csrf_token % } somewhere in your template
 
 
@@ -18,6 +19,7 @@ Features
 This application offers 2 methods of clustering:
 - grid-based clustering
 - clustering based on geometric density of the points (needs PSQL extension)
+- cluster contents of any geographic area defined as Polygon/Multipolygon
 - get all elements contained in a cluster
 
 ... and has a builtin caching mechanism: if the user pans a map, only the new areas are processed.
