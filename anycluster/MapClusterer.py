@@ -659,7 +659,7 @@ class MapClusterer():
                 break
 
 
-        filterstring = self.constructFilterstring(self.cache["filters"])
+        filterstring = self.constructFilterstring(json.loads(self.cache["filters"]))
         filterstring += custom_filterstring
 
         kmeans_list = self.params["ids"]
@@ -682,7 +682,7 @@ class MapClusterer():
     def getAreaContent(self, custom_filterstring=""):
 
         geomfilterstring = self.getGeomFilterstring(self.params["geojson"])
-        filterstring = self.constructFilterstring(self.cache["filters"])
+        filterstring = self.constructFilterstring(json.loads(self.cache["filters"]))
         
         entries_queryset = Gis.objects.raw(
             '''SELECT * FROM "%s" WHERE %s %s;''' % (geo_table, geomfilterstring, filterstring)
