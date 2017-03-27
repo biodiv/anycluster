@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from anycluster.MapClusterer import MapClusterer
 from django.conf import settings
-from django.db.models.loading import get_model
+from django.apps import apps
 from django.contrib.gis.geos import GEOSGeometry
 
 import json
@@ -11,7 +11,8 @@ import json
 #load the gis
 geoapp, geomodel = settings.ANYCLUSTER_GEODJANGO_MODEL.split('.')
 geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
-Gis = get_model(geoapp, geomodel)
+app_config = apps.get_app_config(geoapp)
+Gis = app_config.get_model(geomodel)
 geo_table = Gis._meta.db_table
 
 
