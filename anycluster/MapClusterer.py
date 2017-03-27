@@ -72,7 +72,7 @@ from django.db import connections
 
 from django.conf import settings
 from django.db.models import Q, Min
-from django.db.models.loading import get_model
+from django.apps import apps
 
 BASE_K = getattr(settings, 'ANYCLUSTER_BASE_K', 6)
 K_CAP = getattr(settings, 'ANYCLUSTER_K_CAP', 30)
@@ -90,7 +90,8 @@ if PINCOLUMN:
 else:
     pin_qry = ['', '']
 
-Gis = get_model(geoapp, geomodel)
+app_config = apps.get_app_config(geoapp)
+Gis = app_config.get_model(geomodel)
 
 geo_table = Gis._meta.db_table
 
