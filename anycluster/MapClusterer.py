@@ -271,7 +271,9 @@ class MapClusterer():
             remove_cached_geometries = False
         elif clustertype != self.cache.get("clustertype", None):
             remove_cached_geometries = False
-        
+        elif self.params.get("cache","") == "load":
+            remove_cached_geometries = False
+
 
         for geos in geos_geometries:
             envelope = geos.envelope
