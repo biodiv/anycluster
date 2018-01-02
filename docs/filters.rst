@@ -8,9 +8,9 @@ A filterObject looks like this:
 
 .. code-block:: javascript
 
-   var filterObj = { 
-      "db_column_name" : { "values": value, "operator": operator_string } 
-   }
+   var filterObj = [
+      {"db_column_name" : { "values": value, "operator": operator_string }}
+   ]
 
 
 **value**
@@ -23,10 +23,10 @@ Example:
 
 .. code-block:: javascript
 
-   var filters = { 
-      "color": {"values" : "red", "operator":"!=" }
-	  "number": {"values": [2,3], "operator": "either_="}
-   }
+   var filters = [
+      {"color": {"values" : "red", "operator":"!=" }},
+      {"number": {"values": [2,3], "operator": "either_="}}
+   ]
    
    anyclusterInstance.filter(filters);
 

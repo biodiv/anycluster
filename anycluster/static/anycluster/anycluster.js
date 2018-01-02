@@ -220,7 +220,7 @@ Anycluster.prototype = {
 
 		this.baseURL = settings_.baseURL || "/anycluster/"
 		this.autostart = typeof(settings_.autostart) == "boolean" ? settings_.autostart : true;
-		this.filters = settings_.filters || {};
+		this.filters = settings_.filters || [];
 		this.center = settings_.center || [0,0];
 		this.clusterMethod = settings_.clusterMethod || "grid";
 		this.iconType = settings_.iconType || "exact";
