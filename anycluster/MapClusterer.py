@@ -427,9 +427,11 @@ class MapClusterer():
 
         filterstring = ''
 
-        for column in filters:
+        for filter in filters:
 
-            filterparams = filters[column]
+            column = list(filter.keys())[0]
+
+            filterparams = filter[column]
 
             filterstring += ' AND ('
             
