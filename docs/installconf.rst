@@ -41,14 +41,8 @@ Installation and Configuration
      ANYCLUSTER_GEODJANGO_MODEL = "yourapp.models.your_geodjango_model" 
      ANYCLUSTER_COORDINATES_COLUMN = "your_geometric_column"
 
-4. add the following to your STATICFILES_DIRS (settings.py)
 
-   .. code-block:: python
-
-     '/PATH_TO_YOUR_PROJECT_FOLDER/anycluster/static'
-
-
-5. urls.py
+4. urls.py
 
    .. code-block:: python
 
