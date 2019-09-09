@@ -32,7 +32,7 @@ Installation and Configuration
 
 **Install anycluster with your Django installation**
 
-1. unzip the folder anycluster into your project directory
+1. use ``pip install anycluster`` OR unzip the folder anycluster into your project directory
 2. add 'anycluster' to your INSTALLED_APPS
 3. required SETTINGS (settings.py)
 
