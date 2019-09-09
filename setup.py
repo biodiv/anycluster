@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 install_requires = [
     'django',
-    'psycopg2,
+    'psycopg2',
 ]
 
 setup(
