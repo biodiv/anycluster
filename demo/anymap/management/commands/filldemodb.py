@@ -14,15 +14,20 @@ import random
 
 class Command(BaseCommand):
 
-    def handle(self, markerAmount, *args, **options):
+    def add_arguments(self, parser):
+        parser.add_argument('marker_amount', type=int)
 
-        markerAmount = int(markerAmount)
+
+    def handle(self, *args, **options):
+
+        markerAmount = options['marker_amount']
 
         print ("creating demo with %s markers" % markerAmount)
 
-        for x in range(0,markerAmount):
+        for x in range(0, markerAmount):
 
-            print ("%s" % (markerAmount-x))
+            if x % 1000 == 0:
+                print ("%s" % (markerAmount-x))
 
             lat = random.uniform(-84,84)
             lon = random.uniform(-179,179)

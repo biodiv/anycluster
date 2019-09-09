@@ -1,0 +1,17 @@
+SET client_min_messages = warning;
+\set ECHO none
+\i kmeans.sql
+\set ECHO all
+RESET client_min_messages;
+
+CREATE TABLE testdata(val1 float, val2 float, val3 float);
+COPY testdata FROM '@abs_srcdir@/data/testdata.txt' DELIMITER ' ';
+
+SELECT kmeans(ARRAY[val1, val2], 3,
+	ARRAY[0.0, 0.0, 1.0, 0.5, -1.0, -0.5]) OVER (), val1, val2
+FROM testdata
+LIMIT 10;
+
+SELECT kmeans(ARRAY[val1, val2], NULL) OVER ()
+FROM testdata LIMIT 1;
+

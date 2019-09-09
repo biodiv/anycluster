@@ -1,23 +1,26 @@
 {% load staticfiles %}
 <html>
 	<head>
-		<!--<script type="text/javascript" src="{% static 'anycluster/OpenLayers.js' %}"></script>-->
-		<script type="text/javascript"
-			  src="https://maps.googleapis.com/maps/api/js?v=3.8&key=AIzaSyC7zFb7ymHd59HbHYcAld46OcF93OkjD9s&sensor=false">
-		</script>
+
+		<link rel="stylesheet" href="{% static 'anycluster/anycluster.css' %}" />
+
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+
+		<!-- Make sure you put this AFTER Leaflet's CSS -->
+		<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js" integrity="sha512-GffPMF3RvMeYyc1LWMHtK8EbPv0iNZ8/oTtHPx9/cc2ILxQ+u905qIwdpULaqDkyBKgOaB57QTMg7ztg8Jm2Og==" crossorigin=""></script>
+
+		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=YOURGOOGLEMAPSKEY&sensor=false"></script>
 		<script type="text/javascript" src="{% static 'anycluster/anycluster.js' %}"></script>
 		<script type="text/javascript" src="{% static 'anycluster/django_ajax_csrf.js' %}"></script>
 		<script type="text/javascript" src="{% static 'anycluster/anycluster_marker.js' %}"></script>
 		<script type="text/javascript">
-		
-		
-			var anyclusterSettings = {
-				mapType : "google", // "google" or "osm"
+
+			var anycluster_settings = {
+				mapType : "leaflet", // "google" or "leaflet"
 				gridSize: 256, //integer
 				zoom: 3, //initial zoom
 				center: [49,11], //initial center in lng lat
-				MapTypeId: "TERRAIN", //google only - choose from  ROADMAP,SATELLITE,HYBRID or TERRAIN
-				clusterMethod : "kmeans", //"grid" or "kmeans" or "centroid"
+				clusterMethod : "kmeans", //"grid" or "kmeans"
 				iconType: "exact", //"exact" (with exact cluster counts) or "simple" (with rounded counts) 
 				singlePinImages: {
 					'imperial':'/static/anycluster/pin_imperial.png', //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
@@ -29,26 +32,20 @@
 				onFinalClick : function(entries){
 					openPopup(entries);
 				}
-	
+			};
+		
+			// clone settings for google
+			var anycluster_settings_google = JSON.parse(JSON.stringify(anycluster_settings));
+			anycluster_settings_google["google"] = { // google specific settings
+				MapTypeId: "TERRAIN" //google only - choose from  ROADMAP,SATELLITE,HYBRID or TERRAIN
 			}
-			
-			var anyclusterSettings_osm = {
-				mapType : "osm", // "google" or "osm"
-				gridSize: 256, //integer
-				zoom: 3, //initial zoom
-				center: [49,11], //initial center in lng lat
-				clusterMethod : "kmeans", //"grid" or "kmeans" or "centroid"
-				iconType: "simple", //"exact" (with exact cluster counts) or "simple" (with rounded counts) 
-				singlePinImages: {
-					'dbvalue':'/static/path/to/image.png' //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
-				}
+			anycluster_settings_google["mapType"] = "google";
 	
-			}
 		
 			window.onload = function(){
 				// do not use both maps simultaneously as this will confuse the cache
-				anycluster = new Anycluster("gmap", anyclusterSettings);
-				//var osmap = new Anycluster("osmap", anyclusterSettings_osm);
+				// anycluster = new Anycluster("google_map", anycluster_settings_google);
+				anycluster = new Anycluster("leaflet_map", anycluster_settings);
 
 				var gridRadio = document.getElementById("clusterGrid");
 				gridRadio.addEventListener("change", function(){
@@ -99,39 +96,12 @@
 			}
 		</style>
 		
-		<style>
-		  .olControlAttribution {
-		      position: absolute;
-		      font-size: 10px;
-		      text-align: right;
-		      color: #eeeeee;
-		      bottom: 0;
-		      right: 0;
-		      background: #130085; /* fallback for IE - IE6 requires background shorthand*/
-		      background: rgba(0, 60, 136, 0.3);
-		      filter: alpha(opacity=30);
-		      font-family: 'Lucida Grande', Verdana, Geneva, Lucida, Arial, Helvetica, sans-serif;
-		      padding: 2px 4px;
-		      border-radius: 5px 0 0 0;
-		  }
-		  .olControlAttribution a {
-		      color: #eeeeee;
-		      font-weight: bold;
-		  }
-		  .olControlZoom a:hover {
-		      color: white;
-		  }
-		  div.olControlZoomPanel {
-		      top: 15px;
-		      left: 15px;
-		  }
-	  </style>
 		
 	</head>
 	<body>
-		<div id="osmap" style="width:600px; height:300px; border: 1px solid black"></div>
-		<div id="gmap" style="width:600px; height:300px; border: 1px solid black"></div>
-		<div id="clustererPopup" style="border:2px solid black; position: absolute; left:30%;top:50%; background-color: #aaa; border-radius:10px; padding: 10px; display:none;">
+		<div id="leaflet_map" style="width:600px; height:300px; border: 1px solid black"></div>
+		<div id="google_map" style="width:600px; height:300px; border: 1px solid black"></div>
+		<div id="clustererPopup" style="border:2px solid black; position: absolute; left:30%;top:50%; background-color: #aaa; border-radius:10px; padding: 10px; display:none; z-index:9999;">
 			<div id="clusterContentPopup"></div>
 			<div style="text-align:center; margin-top: 20px;"><button onclick="closePopup();">close</button></div>
 		</div>
@@ -142,6 +112,6 @@
 		<!-- needed for ajax POST requests -->
 		{% csrf_token %}<br><br>
 		<input type="radio" name="clusterstyle" value="grid" id="clusterGrid"><label for="clusterGrid">Grid</label>
-		<input type="radio" name="clusterstyle" value="kmeans" id="clusterKmeans" checked><label for="clusterKmeans">Bubble</label>
+		<input type="radio" name="clusterstyle" value="kmeans" id="clusterKmeans" checked><label for="clusterKmeans">Kmeans</label>
 	</body>
 </html>

@@ -1,0 +1,30 @@
+SET client_min_messages = warning;
+\set ECHO none
+RESET client_min_messages;
+CREATE TABLE testdata(val1 float, val2 float, val3 float);
+COPY testdata FROM '@abs_srcdir@/data/testdata.txt' DELIMITER ' ';
+SELECT kmeans(ARRAY[val1, val2], 3,
+	ARRAY[0.0, 0.0, 1.0, 0.5, -1.0, -0.5]) OVER (), val1, val2
+FROM testdata
+LIMIT 10;
+ kmeans |   val1    |   val2    
+--------+-----------+-----------
+      1 |  1.208985 |  0.421448
+      0 |  0.504542 |  -0.28573
+      1 |  0.630568 |  1.054712
+      1 |  1.056364 |  0.601873
+      0 |  1.095326 | -1.447579
+      2 | -0.210165 |  0.000284
+      0 | -0.367151 | -1.255189
+      0 |  0.868013 | -1.063465
+      0 |  1.704441 | -0.644833
+      0 |  0.565619 | -1.637858
+(10 rows)
+
+SELECT kmeans(ARRAY[val1, val2], NULL) OVER ()
+FROM testdata LIMIT 1;
+ kmeans 
+--------
+       
+(1 row)
+

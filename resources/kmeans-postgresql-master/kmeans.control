@@ -1,0 +1,5 @@
+# kmean extension
+comment = 'k-means classification by window function'
+default_version = '1.1.0'
+module_pathname = '$libdir/kmeans'
+relocatable = true

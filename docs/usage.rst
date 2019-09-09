@@ -8,7 +8,7 @@ First you have to initialize your map.
 .. code-block:: javascript
 
    var anyclusterSettings = { 
-       mapType : "google" 
+       mapType : "leaflet"
    }
 
    anycluster = new Anycluster("div_id", anyclusterSettings);
@@ -58,16 +58,18 @@ anyclusterSettings Properties
 
 
 
-Example:
+Example (google):
 
 .. code-block:: javascript
 
    var anyclusterSettings = {
 		mapType : "google",
+		google : {
+			mapTypeId: "HYBRID",
+		},
 		gridSize: 256,
 		zoom: 3,
 		center: [30,30],
-		MapTypeId: "HYBRID",
 		clusterMethod : "kmeans",
 		iconType: "exact", 
 		singlePinImages: {
@@ -88,6 +90,35 @@ Example:
 
    anycluster = new Anycluster("mymap", anyclusterSettings);
 
+
+Example (leaflet):
+
+	.. code-block:: javascript
+
+   var anyclusterSettings = {
+		mapType : "leaflet",
+		gridSize: 256,
+		zoom: 3,
+		center: [30,30],
+		clusterMethod : "kmeans",
+		iconType: "exact", 
+		singlePinImages: {
+			'blue':'/static/anycluster/pin_blue.png',
+			'red':'/static/anycluster/pin_red.png',
+		},
+		onFinalClick : function(entries){
+			var dialog = $("#dialog");
+			dialog.html(entries);
+			dialog.dialog('open');
+		},
+		loadEnd: function(){ 
+			$("#totalcount").text(anycluster.viewportMarkerCount);
+		},
+		autostart: true,
+		filters: { "is_faved": {"values" : true} }
+   }
+
+   anycluster = new Anycluster("mymap", anyclusterSettings);
 
 Properties of the anycluster instance
 -------------------------------------

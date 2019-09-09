@@ -1,9 +1,9 @@
 '''---------------------------------------------------------------------------------------
 
-                                    DJANGO MAP CLUSTERING
+DJANGO MAP CLUSTERING
 
-                                    - kmeans
-                                    - grid
+- kmeans
+- grid
 
 VERSION: 0.1
 AUTHOR: biodiv
@@ -68,11 +68,14 @@ import json, math, numbers, decimal
 from anycluster.MapTools import MapTools
 from django.contrib.gis.geos import Point, GEOSGeometry
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
+from django.contrib.gis.db.models.fields import BaseSpatialField
 from django.db import connections
 
 from django.conf import settings
-from django.db.models import Q, Min
+from django.db.models import Q, Min, ForeignKey
 from django.apps import apps
+
+from .clusters import PointCluster
 
 BASE_K = getattr(settings, 'ANYCLUSTER_BASE_K', 6)
 K_CAP = getattr(settings, 'ANYCLUSTER_K_CAP', 30)
@@ -86,7 +89,7 @@ PINCOLUMN = getattr(settings, 'ANYCLUSTER_PINCOLUMN', None)
 
 # raw sql for getting pin column value
 if PINCOLUMN:
-    pin_qry = [', MIN(%s) AS pinimg' % (PINCOLUMN), PINCOLUMN + ',']
+    pin_qry = [', MIN({pincolumn}) AS pinimg'.format(pincolumn=PINCOLUMN), PINCOLUMN + ',']
 else:
     pin_qry = ['', '']
 
@@ -98,7 +101,9 @@ geo_table = Gis._meta.db_table
 
 class MapClusterer():
 
-    def __init__(self, request, zoom=1, gridSize=256, input_srid=4326, mapTileSize=256):
+    def __init__(self, request, zoom=1, gridSize=256, input_srid=4326, mapTileSize=256, schema_name='public'):
+
+        self.schema_name = schema_name
         
         # the srid of the coordinates coming from javascript. input_srid = output_srid
         self.input_srid = int(input_srid)
@@ -121,18 +126,26 @@ class MapClusterer():
     # read the srid of the database. 
     def getDatabaseSRID(self):
 
-        srid_qry = 'SELECT id, ST_SRID(%s) FROM "%s" LIMIT 1;' % (
-            geo_column_str, geo_table)
-        db_srid_objs = Gis.objects.raw(srid_qry)
+        db_srid = None
 
-        if len(list(db_srid_objs)) > 0:
-            db_srid = db_srid_objs[0].st_srid
-        else:
+        srid_qry = 'SELECT id, ST_SRID({geo_column}) FROM {schema_name}.{geo_table} LIMIT 1;'.format(
+            geo_column=geo_column_str, schema_name=self.schema_name, geo_table=geo_table)
+
+        with connections['default'].cursor() as cursor:
+            cursor.execute(srid_qry)
+        
+            row = cursor.fetchone()
+
+            if len(row) == 2:
+                db_srid = row[1]
+                
+
+        if not db_srid:
             try:
                 db_srid = settings.ANYCLUSTER_COORDINATES_COLUMN_SRID
             except:
                 db_srid = 4326
-
+        
         return db_srid
 
     
@@ -173,7 +186,7 @@ class MapClusterer():
                 query_collection += ","
 
             # ST_GeomFromText('POLYGON((0 0, 10000 0, 10000 10000, 0 10000, 0 0))',3857)
-            query_collection += "ST_GeomFromText('%s', %s)" % (poly, self.db_srid)
+            query_collection += "ST_GeomFromText('{poly}', {srid})".format(poly=poly, srid=self.db_srid)
 
         query_collection += "])"
 
@@ -221,7 +234,7 @@ class MapClusterer():
 
             if geos:
 
-                if geos.srid != self.db_srid: 
+                if geos.srid != self.db_srid:
                     ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.db_srid))
                     geos.transform(ct)
                 
@@ -375,7 +388,8 @@ class MapClusterer():
         bottomleftCell = self.maptools.point_PixelToCellID(bottomleft, self.gridSize)
 
         # get all Cells that need to be clustered, as quadKey
-        clusterCells = self.maptools.getClusterCellsAsPolyList(toprightCell, bottomleftCell, self.zoom, self.gridSize, self.db_srid)
+        clusterCells = self.maptools.getClusterCellsAsPolyList(toprightCell, bottomleftCell, self.zoom,
+                                                               self.gridSize, self.db_srid)
 
         return clusterCells
         
@@ -391,13 +405,13 @@ class MapClusterer():
 
         if type(value) == str:
             if operator == "startswith":
-                return "'^%s.*' " % value
+                return "'^{value}.*' ".format(value=value)
 
             elif operator == "contains":
-                return "'%s.*'" % value
+                return "'{value}.*'".format(value=value)
             
             else:
-                return "'%s'" % value
+                return "'{value}'".format(value=value)
 
         elif type(value) == bool:
 
@@ -451,7 +465,8 @@ class MapClusterer():
 
                     sql_value = self.parseFilterValue(parts[-1], value)
 
-                    filterstring += "%s %s %s" % (column, operator, sql_value)
+                    filterstring += "{column} {operator} {sql_value}".format(column=column, operator=operator,
+                                                                             sql_value=sql_value)
                 
 
             else:
@@ -469,7 +484,8 @@ class MapClusterer():
 
                     sql_value = str(tuple(values))
 
-                filterstring += "%s %s %s" % (column, operator, sql_value)
+                filterstring += "{column} {operator} {sql_value}".format(column=column, operator=operator,
+                                                                         sql_value=sql_value)
                     
 
             filterstring += ')'
@@ -480,19 +496,24 @@ class MapClusterer():
 
     '''---------------------------------------------------------------------------------------------------------------------------------
         MERGING MARKERS BY DISTANCE
-
+        - retrieves cluster_rows
+        - returns a list of PointCluster instances
+        
         - if the geometric centroids are too close to each other after the kmeans algorithm (e.g. overlap), they are merged to one cluster
         - used by kmeansCluster as phase 2
         - uses pixels for calculation as this is constant on every zoom level
         - transforms cluster.id into a list
     ---------------------------------------------------------------------------------------------------------------------------------'''
 
-    def distanceCluster(self, clusters, c_distance=30):
+    def distanceCluster(self, cluster_rows, c_distance=30):
 
         clusters_processed = []
 
-        for cluster in clusters:
-            clustercoords = getattr(cluster, geo_column_str)
+        for cluster_row in cluster_rows:
+
+            point_cluster = PointCluster(cluster_row, geo_column_str, self.db_srid)
+            
+            clustercoords = getattr(point_cluster, geo_column_str)
 
             added = False
 
@@ -504,15 +525,15 @@ class MapClusterer():
                     if not type(processed_cluster.id) == list:
                         processed_cluster.id = [processed_cluster.id]
 
-                    processed_cluster.id.append(cluster.id)
-                    processed_cluster.count += cluster.count
+                    processed_cluster.id.append(point_cluster.id)
+                    processed_cluster.count += point_cluster.count
                     added = True
                     break
 
             if not added:
-                if not type(cluster.id) == list:
-                    cluster.id = [cluster.id]
-                clusters_processed.append(cluster)
+                if not type(point_cluster.id) == list:
+                    point_cluster.id = [point_cluster.id]
+                clusters_processed.append(point_cluster)
 
         
         return clusters_processed
@@ -525,7 +546,7 @@ class MapClusterer():
     ---------------------------------------------------------------------------------------------------------------------------------'''        
 
     def kmeansCluster(self, custom_filterstring=""):
-
+        
         clusterGeometries = self.getClusterGeometries("kmeans")
 
         markers = []
@@ -540,37 +561,47 @@ class MapClusterer():
 
                 geos_geometry = geometry_dic["geos"]
                 k = geometry_dic["k"]
-                
-                kclusters_queryset = Gis.objects.raw('''
-                    SELECT kmeans AS id, count(*), ST_AsText(ST_Centroid(ST_Collect(%s))) AS %s %s
+
+                sql = '''
+                    SELECT kmeans AS id, count(*), ST_AsText(ST_Centroid(ST_Collect({geo_column})))
+                    AS {geo_column} {pin_qry_0}
                     FROM ( 
-                      SELECT %s kmeans(ARRAY[ST_X(%s), ST_Y(%s)], %s) OVER () AS kmeans, %s
-                      FROM "%s" WHERE %s IS NOT NULL AND ST_Intersects(%s, ST_GeometryFromText('%s') ) %s
+                      SELECT {pin_qry_1} kmeans(ARRAY[ST_X({geo_column}), ST_Y({geo_column})], {k}) OVER ()
+                      AS kmeans, {geo_column}
+                      FROM {schema_name}.{geo_table}
+                      WHERE {geo_column} IS NOT NULL
+                          AND ST_Intersects({geo_column}, ST_GeometryFromText('{geos_geometry}') ) {filterstring}
                     ) AS ksub
 
                     GROUP BY id
                     ORDER BY kmeans;
                     
-                ''' % (geo_column_str, geo_column_str, pin_qry[0],
-                       pin_qry[1], geo_column_str, geo_column_str, k, geo_column_str,
-                       geo_table, geo_column_str, geo_column_str, geos_geometry.ewkt, filterstring) )
-            
-                kclusters = list(kclusters_queryset)
+                '''.format(geo_column=geo_column_str, pin_qry_0=pin_qry[0], pin_qry_1=pin_qry[1], k=k,
+                           schema_name=self.schema_name, geo_table=geo_table, geos_geometry=geos_geometry.ewkt,
+                           filterstring=filterstring)
 
-                kclusters = self.distanceCluster(kclusters)
 
-                for cluster in kclusters:
-                    point = getattr(cluster, geo_column_str)
+                with connections['default'].cursor() as cursor:
+                    cursor.execute(sql)
+                
+                    cluster_rows = cursor.fetchall()
+
+                
+                kclusters = self.distanceCluster(cluster_rows)
+                
+
+                for point_cluster in kclusters:
+                    point = getattr(point_cluster, geo_column_str)
 
                     if point.srid != self.input_srid:
                         self.maptools.point_AnyToAny(point, point.srid, self.input_srid)
 
                     if PINCOLUMN:
-                        pinimg = cluster.pinimg
+                        pinimg = point_cluster.pinimg
                     else:
                         pinimg = None
 
-                    markers.append({'ids': cluster.id, 'count': cluster.count, 'center': {
+                    markers.append({'ids': point_cluster.id, 'count': point_cluster.count, 'center': {
                                 'x': point.x, 'y': point.y}, 'pinimg': pinimg})
 
 
@@ -605,18 +636,19 @@ class MapClusterer():
                     INSERT INTO temp_clusterareas (polygon)
                     ( SELECT (
                         ST_Dump(
-                            ST_GeometryFromText('%s')
+                            ST_GeometryFromText('{geometry}')
                     )).geom )
-                ''' % clusterGeometry["geos"].ewkt)
+                '''.format(geometry=clusterGeometry["geos"].ewkt))
 
             # indexing did not increase performance
             # cursor.execute('''CREATE INDEX temp_gix ON temp_clusterareas USING GIST (polygon);''')
 
-            gridcluster_queryset = '''
-                SELECT count(*) AS count, polygon FROM "%s", temp_clusterareas
-                WHERE coordinates IS NOT NULL AND ST_Intersects(coordinates, polygon) %s
+            gridcluster_queryset = '''SELECT count(*) AS count, polygon {pin_qry_0}
+                FROM {schema_name}.{geo_table}, temp_clusterareas
+                WHERE coordinates IS NOT NULL AND ST_Intersects(coordinates, polygon) {filterstring}
                 GROUP BY polygon
-            ''' % (geo_table, filterstring)
+            '''.format(schema_name=self.schema_name, geo_table=geo_table, filterstring=filterstring,
+                       pin_qry_0=pin_qry[0])
 
             cursor.execute(gridcluster_queryset)            
 
@@ -625,14 +657,20 @@ class MapClusterer():
             for cell in gridCells_pre:
 
                 count = cell[0]
+                pinimg = None
+
+                if count == 1 and PINCOLUMN:
+                    pinimg = cell[2]
 
                 geos = GEOSGeometry(cell[1])
                 geos.transform(self.input_srid)
                 centroid = geos.centroid
                 
-                cellobj = {"count":count, "geojson": geos.geojson, "center":{"x":centroid.x, "y": centroid.y}}
+                cellobj = {"count":count, "geojson": geos.geojson, "center":{"x":centroid.x, "y": centroid.y},
+                           "pinimg" : pinimg}
 
                 gridCells.append(cellobj)
+                
                 
         return gridCells
 
@@ -641,6 +679,30 @@ class MapClusterer():
     '''---------------------------------------------------------------------------------------------------------------------------------
         NON-CLUSTERING FUNCTIONS
     ---------------------------------------------------------------------------------------------------------------------------------'''
+    def get_gis_fields_str(self):
+
+        gis_fields = Gis._meta.concrete_fields
+
+        gis_field_names = []
+
+        # Relational Fields are not supported
+        for field in gis_fields:
+            if isinstance(field, ForeignKey):
+                #name = field.get_attname_column()[0]
+                continue
+            if isinstance(field, BaseSpatialField):
+                name = '{name}::bytea'.format(name=field.name)
+            else:
+                name = field.name
+
+            gis_field_names.append(name)
+
+        gis_fields_str = ','.join(gis_field_names)
+
+        gis_fields_str.rstrip(',')
+
+        return gis_fields_str
+
     # return all IDs of the pins contained by a cluster
     def getClusterContent(self, custom_filterstring=""):
 
@@ -670,16 +732,22 @@ class MapClusterer():
         kmeans_list = self.params["ids"]
         kmeans_string = (",").join(str(k) for k in kmeans_list)
 
-        entries_queryset = Gis.objects.raw('''
-                    SELECT * FROM ( 
-                      SELECT kmeans(ARRAY[ST_X(%s), ST_Y(%s)], %s) OVER () AS kmeans, "%s".*
-                      FROM "%s" WHERE %s IS NOT NULL AND ST_Intersects(%s, ST_GeometryFromText('%s', %s) ) %s
-                    ) AS ksub
-                    WHERE kmeans IN (%s)
-                    ''' %(geo_column_str, geo_column_str, BASE_K, geo_table,
-                          geo_table, geo_column_str, geo_column_str, query_geometry.ewkt, self.db_srid, filterstring,
-                          kmeans_string ))
+        gis_fields_str = self.get_gis_fields_str()
 
+        sql= '''
+            SELECT {fields} FROM ( 
+              SELECT kmeans(ARRAY[ST_X({geo_column}), ST_Y({geo_column})], {base_k}) OVER ()
+              AS kmeans, "{geo_table}".*
+              FROM {schema_name}.{geo_table} WHERE {geo_column} IS NOT NULL
+              AND ST_Intersects({geo_column}, ST_GeometryFromText('{geometry}', {srid}) ) {filterstring}
+            ) AS ksub
+            WHERE kmeans IN ({kmeans_string})
+            '''.format(geo_column=geo_column_str, base_k=BASE_K, geo_table=geo_table, schema_name=self.schema_name,
+                       geometry=query_geometry.ewkt, srid=self.db_srid, filterstring=filterstring,
+                       kmeans_string=kmeans_string, fields=gis_fields_str)
+
+        
+        entries_queryset = Gis.objects.raw(sql)
                                                
         return entries_queryset
 
@@ -688,9 +756,13 @@ class MapClusterer():
 
         geomfilterstring = self.getGeomFilterstring(self.params["geojson"])
         filterstring = self.constructFilterstring(json.loads(self.cache["filters"]))
+
+        gis_fields_str = self.get_gis_fields_str()
         
         entries_queryset = Gis.objects.raw(
-            '''SELECT * FROM "%s" WHERE %s %s;''' % (geo_table, geomfilterstring, filterstring)
+            '''SELECT {fields} FROM {schema_name}.{geo_table} WHERE {geomfilterstring} {filterstring};'''.format(
+                schema_name=self.schema_name, geo_table=geo_table, geomfilterstring=geomfilterstring,
+                filterstring=filterstring, fields=gis_fields_str)
             )
 
         return entries_queryset
@@ -731,7 +803,8 @@ class MapClusterer():
         for counter, geos in enumerate(geos_geometries):
             if counter > 0:
                 geomfilterstring += " OR "
-            geomfilterstring += " ST_Intersects(%s, ST_GeometryFromText('%s', %s) ) " %(geo_column_str, geos.wkt, self.db_srid)
+            geomfilterstring += " ST_Intersects({geo_column}, ST_GeometryFromText('{geometry}', {srid}) ) ".format(
+                geo_column=geo_column_str, geometry=geos.wkt, srid=self.db_srid)
 
         geomfilterstring += ")"
             

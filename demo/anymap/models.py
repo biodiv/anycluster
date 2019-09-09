@@ -1,4 +1,3 @@
-from django.db import models
 from django.contrib.gis.db import models
 
 from django.utils.translation import ugettext_lazy as _
@@ -25,10 +24,9 @@ class Gardens(models.Model):
     free_entrance = models.BooleanField(default=False)
     last_renewal = models.DateTimeField()
     coordinates = models.PointField(srid=4326)
-    objects = models.GeoManager()
 
-    def __unicode__(self):
-        return u'%s (%s)' % (self.name,self.style)
+    def __str__(self):
+        return '%s (%s)' % (self.name, self.style)
     
     
     

@@ -1,0 +1,37 @@
+{
+	"name": "kmeans",
+	"abstract": "K-means clustering as a user-defined window function",
+	"description": "This module provides k-means calculation over row set.",
+	"version": "1.1.0",
+	"maintainer": "Hitoshi Harada <umi.tanuki@gmail.com>",
+	"license": "postgresql",
+	"provides": {
+		"kmeans": {
+			"abstract": "k-means clustering function",
+			"version": "1.1.0",
+			"file": "kmeans.sql",
+			"docfile": "doc/kmeans.md"
+		}
+	},
+	"resources": {
+		"bugtracker": {
+			"web": "http://github.com/umitanuki/kmeans-postgresql/issues/"
+		},
+		"repository": {
+			"url": "git://github.com/umitanuki/kmeans-postgresql.git",
+			"web": "http://github.com/umitanuki/kmeans-postgresql",
+			"type": "git"
+		}
+	},
+	"meta-spec": {
+		"version": "1.0.0",
+		"url": "http://pgxn.org/meta/spec.txt"
+	},
+	"tags": [
+		"clustering",
+		"window function",
+		"k-means",
+		"statistics",
+		"analysis"
+	]
+}

@@ -5,6 +5,22 @@
 	text-align: center;
 }
 
+.exactCountCluster {
+	width: 100%;
+	height: 100%;
+	background-size: contain;
+	background-repeat: no-repeat;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+.leaflet-div-icon {
+	background: none !important;
+	border: none !important;
+}
+
 .cluster-5 {
 }
 
