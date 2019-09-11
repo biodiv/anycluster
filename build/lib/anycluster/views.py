@@ -1,9 +1,11 @@
 from django.http import HttpResponse
 from django.views.generic import TemplateView
 from django.shortcuts import render
-from anycluster.MapClusterer import MapClusterer
+from django.core import serializers
 from django.conf import settings
 from django.apps import apps
+
+from anycluster.MapClusterer import MapClusterer
 
 import json
 
@@ -44,7 +46,21 @@ class KmeansCluster(ClusterView):
 
 
 
-class GetClusterContent(ClusterView):
+'''
+    Cluster/ AreaContent Retrieval
+    - json or html
+'''
+class EntriesJsonMixin:
+    def entries_as_json(self, entries):
+
+        serializer_fields = self.clusterer.get_gis_field_names()
+
+        data = serializers.serialize('json', entries, fields=serializer_fields)
+
+        return data
+    
+
+class GetClusterContent(EntriesJsonMixin, ClusterView):
 
     template_name = 'anycluster/clusterPopup.html'
 
@@ -58,11 +74,18 @@ class GetClusterContent(ClusterView):
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
+
+        return_format = request.GET.get('format', 'html')
+
+        if return_format == 'json':
+            entries_json = self.entries_as_json(context['entries'])
+            return HttpResponse(json.dumps(entries_json), content_type="application/json")
+        
         return self.render_to_response(context)
 
 
 
-class GetAreaContent(ClusterView):
+class GetAreaContent(EntriesJsonMixin, ClusterView):
 
     template_name = 'anycluster/clusterPopup.html'
 
@@ -76,5 +99,12 @@ class GetAreaContent(ClusterView):
 
     def post(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
+
+        return_format = request.GET.get('format', 'html')
+
+        if return_format == 'json':
+            entries_json = self.entries_as_json(context['entries'])
+            return HttpResponse(json.dumps(entries_json), content_type="application/json")
+        
         return self.render_to_response(context)
 

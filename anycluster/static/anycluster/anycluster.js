@@ -61,6 +61,13 @@ Anycluster.prototype = {
 		this.loadEnd = settings_.loadEnd || this.loadEnd;
 		this.loadStart = settings_.loadStart || this.loadStart;
 		this.clusterArea = settings_.clusterArea || false;
+		this.returnFormat = settings_.returnFormat || "html"; // return format for final clicks, html or json
+		this.mobile = settings_.mobile || false;
+		this.markerFolder = settings_.markerFolder || "/static/anycluster/images/";
+
+		if (this.mapType == "kmeans"){
+			this.gridSize = 256;
+		}
 
 		// api specific settings
 		if (this.mapType == "google"){
@@ -75,6 +82,18 @@ Anycluster.prototype = {
 				this.api_settings[key] = this.api[this.mapType]["default_settings"][key];
 			}
 		}
+	},
+
+	prepare_xhr : function(xhr){
+		if (this.mobile == true){
+			xhr.withCredentials = true;
+		}
+		else {		
+			var csrftoken = getCookieValue("csrftoken");
+			xhr.setRequestHeader("X-CSRFToken", csrftoken);
+		}
+
+		return xhr;
 	},
 
 	// on small markers or on final zoom, this function is launched
@@ -166,6 +185,7 @@ Anycluster.prototype = {
 		
 		//send the ajax request
 		url = encodeURI(url);
+
 		var xhr = new XMLHttpRequest();
 
 		xhr.onload = function(){
@@ -222,10 +242,8 @@ Anycluster.prototype = {
 		}
 		
 		xhr.open("POST", url, true);
-		
-		var csrftoken = getCookieValue("csrftoken");
-    	
-		xhr.setRequestHeader("X-CSRFToken", csrftoken);
+
+		xhr = this.prepare_xhr(xhr);
 
 		xhr.send(JSON.stringify(postParams));
 		
@@ -241,7 +259,13 @@ Anycluster.prototype = {
 		}
 		
 		
-		var url = encodeURI(this.baseURL + "getClusterContent/" + this.zoom + "/" + this.gridSize + "/");
+		var url = this.baseURL + "getClusterContent/" + this.zoom + "/" + this.gridSize + "/";
+
+		if (this.returnFormat == 'json'){
+			url += '?format=json'; 
+		}
+
+		url = encodeURI(url);
 		
 		var xhr = new XMLHttpRequest();
 		
@@ -252,8 +276,7 @@ Anycluster.prototype = {
 		
 		xhr.open("POST",url,true);
 
-		var csrftoken = getCookieValue("csrftoken");
-    		xhr.setRequestHeader("X-CSRFToken", csrftoken);
+		xhr = this.prepare_xhr(xhr);
 
 		xhr.send(JSON.stringify(postParams));
 	
@@ -278,6 +301,10 @@ Anycluster.prototype = {
 		
 
 		var url = this.baseURL + "getAreaContent/" + this.zoom + "/" + this.gridSize + "/"
+
+		if (this.returnFormat == 'json'){
+			url += '?format=json'; 
+		}
 			
 		url = encodeURI(url);
 		var xhr = new XMLHttpRequest();
@@ -288,8 +315,7 @@ Anycluster.prototype = {
 
 		xhr.open("POST",url,true);
 
-		var csrftoken = getCookieValue("csrftoken");
-    		xhr.setRequestHeader("X-CSRFToken", csrftoken);
+		xhr = this.prepare_xhr(xhr);
 
 		xhr.send(JSON.stringify(postParams));
 	
@@ -344,7 +370,7 @@ Anycluster.prototype = {
 	
 		if (count == 1) {
 		
-			var singlePinURL = "/static/anycluster/images/pin_unknown.png";
+			var singlePinURL = "" + this.markerFolder + "pin_unknown.png";
 
 			if( typeof(this.singlePinImages) == "function"){
 				singlePinURL = this.singlePinImages(pinimg);
@@ -389,10 +415,10 @@ Anycluster.prototype = {
 	    else {
 	    
 			if (this.iconType == "exact"){
-				var imgurl = "/static/anycluster/images/" + pinicon + "_empty.png";
+				var imgurl = "" + this.markerFolder + pinicon + "_empty.png";
 			}
 			else {
-				var imgurl = "/static/anycluster/images/" + pinicon + ".png";
+				var imgurl = "" + this.markerFolder + pinicon + ".png";
 			}
 	    }
 

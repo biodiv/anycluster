@@ -677,9 +677,9 @@ class MapClusterer():
 
     
     '''---------------------------------------------------------------------------------------------------------------------------------
-        NON-CLUSTERING FUNCTIONS
+        NON-CLUSTERING METHODS
     ---------------------------------------------------------------------------------------------------------------------------------'''
-    def get_gis_fields_str(self):
+    def get_gis_field_names(self):
 
         gis_fields = Gis._meta.concrete_fields
 
@@ -696,6 +696,13 @@ class MapClusterer():
                 name = field.name
 
             gis_field_names.append(name)
+
+        return gis_field_names
+        
+        
+    def get_gis_fields_str(self):
+
+        gis_field_names = self.get_gis_field_names()
 
         gis_fields_str = ','.join(gis_field_names)
 
