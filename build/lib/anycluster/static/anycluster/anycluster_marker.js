@@ -18,7 +18,7 @@ var imageSizes = {
 	10000:60
 };
 
-if (google){
+if ("google" in window){
 
 	/** @constructor */
 	function clusterMarker(latlng, count, map, ids) {

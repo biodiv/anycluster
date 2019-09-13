@@ -86,12 +86,20 @@ geo_column_str = settings.ANYCLUSTER_COORDINATES_COLUMN
 
 # column for determining the pin image for pins with count 1
 PINCOLUMN = getattr(settings, 'ANYCLUSTER_PINCOLUMN', None)
+ADDITIONAL_COLUMN = getattr(settings, 'ANYCLUSTER_ADDITIONAL_COLUMN', None)
 
 # raw sql for getting pin column value
 if PINCOLUMN:
-    pin_qry = [', MIN({pincolumn}) AS pinimg'.format(pincolumn=PINCOLUMN), PINCOLUMN + ',']
+    pin_qry = [', MIN({pincolumn}) AS pinimg'.format(pincolumn=PINCOLUMN),
+               '{pincolumn},'.format(pincolumn=PINCOLUMN)]
 else:
     pin_qry = ['', '']
+
+if ADDITIONAL_COLUMN:
+    additional_column_qry = [', MIN({column}) AS {column}'.format(column=ADDITIONAL_COLUMN),
+                             '{column},'.format(column=ADDITIONAL_COLUMN)]
+else:
+    additional_column_qry = ['', '']
 
 app_config = apps.get_app_config(geoapp)
 Gis = app_config.get_model(geomodel)
@@ -564,9 +572,9 @@ class MapClusterer():
 
                 sql = '''
                     SELECT kmeans AS id, count(*), ST_AsText(ST_Centroid(ST_Collect({geo_column})))
-                    AS {geo_column} {pin_qry_0}
+                    AS {geo_column} {pin_qry_0} {additional_column_qry_0}
                     FROM ( 
-                      SELECT {pin_qry_1} kmeans(ARRAY[ST_X({geo_column}), ST_Y({geo_column})], {k}) OVER ()
+                      SELECT {pin_qry_1} {additional_column_qry_1} kmeans(ARRAY[ST_X({geo_column}), ST_Y({geo_column})], {k}) OVER ()
                       AS kmeans, {geo_column}
                       FROM {schema_name}.{geo_table}
                       WHERE {geo_column} IS NOT NULL
@@ -578,7 +586,8 @@ class MapClusterer():
                     
                 '''.format(geo_column=geo_column_str, pin_qry_0=pin_qry[0], pin_qry_1=pin_qry[1], k=k,
                            schema_name=self.schema_name, geo_table=geo_table, geos_geometry=geos_geometry.ewkt,
-                           filterstring=filterstring)
+                           filterstring=filterstring,additional_column_qry_0=additional_column_qry[0],
+                           additional_column_qry_1=additional_column_qry[1])
 
 
                 with connections['default'].cursor() as cursor:
@@ -596,13 +605,20 @@ class MapClusterer():
                     if point.srid != self.input_srid:
                         self.maptools.point_AnyToAny(point, point.srid, self.input_srid)
 
-                    if PINCOLUMN:
-                        pinimg = point_cluster.pinimg
-                    else:
-                        pinimg = None
+                    marker = {
+                        'ids': point_cluster.id,
+                        'count': point_cluster.count,
+                        'center': {
+                                'x': point.x,
+                                'y': point.y
+                        },
+                        'pinimg': point_cluster.pinimg,
+                    }
 
-                    markers.append({'ids': point_cluster.id, 'count': point_cluster.count, 'center': {
-                                'x': point.x, 'y': point.y}, 'pinimg': pinimg})
+                    if ADDITIONAL_COLUMN:
+                        marker[ADDITIONAL_COLUMN] = getattr(point_cluster, ADDITIONAL_COLUMN)
+
+                    markers.append(marker)
 
 
         return markers

@@ -321,7 +321,30 @@ Anycluster.prototype = {
 	
 	},
 
+	_max_bounds : {
+		"left" : -179,
+		"top" : 89,
+		"right" : 179,
+		"bottom" : -89
+	},
+
 	viewportToGeoJson : function(viewport){
+
+		if (viewport["left"] < this._max_bounds["left"]){
+			viewport["left"] = this._max_bounds["left"];
+		}
+
+		if (viewport["bottom"] < this._max_bounds["bottom"]){
+			viewport["bottom"] = this._max_bounds["bottom"];
+		}
+
+		if (viewport["top"] > this._max_bounds["top"]){
+			viewport["top"] = this._max_bounds["top"];
+		}
+
+		if (viewport["right"] > this._max_bounds["right"]){
+			viewport["right"] = this._max_bounds["right"];
+		}
 
 		// check if the viewport spans the edges of coordinate system
 		
@@ -366,14 +389,17 @@ Anycluster.prototype = {
 
 	},
 	
-	selectPinIcon : function(count, pinimg) {
+	selectPinIcon : function(cluster) {
+
+		var count = cluster["count"];
+		var pinimg = cluster["pinimg"];
 	
 		if (count == 1) {
 		
 			var singlePinURL = "" + this.markerFolder + "pin_unknown.png";
 
 			if( typeof(this.singlePinImages) == "function"){
-				singlePinURL = this.singlePinImages(pinimg);
+				singlePinURL = this.singlePinImages(cluster);
 			}
 			else {
 			
@@ -575,7 +601,7 @@ Anycluster.prototype = {
 				var pinimg = cluster["pinimg"];
 				var ids = cluster["ids"];
 			
-				var piniconObj = clusterer.selectPinIcon(count,pinimg);
+				var piniconObj = clusterer.selectPinIcon(cluster);
 				
 				var pinicon = piniconObj.url;
 			
@@ -842,7 +868,7 @@ Anycluster.prototype = {
 				
 
 				// get the correct icon
-				var piniconObj = clusterer.selectPinIcon(count, pinimg);
+				var piniconObj = clusterer.selectPinIcon(cluster);
 
 				// create a leaflet icon
 				var clusterIcon = L.icon({
@@ -860,7 +886,7 @@ Anycluster.prototype = {
 				var count = cluster['count'];
 				var pinimg = cluster['pinimg'];
 
-				var piniconObj = clusterer.selectPinIcon(count, pinimg);
+				var piniconObj = clusterer.selectPinIcon(cluster);
 
 				// exact count needs "marker with text"
 
