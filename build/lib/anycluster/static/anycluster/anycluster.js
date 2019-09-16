@@ -98,19 +98,26 @@ Anycluster.prototype = {
 
 	// on small markers or on final zoom, this function is launched
 	markerFinalClickFunction : function(mapmarker) {
+
+		var clusterer = this;
 	
-		if (this.clusterMethod == "kmeans") {
-			this.getClusterContent(mapmarker, this.onFinalClick);
+		if (clusterer.clusterMethod == "kmeans") {
+			clusterer.getClusterContent(mapmarker, function(data){
+				clusterer.onFinalClick(mapmarker, data);
+			});
 		}
-		else if (this.clusterMethod = "grid"){
+		else if (clusterer.clusterMethod = "grid"){
 			var geojson = mapmarker["geojson"];
-			this.getAreaContent(geojson, this.onFinalClick);
+			clusterer.getAreaContent(geojson, function(data){
+				clusterer.onFinalClick(mapmarker, data);
+			});
 		}
 	},
 
 	// hook for you to implement what happens if a user clicks on the final marker
-	onFinalClick: function(entries_html){
-		alert(entries_html);
+	// data cen be html or json, depending on this.returnFormat
+	onFinalClick: function(mapmarker, data){
+		alert(data);
 	},
 
 	markerClickFunction : function(marker) {
@@ -251,17 +258,19 @@ Anycluster.prototype = {
 	
 	getClusterContent : function(cluster, gotClusterContent){
 
+		var clusterer = this;
+
 		var postParams = {
 			"x": cluster.longitude,
 			"y": cluster.latitude,
-			"ids":cluster.ids,
+			"ids": cluster.ids,
 			"filters": this.filters
 		}
 		
 		
 		var url = this.baseURL + "getClusterContent/" + this.zoom + "/" + this.gridSize + "/";
 
-		if (this.returnFormat == 'json'){
+		if (this.returnFormat == "json"){
 			url += '?format=json'; 
 		}
 
@@ -270,7 +279,13 @@ Anycluster.prototype = {
 		var xhr = new XMLHttpRequest();
 		
 		xhr.onload = function(){
-			gotClusterContent(xhr.responseText);
+			var data = xhr.responseText;
+
+			if (clusterer.returnFormat == "json"){
+				data = JSON.parse(data);
+			}
+			
+			gotClusterContent(data);
 		}
 
 		
@@ -292,6 +307,8 @@ Anycluster.prototype = {
 	
 	getAreaContent : function(geoJson, gotAreaContent){
 
+		var clusterer = this;
+
 		this.zoom = this.getZoom();
 
 		var postParams = {
@@ -310,7 +327,12 @@ Anycluster.prototype = {
 		var xhr = new XMLHttpRequest();
 	
 		xhr.onload = function(){
-			gotAreaContent(xhr.responseText);
+			var data = xhr.responseText;
+
+			if (clusterer.returnFormat == "json"){
+				data = JSON.parse(data);
+			}
+			gotAreaContent(data);
 		}
 
 		xhr.open("POST",url,true);
@@ -460,7 +482,8 @@ Anycluster.prototype = {
 	    var imgObj = {
 	    	url : imgurl,
 	    	size : size,
-			anchor: anchor
+			anchor: anchor,
+			popupAnchor: [0, -parseInt(size[1]) + 8]
 	    }
 	    
 	    return imgObj;
@@ -874,7 +897,8 @@ Anycluster.prototype = {
 				var clusterIcon = L.icon({
 					iconUrl: piniconObj.url,
 					iconSize: piniconObj.size,
-					iconAnchor: piniconObj.anchor
+					iconAnchor: piniconObj.anchor,
+					popupAnchor: piniconObj.popupAnchor
 				});
 
 				clusterer.drawMarkerOnMap(cluster, clusterIcon);

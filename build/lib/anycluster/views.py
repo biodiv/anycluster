@@ -79,7 +79,7 @@ class GetClusterContent(EntriesJsonMixin, ClusterView):
 
         if return_format == 'json':
             entries_json = self.entries_as_json(context['entries'])
-            return HttpResponse(json.dumps(entries_json), content_type="application/json")
+            return HttpResponse(entries_json, content_type="application/json")
         
         return self.render_to_response(context)
 
@@ -104,7 +104,7 @@ class GetAreaContent(EntriesJsonMixin, ClusterView):
 
         if return_format == 'json':
             entries_json = self.entries_as_json(context['entries'])
-            return HttpResponse(json.dumps(entries_json), content_type="application/json")
+            return HttpResponse(entries_json, content_type="application/json")
         
         return self.render_to_response(context)
 
