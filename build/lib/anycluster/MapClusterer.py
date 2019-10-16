@@ -144,7 +144,7 @@ class MapClusterer():
         
             row = cursor.fetchone()
 
-            if len(row) == 2:
+            if row and len(row) == 2:
                 db_srid = row[1]
                 
 
