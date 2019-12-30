@@ -13,6 +13,7 @@ anycluster/views.py
 anycluster.egg-info/PKG-INFO
 anycluster.egg-info/SOURCES.txt
 anycluster.egg-info/dependency_links.txt
+anycluster.egg-info/requires.txt
 anycluster.egg-info/top_level.txt
 anycluster/static/anycluster/anycluster.css
 anycluster/static/anycluster/anycluster.js

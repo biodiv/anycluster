@@ -3,11 +3,13 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-install_requires = []
+install_requires = [
+    'psycopg2',
+]
 
 setup(
     name="anycluster",
-    version='0.6.1',
+    version='0.6.2',
     description='anycluster provides Server-Side clustering of map markers for Geodjango',
     long_description=long_description,
     long_description_content_type="text/markdown",
