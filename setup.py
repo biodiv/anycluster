@@ -4,12 +4,12 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
-    'psycopg2',
+    'psycopg2-binary',
 ]
 
 setup(
     name="anycluster",
-    version='0.5',
+    version='0.6',
     description='anycluster provides Server-Side clustering of map markers for Geodjango',
     long_description=long_description,
     long_description_content_type="text/markdown",

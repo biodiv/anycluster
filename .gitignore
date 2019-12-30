@@ -1,6 +1,5 @@
 # directories
 __pycache__
-.idea
 
 # files
 *.pyc

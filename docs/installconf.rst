@@ -74,3 +74,4 @@ Installation and Configuration
 
 
 That's it! you are now ready to cluster your map markers!
+
