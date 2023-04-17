@@ -218,8 +218,6 @@ class MapTools():
 
     def clusterCellToBounds(self, cell, zoom, gridSize, srid):
 
-        bounds = []
-
         pixelbounds = self.cellIDToTileBounds(cell, gridSize)
         mercatorbounds = self.bounds_PixelToMercator(pixelbounds, zoom)
 

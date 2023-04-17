@@ -1,0 +1,10 @@
+.space-around {
+    justify-content: space-around;
+}
+
+#map {
+    width: 100%;
+    border: .5rem solid black;
+    border-radius: 1rem;
+    aspect-ratio: 4/3;
+}

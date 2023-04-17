@@ -1,0 +1,11 @@
+{% extends 'map_base.html' %}
+{% load static %}
+
+{% block head %}
+<script src="{% static 'openlayers/v7.3.0/dist/ol.js' %}"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.3.0/ol.css">
+{% endblock %}
+
+{% block script %}
+<script type="module" src="{% static 'anymap/anycluster-openlayers.js' %}"></script>
+{% endblock %}

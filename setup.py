@@ -5,11 +5,13 @@ with open("README.md", "r") as fh:
 
 install_requires = [
     'psycopg2',
+    'djangorestframework',
+    'jsonschema',
 ]
 
 setup(
     name="anycluster",
-    version='0.6.2',
+    version='1.0.0',
     description='anycluster provides Server-Side clustering of map markers for Geodjango',
     long_description=long_description,
     long_description_content_type="text/markdown",
