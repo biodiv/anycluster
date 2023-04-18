@@ -1,7 +1,7 @@
 # directories
 __pycache__
 node_modules
-
+.parcel-cache
 # files
 *.pyc
 *.directory
