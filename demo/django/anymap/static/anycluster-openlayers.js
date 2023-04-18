@@ -1,1 +1,1 @@
-/home/tom/anycluster/anycluster-client/anycluster-openlayers/lib/anycluster-openlayers.js
+../../../../anycluster-client/anycluster-openlayers/lib/anycluster-openlayers.js

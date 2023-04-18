@@ -1,8 +1,28 @@
-"use strict";
+import {
+    AnyclusterClient,
+    AnyclusterClientSettings,
+    Viewport,
+    Cluster,
+    ClusterMethod,
+    GeoJSON as IGeoJSON,
+} from 'anycluster-client';
 
-import { ClusterMethod, GeometryType, AnyclusterClient } from "/static/anymap/anycluster.js";
+import * as  L from 'leaflet';
 
-const gridColorValues = {
+export {
+    ClusterMethod
+};
+
+const defaultGridFillColors = {
+    5: "rgba(100, 75, 80, 1)",
+    10: "rgba(90, 50, 50, 1)",
+    50: "rgba(100, 50, 31, 1)",
+    100: "rgba(100, 65, 0, 1)",
+    1000: "rgba(255, 69, 0, 1)",
+    10000: "rgba(255, 0 , 0, 1)"
+};
+
+const defaultGridStrokeColors = {
     5: "pink",
     10: "lightcoral",
     50: "coral",
@@ -11,28 +31,21 @@ const gridColorValues = {
     10000: "red"
 };
 
-const singlePinImages = {
-    'imperial': '/static/anycluster/pin_imperial.png', //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'
-    'stone': '/static/anycluster/pin_stone.png',
-    'wild': '/static/anycluster/pin_wild.png',
-    'japanese': '/static/anycluster/pin_japan.png',
-    'flower': '/static/anycluster/pin_flower.png'
-}
+export class AnyclusterLeaflet extends AnyclusterClient {
 
-let map = L.map('map', {
-    center: [47.422763, 10.329083],
-    zoom: 3,
-    minZoom: 3,
-    worldCopyJump: true,
-});
+    currentZoom: number
+    gridFillColors: Record<number, string>
+    gridStrokeColors: Record<number, string>
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
+    constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings) {
+        super(map, apiUrl, markerFolderPath, settings);
 
+        this.currentZoom = this.getZoom();
 
-class AnyclusterLeaflet extends AnyclusterClient {
+        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : defaultGridFillColors;
+        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : defaultGridStrokeColors;
+
+    }
 
 
     removeArea() {
@@ -41,7 +54,7 @@ class AnyclusterLeaflet extends AnyclusterClient {
         }
     }
 
-    addArea(geojson) {
+    addArea(geojson: IGeoJSON) {
         if (!this.map.hasOwnProperty("areaLayer")) {
             this.createAreaLayer();
         }
@@ -51,6 +64,7 @@ class AnyclusterLeaflet extends AnyclusterClient {
                 color: 'red'
             }
         }).addTo(this.map.areaLayer);
+
     }
 
     createClusterLayers() {
@@ -58,16 +72,18 @@ class AnyclusterLeaflet extends AnyclusterClient {
         this.map.kmeansLayer = kmeansLayer;
 
         // support geojson for grid cluster
-        const gridClusterLayer = L.layerGroup().addTo(map);
+        const gridClusterLayer = L.layerGroup().addTo(this.map);
         this.map.gridClusterLayer = gridClusterLayer;
+
     }
 
     createAreaLayer() {
-        const areaLayer = L.layerGroup().addTo(map);
+        const areaLayer = L.layerGroup().addTo(this.map);
         this.map.areaLayer = areaLayer;
+
     }
 
-    getMarkerIcon(cluster) {
+    getMarkerIcon(cluster: Cluster) {
 
         // get the correct icon
         const piniconObj = this.selectPinIcon(cluster);
@@ -81,10 +97,10 @@ class AnyclusterLeaflet extends AnyclusterClient {
         });
 
         return markerIcon;
+
     }
 
-    drawMarker(cluster) {
-
+    drawMarker(cluster: Cluster) {
         const markerIcon = this.getMarkerIcon(cluster);
 
         const latLng = L.latLng(cluster.center.y, cluster.center.x);
@@ -102,10 +118,10 @@ class AnyclusterLeaflet extends AnyclusterClient {
         marker.addTo(this.map.kmeansLayer);
 
         this.markerList.push(marker);
+
     }
 
-    drawCell(cluster) {
-
+    drawCell(cluster: Cluster) {
         const count = cluster.count;
 
         if (count == 1) {
@@ -126,7 +142,7 @@ class AnyclusterLeaflet extends AnyclusterClient {
 
             const roundedCount = this.roundMarkerCount(count);
 
-            const fillColor = gridColorValues[roundedCount];
+            const fillColor = defaultGridFillColors[roundedCount];
             const strokeWeight = 0;
 
             const cell = L.geoJSON(geojson, {
@@ -162,15 +178,17 @@ class AnyclusterLeaflet extends AnyclusterClient {
 
         this.markerList.length = 0;
 
+
     }
 
-    addMapEventListeners () {
+    addMapEventListeners() {
         this.map.addEventListener("moveend", event => this.getClusters());
         this.map.addEventListener("zoomend", event => this.removeAllMarkers());
     }
 
 
-    getViewport() {
+    getViewport(): Viewport {
+
         const viewport = this.map.getBounds();
 
         if (viewport.isValid()) {
@@ -186,19 +204,20 @@ class AnyclusterLeaflet extends AnyclusterClient {
         else {
             throw new Error("invalid viewport");
         }
+
     }
 
-    getZoom() {
+    getZoom(): number {
         return this.map.getZoom();
     }
 
-    setZoom(zoom) {
+    setZoom(zoom: number): void {
         this.map.setZoom(zoom);
     }
 
 
-    setMap(lng, lat, zoom) {
-        const center = L.latLng(lat, lng);
+    setMap(x: number, y: number, zoom: number): void {
+        const center = L.latLng(y, x);
         this.map.setView(center, zoom);
     }
 
@@ -218,51 +237,5 @@ class AnyclusterLeaflet extends AnyclusterClient {
             });
         }
     }
+
 }
-
-const apiUrl = "http://localhost:8080/anycluster/";
-
-const settings = {
-    singlePinImages: singlePinImages,
-    onFinalClick: function (marker, data) {
-        alert(JSON.stringify(data))
-    }
-};
-
-const markerFolderPath = '/static/anycluster/images/';
-
-const anyclusterLeaflet = new AnyclusterLeaflet(map, apiUrl, markerFolderPath, settings);
-
-const kmeansButton = document.getElementById("kmeans-button");
-const gridButton = document.getElementById("grid-button");
-
-kmeansButton.addEventListener("click", function (event) {
-    anyclusterLeaflet.setClusterMethod(ClusterMethod.kmeans);
-});
-
-gridButton.addEventListener("click", function (event) {
-    areaButton.checked = false;
-    viewportButton.checked = true;
-    anyclusterLeaflet.setClusterMethod(ClusterMethod.grid);
-});
-
-let bavaria = null;
-
-fetch("/static/anymap/bavaria.geojson")
-    .then((response) => response.json())
-    .then((data) => {
-        bavaria = data;
-    });
-
-const viewportButton = document.getElementById("geometry-viewport");
-const areaButton = document.getElementById("geometry-area");
-
-viewportButton.addEventListener("click", function (event) {
-    anyclusterLeaflet.setArea(null);
-});
-
-areaButton.addEventListener("click", function (event) {
-    gridButton.checked = false;
-    kmeansButton.checked = true;
-    anyclusterLeaflet.setArea(bavaria);
-});
