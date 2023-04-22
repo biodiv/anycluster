@@ -10,18 +10,15 @@ from anycluster.definitions import GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA, C
 
 from .serializers import ClusterRequestSerializer, ClusterContentRequestSerializer
 
-from anycluster import ClusterCache, Filters
+from anycluster import ClusterCache
 
 import json
 
 class APIHome(APIView):
-    """
-    - does not require an app uuid
-    - displays the status of the api
-    """
 
     def get(self, request, *args, **kwargs):
         return Response({'success':True})
+
 
 class MapClusterViewBase:
 
@@ -32,22 +29,23 @@ class MapClusterViewBase:
         return output_srid
 
 
-    def get_map_clusterer(self, geometry_type, clustertype, clear_cache, output_srid, request, **kwargs):
+    def get_map_clusterer(self, geometry_type, clustertype, filters, clear_cache, output_srid, request, **kwargs):
 
         grid_size = kwargs['grid_size']
         zoom = kwargs['zoom']
 
         if clear_cache == True:
-            cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=[])
+            cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=filters)
         else:
-            cluster_cache = self.get_cache(geometry_type, zoom, clustertype, request)
+            cluster_cache = self.get_cache(geometry_type, zoom, clustertype, request, filters)
         clusterer = MapClusterer(cluster_cache, grid_size=grid_size, output_srid=output_srid)
         return clusterer
 
 
-    def get_cache(self, geometry_type, zoom, clustertype, request):
+    def get_cache(self, geometry_type, zoom, clustertype, request, filters):
         cached = request.session.get(self.cache_name, {})
-        cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=cached.get('filters', []))
+        cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=filters)
+        # ClusterCache decides if the cache is still valid for the given parameters and loads the cache if so
         cluster_cache.load_geometries(cached)
         return cluster_cache
 
@@ -82,16 +80,17 @@ class GridCluster(MapClusterViewBase, APIView):
 
             clear_cache = serializer.validated_data['clear_cache']
             output_srid = self.parse_srid(serializer.validated_data['output_srid'])
+
+            filters = serializer.validated_data['filters']
             
-            map_clusterer = self.get_map_clusterer(GEOMETRY_TYPE_VIEWPORT, CLUSTER_TYPE_GRID, clear_cache, output_srid,
-                request, **kwargs)
+            map_clusterer = self.get_map_clusterer(GEOMETRY_TYPE_VIEWPORT, CLUSTER_TYPE_GRID, filters, clear_cache,
+                output_srid, request, **kwargs)
             
             geojson = serializer.validated_data['geojson']
-            filters = Filters(serializer.validated_data['filters'])
             zoom = kwargs['zoom']
 
             grid = map_clusterer.grid_cluster(geojson, zoom, filters)
-
+            
             self.set_cache(request, map_clusterer.cluster_cache)
             return Response(grid, status=status.HTTP_200_OK)
             
@@ -111,11 +110,12 @@ class KmeansCluster(MapClusterViewBase, APIView):
             clear_cache = serializer.validated_data['clear_cache']
             output_srid = self.parse_srid(serializer.validated_data['output_srid'])
 
-            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, clear_cache, output_srid, request,
-                **kwargs)
+            filters = serializer.validated_data['filters']
+
+            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, filters, clear_cache, output_srid,
+                request, **kwargs)
 
             geojson = serializer.validated_data['geojson']
-            filters = Filters(serializer.validated_data['filters'])
             zoom = kwargs['zoom']
 
             markers = map_clusterer.kmeans_cluster(geojson, geometry_type, zoom, filters)
@@ -140,9 +140,10 @@ class GetClusterContent(MapClusterViewBase, APIView):
             output_srid = self.parse_srid(serializer.validated_data['output_srid'])
             input_srid = self.parse_srid(serializer.validated_data['input_srid'])
 
-            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, False, output_srid, request, **kwargs)
+            filters = serializer.validated_data['filters']
 
-            filters = Filters(serializer.validated_data['filters'])
+            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, filters, False, output_srid,
+                request, **kwargs)
 
             ids = serializer.validated_data['ids']
             x = serializer.validated_data['x']
@@ -150,7 +151,8 @@ class GetClusterContent(MapClusterViewBase, APIView):
 
             zoom = kwargs['zoom']
 
-            cluster_content = map_clusterer.get_kmeans_cluster_content(geometry_type, ids, x, y, filters, zoom, input_srid=input_srid)
+            cluster_content = map_clusterer.get_kmeans_cluster_content(geometry_type, ids, x, y, filters, zoom,
+                input_srid=input_srid)
 
             data = self.serialize_gis_model_list(map_clusterer, cluster_content)
 
@@ -174,9 +176,10 @@ class GetAreaContent(MapClusterViewBase, APIView):
             geometry_type = serializer.validated_data['geometry_type']
             output_srid = self.parse_srid(serializer.validated_data['output_srid'])
 
-            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, False, output_srid, request, **kwargs)
+            filters = serializer.validated_data['filters']
 
-            filters = Filters(serializer.validated_data['filters'])
+            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, filters, False, output_srid,
+                request, **kwargs)
 
             geojson = serializer.validated_data['geojson']
 
@@ -196,7 +199,10 @@ class GetDatasetContent(MapClusterViewBase, APIView):
 
         output_srid = request.GET.get('output_srid', 4326)
 
-        map_clusterer = self.get_map_clusterer(GEOMETRY_TYPE_VIEWPORT, CLUSTER_TYPE_GRID, False, output_srid, request, **kwargs)
+        filters = []
+
+        map_clusterer = self.get_map_clusterer(GEOMETRY_TYPE_VIEWPORT, CLUSTER_TYPE_GRID, filters, False, output_srid,
+            request, **kwargs)
 
         dataset_id = kwargs['dataset_id']
 

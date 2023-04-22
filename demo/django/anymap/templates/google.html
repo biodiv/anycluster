@@ -1,0 +1,56 @@
+{% extends 'map_base.html' %}
+{% load static %}
+
+{% block head %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=drawing"></script>
+{% endblock %}
+
+{% block warning %}
+    {% if not google_maps_api_key %}
+        <div class="alert alert-danger" role="alert">
+            no google maps api key found!
+        </div>      
+    {% endif %}
+{% endblock %}
+
+{% block map_title %}
+    Google
+{% endblock %}
+
+{% block script %}
+<script type="module">
+    "use strict";
+
+    import { AnyclusterGoogle } from "/static/anycluster-google.js";
+    import { MapInteractions } from "/static/anymap/map-interactions.js";
+
+    const map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 3,
+        center: { lat: 47.4, lng: 10.3 },
+    });
+
+    const singlePinImages = {
+        'imperial': '/static/anycluster/pin_imperial.png',
+        'stone': '/static/anycluster/pin_stone.png',
+        'wild': '/static/anycluster/pin_wild.png',
+        'japanese': '/static/anycluster/pin_japan.png',
+        'flower': '/static/anycluster/pin_flower.png'
+    }
+
+    const apiUrl = "http://localhost:8080/anycluster/";
+
+    const settings = {
+        singlePinImages: singlePinImages,
+        onFinalClick: function (marker, data) {
+            alert(JSON.stringify(data))
+        }
+    };
+
+    const markerFolderPath = '/static/anycluster/images/';
+
+    google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+        const anyclusterGoogle = new AnyclusterGoogle('{{ google_maps_api_key }}', map, apiUrl, markerFolderPath, settings);
+        const mapInteractions = new MapInteractions(anyclusterGoogle);
+    });
+</script>
+{% endblock %}

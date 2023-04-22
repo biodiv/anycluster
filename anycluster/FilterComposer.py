@@ -14,7 +14,21 @@
 import numbers, decimal
 
 # IMPLEMENT: check settings.ANYVLUSTER_ALLOWED_FILTER_COLUMNS
-class Filters:
+class FilterComposer:
+
+    operator_mapping = {
+        '=': '=',
+        '!=': '!=',
+        '>=': '>=',
+        '<=': '<=',
+        'startswith': '~',
+        'contains': '~'
+    }
+
+    list_operator_mapping = {
+        'in': 'IN',
+        'not in': 'NOT IN',
+    }
     
     def __init__(self, filters):
         self.filters = filters
@@ -23,7 +37,7 @@ class Filters:
 
         if type(value) == str:
             if operator == 'startswith':
-                return "'^{value}.*' ".format(value=value)
+                return "'^{value}.*'".format(value=value)
 
             elif operator == 'contains':
                 return "'{value}.*'".format(value=value)
@@ -47,59 +61,30 @@ class Filters:
 
     def as_sql(self):
 
-        operator_mapping = {
-            '=': '=',
-            '!=': '!=',
-            '>=': '>=',
-            '<=': '<=',
-            'startswith': '~',
-            'contains': '~'
-        }
-
         filterstring = ''
 
         for filter in self.filters:
 
-            column = list(filter.keys())[0]
-
-            filterparams = filter[column]
+            column = filter['column']
+            operator = filter['operator']
+            value = filter['value']
 
             filterstring += ' AND ('
 
-            operator_pre = filterparams.get('operator', '=')
+            if isinstance(value, list):
+                parsed_operator = self.list_operator_mapping[operator]
 
-            values = filterparams['values']
+                sql_value = str(tuple(value))
 
-            if 'either' in operator_pre:
-
-                parts = operator_pre.split('_')
-
-                operator = operator_mapping[parts[-1]]
-
-                for counter, value in enumerate(values):
-                    if counter > 0:
-                        filterstring += ' OR '
-
-                    sql_value = self.parse_filter_value(parts[-1], value)
-
-                    filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=operator,
-                                                                             sql_value=sql_value)
+                filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=parsed_operator,
+                                                                         sql_value=sql_value)
 
             else:
+                parsed_operator = self.operator_mapping[operator]
 
-                if type(values) == str or type(values) == bool:
-                    operator = operator_mapping[operator_pre]
-                    sql_value = self.parse_filter_value(operator_pre, values)
+                sql_value = self.parse_filter_value(operator, value)
 
-                elif type(values) == list:
-                    if operator_pre == '!=':
-                        operator = 'NOT IN'
-                    else:
-                        operator = 'IN'
-
-                    sql_value = str(tuple(values))
-
-                filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=operator,
+                filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=parsed_operator,
                                                                          sql_value=sql_value)
 
             filterstring += ')'

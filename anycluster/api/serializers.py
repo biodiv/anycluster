@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 import jsonschema
@@ -5,6 +6,17 @@ import jsonschema
 from .json_schemas import FEATURE_OR_FEATURECOLLECTION_SCHEMA
 
 from anycluster.definitions import GEOMETRY_TYPES, GEOMETRY_TYPE_VIEWPORT
+
+
+def filters_are_allowed(filters):
+
+    for filter in filters:
+        column = filter.get('column', None)
+        if not column:
+            raise serializers.ValidationError('Filter require a column')
+        
+        if column not in settings.ANYCLUSTER_FILTERS:
+            raise serializers.ValidationError('It is not allowed to filter Column {0}'.format(column))
 
 # needs to supprt FeatureCollection and Multipolygon
 class ClusterRequestSerializer(serializers.Serializer):
@@ -27,8 +39,6 @@ class ClusterRequestSerializer(serializers.Serializer):
             if not len(coordinates) == 5:
                 raise serializers.ValidationError('Viewport must consist of 5 points')
 
-            
-
         return data
 
 
@@ -40,6 +50,7 @@ class ClusterRequestSerializer(serializers.Serializer):
         return value
 
     def validate_filters(self, value):
+        filters_are_allowed(value)
         return value
 
 
@@ -54,3 +65,7 @@ class ClusterContentRequestSerializer(serializers.Serializer):
     x = serializers.FloatField(write_only=True)
     y = serializers.FloatField(write_only=True)
     filters = serializers.ListField(required=False, default=[], write_only=True)
+
+    def validate_filters(self, value):
+        filters_are_allowed(value)
+        return value

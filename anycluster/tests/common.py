@@ -95,6 +95,10 @@ VALID_POLYGON_REQUEST = {
     'geometry_type': GEOMETRY_TYPE_AREA
 }
 
-VALID_FILTERS = {
-
-}
+VALID_FILTERS = [
+    {
+        'column': 'style',
+        'value': 'flower',
+        'operator': '=',
+    }
+]

@@ -61,7 +61,7 @@ def random_date():
     """
     end = timezone.now()
 
-    start = datetime.strptime('1/1/2008 1:30 PM', '%m/%d/%Y %I:%M %p')
+    start = datetime.strptime('1/1/2008 1:30 PM', '%m/%d/%Y %I:%M %p').replace(tzinfo=timezone.utc)
     
     delta = end - start
     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds

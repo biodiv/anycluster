@@ -1,0 +1,56 @@
+{
+  "name": "anycluster-google",
+  "version": "0.2.0",
+  "description": "anycluster client for Google Maps",
+  "main": "dist/main.js",
+  "lib": "lib/anycluster-google.js",
+  "module": "dist/ancluster-google.js",
+  "types": "dist/types.d.ts",
+  "source": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/biodiv/anycluster.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "map",
+    "clustering",
+    "server-side",
+    "anycluster",
+    "google maps"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/biodiv/anycluster/issues"
+  },
+  "homepage": "https://github.com/biodiv/anycluster#readme",
+  "devDependencies": {
+    "@parcel/packager-ts": "^2.8.3",
+    "@parcel/transformer-typescript-types": "^2.8.3",
+    "@types/google.maps": "^3.52.6",
+    "parcel": "^2.8.3",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "@googlemaps/js-api-loader": "^1.15.1",
+    "anycluster-client": "^0.2.0"
+  },
+  "targets": {
+    "main": {
+      "optimize": true
+    },
+    "lib": {
+      "source": "src/index.ts",
+      "outputFormat": "esmodule",
+      "includeNodeModules": true,
+      "isLibrary": true,
+      "distDir": "lib/"
+    }
+  }
+}

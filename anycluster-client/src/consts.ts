@@ -41,3 +41,14 @@ export const DefaultMarkerImageSizes = {
     1000: [50, 50],
     10000: [60, 60]
 }
+
+export enum Operators {
+    in = 'in',
+    notIn = 'not in',
+    equals = '=',
+    unEquals = '!=',
+    largerThan = '>=',
+    smallerThan = '<=',
+    startswith = 'startswith',
+    contains = 'contains',
+}

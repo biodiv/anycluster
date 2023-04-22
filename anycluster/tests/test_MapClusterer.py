@@ -3,12 +3,12 @@ from django.test import TestCase
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from anycluster.MapClusterer import MapClusterer
-from anycluster import MapTools, Filters
+from anycluster import MapTools
 
 from anycluster.definitions import (CLUSTER_TYPES, GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA, GEOMETRY_TYPES,
                                     CLUSTER_TYPE_KMEANS, CLUSTER_TYPE_GRID)
 from anycluster.tests.common import GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION
-from anycluster.tests.mixins import WithGIS
+from anycluster.tests.mixins import WithGIS, WithFilters
 
 from anymap.models import Gardens
 
@@ -16,7 +16,7 @@ import json
 
 TEST_ZOOM_LEVEL = 7
 
-class TestMapClusterer(WithGIS, TestCase):
+class TestMapClusterer(WithFilters, WithGIS, TestCase):
 
 
     def test_init(self):
@@ -25,17 +25,20 @@ class TestMapClusterer(WithGIS, TestCase):
 
             for geometry_type in GEOMETRY_TYPES:
 
-                zoom = TEST_ZOOM_LEVEL
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                map_clusterer = MapClusterer(cluster_cache)
+                    zoom = TEST_ZOOM_LEVEL
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                self.assertEqual(map_clusterer.cluster_cache, cluster_cache)
-                self.assertEqual(map_clusterer.schema_name, 'public')
-                self.assertEqual(map_clusterer.db_srid, 3857)
-                self.assertEqual(map_clusterer.grid_size, 256)
-                self.assertEqual(map_clusterer.maptools.__class__, MapTools)
-                self.assertTrue(isinstance(map_clusterer.valid_operators, list))
+                    map_clusterer = MapClusterer(cluster_cache)
+
+                    self.assertEqual(map_clusterer.cluster_cache, cluster_cache)
+                    self.assertEqual(map_clusterer.schema_name, 'public')
+                    self.assertEqual(map_clusterer.db_srid, 3857)
+                    self.assertEqual(map_clusterer.grid_size, 256)
+                    self.assertEqual(map_clusterer.maptools.__class__, MapTools)
+                    self.assertTrue(isinstance(map_clusterer.valid_operators, list))
 
 
     def test_get_database_srid(self):
@@ -44,135 +47,151 @@ class TestMapClusterer(WithGIS, TestCase):
 
             for geometry_type in GEOMETRY_TYPES:
 
-                zoom = 1
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                map_clusterer = MapClusterer(cluster_cache)
+                    zoom = 1
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                db_srid = map_clusterer.get_database_srid()
-                self.assertEqual(db_srid, 3857)
+                    map_clusterer = MapClusterer(cluster_cache)
+
+                    db_srid = map_clusterer.get_database_srid()
+                    self.assertEqual(db_srid, 3857)
 
 
     def test_convert_geojson_feature_to_geos_polygon(self):
 
         for clustertype in CLUSTER_TYPES:
-
             for geometry_type in GEOMETRY_TYPES:
 
-                zoom = TEST_ZOOM_LEVEL
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                map_clusterer = MapClusterer(cluster_cache)
+                    zoom = TEST_ZOOM_LEVEL
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE]:
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                    geos_geometries = map_clusterer.convert_geojson_feature_to_geos(
-                        geojson)
+                    for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE]:
 
-                    self.assertEqual(len(geos_geometries), 1)
+                        geos_geometries = map_clusterer.convert_geojson_feature_to_geos(
+                            geojson)
 
-                    for geos_geometry in geos_geometries:
+                        self.assertEqual(len(geos_geometries), 1)
+
+                        for geos_geometry in geos_geometries:
+                            self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
+                            self.assertEqual(geos_geometry.srid, 3857)
+
+                    mp_geos_geometries = map_clusterer.convert_geojson_feature_to_geos(
+                        GEOJSON_MULTIPOLYGON)
+
+                    self.assertEqual(len(mp_geos_geometries), 2)
+
+                    for geos_geometry in mp_geos_geometries:
                         self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
                         self.assertEqual(geos_geometry.srid, 3857)
-
-                mp_geos_geometries = map_clusterer.convert_geojson_feature_to_geos(
-                    GEOJSON_MULTIPOLYGON)
-
-                self.assertEqual(len(mp_geos_geometries), 2)
-
-                for geos_geometry in mp_geos_geometries:
-                    self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
-                    self.assertEqual(geos_geometry.srid, 3857)
 
 
     def test_convert_geojson_to_geos_feature(self):
 
         for clustertype in CLUSTER_TYPES:
-
             for geometry_type in GEOMETRY_TYPES:
 
-                zoom = TEST_ZOOM_LEVEL
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                map_clusterer = MapClusterer(cluster_cache)
+                    zoom = TEST_ZOOM_LEVEL
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON]:
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                    geos_geometries = map_clusterer.convert_geojson_to_geos(
-                        geojson)
+                    for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON]:
 
-                    for geos_geometry in geos_geometries:
-                        self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
+                        geos_geometries = map_clusterer.convert_geojson_to_geos(
+                            geojson)
+
+                        for geos_geometry in geos_geometries:
+                            self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
 
 
     def test_convert_geojson_to_geos_featurecollection(self):
 
         for clustertype in CLUSTER_TYPES:
-
             for geometry_type in GEOMETRY_TYPES:
 
-                zoom = TEST_ZOOM_LEVEL
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                map_clusterer = MapClusterer(cluster_cache)
-                geos_geometries = map_clusterer.convert_geojson_to_geos(
-                    GEOJSON_FEATURECOLLECTION)
+                    zoom = TEST_ZOOM_LEVEL
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                for geos_geometry in geos_geometries:
-                    self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
+                    map_clusterer = MapClusterer(cluster_cache)
+                    geos_geometries = map_clusterer.convert_geojson_to_geos(
+                        GEOJSON_FEATURECOLLECTION)
+
+                    for geos_geometry in geos_geometries:
+                        self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
 
 
     def test_get_cluster_geometries_viewport(self):
 
         for clustertype in CLUSTER_TYPES:
-
             for geometry_type in GEOMETRY_TYPES:
 
-                zoom = TEST_ZOOM_LEVEL
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON]:
+                    zoom = TEST_ZOOM_LEVEL
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                    cluster_geometries = map_clusterer.get_cluster_geometries(
-                        geojson, geometry_type, zoom)
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                    for geos_geometry in cluster_geometries:
-                        self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
+                    for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON]:
+
+                        cluster_geometries = map_clusterer.get_cluster_geometries(
+                            geojson, geometry_type, zoom)
+
+                        for geos_geometry in cluster_geometries:
+                            self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
 
 
     def test_get_cluster_geometries_area(self):
 
         for clustertype in CLUSTER_TYPES:
 
-            zoom = TEST_ZOOM_LEVEL
-            cluster_cache = self.get_cluster_cache(GEOMETRY_TYPE_AREA, zoom, clustertype)
 
-            map_clusterer = MapClusterer(cluster_cache)
+            filter_lists = self.get_test_filters()
+            for filters in filter_lists:
 
-            geojson = GEOJSON_RECTANGLE
+                zoom = TEST_ZOOM_LEVEL
+                cluster_cache = self.get_cluster_cache(GEOMETRY_TYPE_AREA, zoom, clustertype, filters)
 
-            cluster_geometries = map_clusterer.get_cluster_geometries(
-                geojson, GEOMETRY_TYPE_AREA, zoom)
+                map_clusterer = MapClusterer(cluster_cache)
 
-            matching_geojson = GEOJSON_RECTANGLE['geometry'].copy()
-            initial_geos = GEOSGeometry(
-                json.dumps(matching_geojson), srid=4326)
-            ct = CoordTransform(SpatialReference(
-                initial_geos.srid), SpatialReference(3857))
-            initial_geos.transform(ct)
-
-            self.assertEqual(initial_geos.geojson,
-                            cluster_geometries[0].geojson)
-
-            for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON]:
+                geojson = GEOJSON_RECTANGLE
 
                 cluster_geometries = map_clusterer.get_cluster_geometries(
                     geojson, GEOMETRY_TYPE_AREA, zoom)
 
-                for geos_geometry in cluster_geometries:
-                    self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
+                matching_geojson = GEOJSON_RECTANGLE['geometry'].copy()
+                initial_geos = GEOSGeometry(
+                    json.dumps(matching_geojson), srid=4326)
+                ct = CoordTransform(SpatialReference(
+                    initial_geos.srid), SpatialReference(3857))
+                initial_geos.transform(ct)
+
+                self.assertEqual(initial_geos.geojson,
+                                cluster_geometries[0].geojson)
+
+                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON]:
+
+                    cluster_geometries = map_clusterer.get_cluster_geometries(
+                        geojson, GEOMETRY_TYPE_AREA, zoom)
+
+                    for geos_geometry in cluster_geometries:
+                        self.assertTrue(isinstance(geos_geometry, GEOSGeometry))
 
 
     def test_kmeans_cluster(self):
@@ -180,19 +199,22 @@ class TestMapClusterer(WithGIS, TestCase):
         zoom = TEST_ZOOM_LEVEL
 
         for geometry_type in GEOMETRY_TYPES:
-
             for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON]:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, CLUSTER_TYPE_KMEANS)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                filters = Filters([])
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, CLUSTER_TYPE_KMEANS, filters)
 
-                markers = map_clusterer.kmeans_cluster(geojson, geometry_type, zoom, filters)
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                if geometry_type == GEOMETRY_TYPE_VIEWPORT:
-                    self.assertTrue(len(markers) > 0)
+                    filters = []
+
+                    markers = map_clusterer.kmeans_cluster(geojson, geometry_type, zoom, filters)
+
+                    if geometry_type == GEOMETRY_TYPE_VIEWPORT:
+                        self.assertTrue(len(markers) > 0)
 
 
     def test_get_srid_from_geojson_feature(self):
@@ -200,33 +222,39 @@ class TestMapClusterer(WithGIS, TestCase):
         zoom = TEST_ZOOM_LEVEL
 
         for clustertype in CLUSTER_TYPES:
-
             for geometry_type in GEOMETRY_TYPES:
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE]:
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                    srid = map_clusterer.get_srid_from_geojson_feature(geojson)
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                    self.assertEqual(srid, 4326)
+                    for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE]:
+
+                        srid = map_clusterer.get_srid_from_geojson_feature(geojson)
+
+                        self.assertEqual(srid, 4326)
 
 
     def test_grid_cluster(self):
+
+        filter_lists = self.get_test_filters()
+        for filters in filter_lists:
         
-        zoom = TEST_ZOOM_LEVEL
-        cluster_cache = self.get_cluster_cache(GEOMETRY_TYPE_VIEWPORT, zoom, CLUSTER_TYPE_GRID)
+            zoom = TEST_ZOOM_LEVEL
+            cluster_cache = self.get_cluster_cache(GEOMETRY_TYPE_VIEWPORT, zoom, CLUSTER_TYPE_GRID, filters)
 
-        map_clusterer = MapClusterer(cluster_cache)
+            map_clusterer = MapClusterer(cluster_cache)
 
-        filters = Filters([])
+            filters = []
 
-        geojson = GEOJSON_RECTANGLE
+            geojson = GEOJSON_RECTANGLE
 
-        cells = map_clusterer.grid_cluster(geojson, zoom, filters)
+            cells = map_clusterer.grid_cluster(geojson, zoom, filters)
 
-        self.assertTrue(len(cells) > 0)
+            self.assertTrue(len(cells) > 0)
 
 
     def test_get_gis_field_names(self):
@@ -236,34 +264,40 @@ class TestMapClusterer(WithGIS, TestCase):
         for clustertype in CLUSTER_TYPES:
             for geometry_type in GEOMETRY_TYPES:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                map_clusterer = MapClusterer(cluster_cache)
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                field_names = map_clusterer.get_gis_field_names()
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                expected_field_names = ['id', 'name', 'style', 'rating', 'free_entrance', 'last_renewal',
-                                        'coordinates::bytea']
+                    field_names = map_clusterer.get_gis_field_names()
 
-                self.assertEqual(field_names, expected_field_names)
+                    expected_field_names = ['id', 'name', 'style', 'rating', 'free_entrance', 'last_renewal',
+                                            'coordinates::bytea']
+
+                    self.assertEqual(field_names, expected_field_names)
 
 
     def test_get_gis_field_str(self):
         
         zoom = TEST_ZOOM_LEVEL
 
-
         for clustertype in CLUSTER_TYPES:
             for geometry_type in GEOMETRY_TYPES:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                fields_str = map_clusterer.get_gis_fields_str()
-                expected_str = 'id,name,style,rating,free_entrance,last_renewal,coordinates::bytea'
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                self.assertEqual(fields_str, expected_str)
+                    map_clusterer = MapClusterer(cluster_cache)
+
+                    fields_str = map_clusterer.get_gis_fields_str()
+                    expected_str = 'id,name,style,rating,free_entrance,last_renewal,coordinates::bytea'
+
+                    self.assertEqual(fields_str, expected_str)
 
 
     def test_get_kmeans_cluster_content(self):
@@ -273,31 +307,35 @@ class TestMapClusterer(WithGIS, TestCase):
         for clustertype in CLUSTER_TYPES:
             for geometry_type in GEOMETRY_TYPES:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                geojson = GEOJSON_RECTANGLE
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                filters = Filters([])
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                markers = map_clusterer.kmeans_cluster(geojson, geometry_type, zoom, filters)
+                    geojson = GEOJSON_RECTANGLE
 
-                if geometry_type == GEOMETRY_TYPE_AREA:
-                    self.assertEqual(len(map_clusterer.cluster_cache.geometries), 1)
+                    filters = []
 
-                self.assertTrue(len(markers) > 0)
+                    markers = map_clusterer.kmeans_cluster(geojson, geometry_type, zoom, filters)
 
-                marker = markers[0]
+                    if geometry_type == GEOMETRY_TYPE_AREA:
+                        self.assertEqual(len(map_clusterer.cluster_cache.geometries), 1)
 
-                ids = marker['ids']
-                x = marker['center']['x']
-                y = marker['center']['y']
+                    self.assertTrue(len(markers) > 0)
 
-                cluster_content = map_clusterer.get_kmeans_cluster_content(geometry_type, ids, x, y, filters, zoom)
+                    marker = markers[0]
 
-                self.assertTrue(marker['count'] > 0)
-                self.assertEqual(len(list(cluster_content)), marker['count'])
+                    ids = marker['ids']
+                    x = marker['center']['x']
+                    y = marker['center']['y']
+
+                    cluster_content = map_clusterer.get_kmeans_cluster_content(geometry_type, ids, x, y, filters, zoom)
+
+                    self.assertTrue(marker['count'] > 0)
+                    self.assertEqual(len(list(cluster_content)), marker['count'])
             
 
     def test_get_area_content(self):
@@ -307,37 +345,44 @@ class TestMapClusterer(WithGIS, TestCase):
         for clustertype in CLUSTER_TYPES:
             for geometry_type in GEOMETRY_TYPES:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                geojson = GEOJSON_RECTANGLE
-                filters = Filters([])
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                area_content = map_clusterer.get_area_content(geojson, filters)
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                self.assertEqual(len(list(area_content)), 100)
+                    geojson = GEOJSON_RECTANGLE
+                    filters = []
+
+                    area_content = map_clusterer.get_area_content(geojson, filters)
+
+                    self.assertEqual(len(list(area_content)), 100)
 
 
     def test_get_geom_filterstring(self):
         
         zoom = 1
 
-
         for clustertype in CLUSTER_TYPES:
             for geometry_type in GEOMETRY_TYPES:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                geojson = GEOJSON_RECTANGLE
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                geom_filterstring = map_clusterer.get_geom_filterstring(geojson)
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                expected_string = "( ST_Intersects(coordinates, ST_GeometryFromText('POLYGON ((990852.5481939941 6539650.689072899, 990852.5481939941 5980227.102028428, 1559876.2279959028 5980227.102028428, 1559876.2279959028 6539650.689072899, 990852.5481939941 6539650.689072899))', 3857) ) )"
+                    geojson = GEOJSON_RECTANGLE
 
-                self.assertEqual(geom_filterstring, expected_string)
+                    geom_filterstring = map_clusterer.get_geom_filterstring(geojson)
+
+                    expected_string = "( ST_Intersects(coordinates, ST_GeometryFromText('POLYGON ((990852.5481939941 6539650.689072899, 990852.5481939941 5980227.102028428, 1559876.2279959028 5980227.102028428, 1559876.2279959028 6539650.689072899, 990852.5481939941 6539650.689072899))', 3857) ) )"
+
+                    self.assertEqual(geom_filterstring, expected_string)
 
 
     def test_calculate_k(self):
@@ -347,21 +392,24 @@ class TestMapClusterer(WithGIS, TestCase):
         for clustertype in CLUSTER_TYPES:
             for geometry_type in GEOMETRY_TYPES:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                map_clusterer = MapClusterer(cluster_cache)
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                geojson = GEOJSON_POLYGON
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                geos_geometries = map_clusterer.get_cluster_geometries(geojson, 'area', zoom)
+                    geojson = GEOJSON_POLYGON
 
-                self.assertEqual(len(geos_geometries), 1)
+                    geos_geometries = map_clusterer.get_cluster_geometries(geojson, 'area', zoom)
 
-                geos = geos_geometries[0]
+                    self.assertEqual(len(geos_geometries), 1)
 
-                k = map_clusterer.calculate_k(geos, zoom)
+                    geos = geos_geometries[0]
 
-                self.assertEqual(k, 30)
+                    k = map_clusterer.calculate_k(geos, zoom)
+
+                    self.assertEqual(k, 30)
 
 
     def test_same_request_twice(self):
@@ -371,42 +419,49 @@ class TestMapClusterer(WithGIS, TestCase):
         for geometry_type in GEOMETRY_TYPES:
             for clustertype in CLUSTER_TYPES:
 
-                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype)
 
-                map_clusterer = MapClusterer(cluster_cache)
+                filter_lists = self.get_test_filters()
+                for filters in filter_lists:
 
-                geojson = GEOJSON_RECTANGLE
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
 
-                cluster_geometries = map_clusterer.get_cluster_geometries(
-                    geojson, geometry_type, zoom)
+                    map_clusterer = MapClusterer(cluster_cache)
 
-                self.assertTrue(len(cluster_geometries) > 0)
-                self.assertEqual(map_clusterer.cluster_cache.zoom, zoom)
-                self.assertEqual(map_clusterer.cluster_cache.clustertype, clustertype)
-                self.assertEqual(map_clusterer.cluster_cache.geometry_type, geometry_type)
-                self.assertEqual(map_clusterer.cluster_cache.filters, [])
+                    geojson = GEOJSON_RECTANGLE
 
-                cache_cluster_geometries = map_clusterer.get_cluster_geometries(
-                    geojson, geometry_type, zoom)
+                    cluster_geometries = map_clusterer.get_cluster_geometries(
+                        geojson, geometry_type, zoom)
 
-                self.assertEqual(len(cache_cluster_geometries), 0)
+                    self.assertTrue(len(cluster_geometries) > 0)
+                    self.assertEqual(map_clusterer.cluster_cache.zoom, zoom)
+                    self.assertEqual(map_clusterer.cluster_cache.clustertype, clustertype)
+                    self.assertEqual(map_clusterer.cluster_cache.geometry_type, geometry_type)
+                    self.assertEqual(map_clusterer.cluster_cache.filters, filters)
+
+                    cache_cluster_geometries = map_clusterer.get_cluster_geometries(
+                        geojson, geometry_type, zoom)
+
+                    self.assertEqual(len(cache_cluster_geometries), 0)
 
 
     def test_get_dataset_content(self):
         
         garden = Gardens.objects.all().first()
 
-        cluster_cache = self.get_cluster_cache(GEOMETRY_TYPE_VIEWPORT, TEST_ZOOM_LEVEL, CLUSTER_TYPE_GRID)
-        map_clusterer = MapClusterer(cluster_cache)
+        filter_lists = self.get_test_filters()
+        for filters in filter_lists:
 
-        garden_ = map_clusterer.get_dataset_content(garden.id)[0]
+            cluster_cache = self.get_cluster_cache(GEOMETRY_TYPE_VIEWPORT, TEST_ZOOM_LEVEL, CLUSTER_TYPE_GRID, filters)
+            map_clusterer = MapClusterer(cluster_cache)
 
-        for field_name in map_clusterer.get_gis_field_names():
+            garden_ = map_clusterer.get_dataset_content(garden.id)[0]
 
-            if field_name == 'coordinates::bytea':
-                field_name = 'coordinates'
+            for field_name in map_clusterer.get_gis_field_names():
 
-            self.assertEqual(getattr(garden, field_name), getattr(garden_, field_name))
+                if field_name == 'coordinates::bytea':
+                    field_name = 'coordinates'
+
+                self.assertEqual(getattr(garden, field_name), getattr(garden_, field_name))
 
 
     def test_panned_request(self):

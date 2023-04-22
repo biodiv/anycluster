@@ -18,25 +18,6 @@ import GeoJSON from 'ol/format/GeoJSON';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 
-
-const defaultGridFillColors = {
-    5: "rgba(100, 75, 80, .3)",
-    10: "rgba(90, 50, 50, .3)",
-    50: "rgba(100, 50, 31, .3)",
-    100: "rgba(100, 65, 0, .3)",
-    1000: "rgba(255, 69, 0, .3)",
-    10000: "rgba(255, 0 , 0, .3)"
-};
-
-const defaultGridStrokeColors = {
-    5: "pink",
-    10: "lightcoral",
-    50: "coral",
-    100: "orange",
-    1000: "orangered",
-    10000: "red"
-};
-
 interface ExtendedFeature extends Feature {
     x: number
     y: number
@@ -47,17 +28,10 @@ interface ExtendedFeature extends Feature {
 export class AnyclusterOpenLayers extends AnyclusterClient {
 
     currentZoom: number
-    gridFillColors: Record<number, string>
-    gridStrokeColors: Record<number, string>
 
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings) {
         super(map, apiUrl, markerFolderPath, settings);
-
         this.currentZoom = this.getZoom();
-
-        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : defaultGridFillColors;
-        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : defaultGridStrokeColors;
-
     }
 
 
@@ -113,15 +87,13 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
         this.map.addLayer(kmeansLayer);
         this.map.kmeansLayer = kmeansLayer;
 
-        this.map.on('click', (event: any) => {
+        this.map.on("click", (event: any) => {
 
             let hit = false;
 
             this.map.forEachFeatureAtPixel(event.pixel, (feature: ExtendedFeature) => {
 
                 if (hit == false){
-
-                    console.log(feature)
 
                     if (feature.clustertype == "cell" || feature.clustertype == "marker"){
                         hit = true;
@@ -165,7 +137,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
 
         const icon = new Icon({
             anchor: piniconObj.relativeAnchor,
-            crossOrigin: 'anonymous',
+            crossOrigin: "anonymous",
             src: piniconObj.url,
             imgSize: piniconObj.size,
             size: piniconObj.size
@@ -196,9 +168,9 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
         this.markerList.push(extendedMarker);
     }
 
-    getCellStyle(feature: Feature, resolution: number): Style {
+    getCellStyle(feature: ExtendedFeature, resolution: number): Style {
 
-        const roundedCount = this.roundMarkerCount(feature.get("count"));
+        const roundedCount = this.roundMarkerCount(feature.count);
         const fillColor = this.gridFillColors[roundedCount];
         const strokeColor = this.gridStrokeColors[roundedCount];
         const strokeWeight = 2;

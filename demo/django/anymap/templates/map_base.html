@@ -3,8 +3,18 @@
 
 {% block head %}{% endblock %}
 
+{% block warning %}
+{% endblock %}
+
 {% block content %}
-    <div class="container">
+    <div class="container mb-5">
+        <div class="row justify-content-center mt-5">
+            <div class="col-12 col-md-10 col-lg-8 d-flex justify-content-center align-items-center">
+                
+                <h1>{% block map_title %}{% endblock %}</h1>
+            </div>
+        </div>
+        
         <div class="row justify-content-center mt-5">
             <div class="col-12 col-md-10 col-lg-8 d-flex justify-content-center align-items-center">
                 <div id="map"></div>
@@ -13,7 +23,7 @@
         <div class="row mt-5 justify-content-center">
             <div class="col-12 col-md-6 text-center">
                 <h2>Cluster Type</h2>
-                <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <div class="btn-group" role="group">
                     <input id="kmeans-button" type="radio" class="btn-check" name="clustertype" checked>
                     <label class="btn btn-outline-primary" for="kmeans-button">kmeans</label>
 
@@ -24,7 +34,7 @@
             </div>
             <div class="col-12 col-md-6 text-center">
                 <h2>Geometry Type</h2>
-                <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <div class="btn-group" role="group">
                     <input id="geometry-viewport" type="radio" class="btn-check" name="geometrytype" checked>
                     <label class="btn btn-outline-primary" for="geometry-viewport">viewport</label>
 
@@ -34,7 +44,53 @@
                 </div>
             </div>
         </div>
+        <div class="row mt-5 text-center">
+            <h1>Filters</h1>
+            <div class="col-12 my-5 text-center">
+                <h2>garden type</h2>
+                <div class="btn-group" role="group">
+                    
+                    <input id="all-gardens-button" type="radio" class="btn-check" name="gardentype" value="all" checked>
+                    <label class="btn btn-outline-primary" for="all-gardens-button">all</label>
+
+                    <input id="flower-button" type="radio" class="btn-check" name="gardentype" value="flower">
+                    <label class="btn btn-outline-primary" for="flower-button">flower</label>
+
+                    <input id="stone-button" type="radio" class="btn-check" name="gardentype" value="stone">
+                    <label class="btn btn-outline-primary" for="stone-button">stone</label>
+
+                    <input id="japanese-button" type="radio" class="btn-check" name="gardentype" value="japanese">
+                    <label class="btn btn-outline-primary" for="japanese-button">japanese</label>
+
+                    <input id="flower-stone-button" type="radio" class="btn-check" name="gardentype" value="flowerAndStone">
+                    <label class="btn btn-outline-primary" for="flower-stone-button">flower+stone</label>
+
+                    <input id="not-flower-button" type="radio" class="btn-check" name="gardentype" value="notFlower">
+                    <label class="btn btn-outline-primary" for="not-flower-button">not flower</label>
+
+                    <input id="not-flower-or-stone-button" type="radio" class="btn-check" name="gardentype" value="notFlowerOrStone">
+                    <label class="btn btn-outline-primary" for="not-flower-or-stone-button">not flower or stone</label>
+
+                </div>
+            </div>
+            <div class="col-12 col-md-6 text-center">
+                <h2>entrance fee (bool)</h2>
+                <div class="btn-group" role="group">
+
+                    <input id="all-entrance-button" type="radio" class="btn-check" name="entrance-fee" value="all" checked>
+                    <label class="btn btn-outline-primary" for="all-entrance-button">all</label>
+                    
+                    <input id="free-entrance-button" type="radio" class="btn-check" name="entrance-fee" value="freeEntrance">
+                    <label class="btn btn-outline-primary" for="free-entrance-button">free</label>
+
+                    <input id="paid-entrance-button" type="radio" class="btn-check" name="entrance-fee" value="paidEntrance">
+                    <label class="btn btn-outline-primary" for="paid-entrance-button">paid</label>
+
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}
 
-{% block script %}{% endblock %}
+{% block script %}
+{% endblock %}

@@ -9,6 +9,8 @@ from anymap.models import Gardens, GARDEN_STYLES
 
 import subprocess, random
 
+from anycluster.tests.common import VALID_FILTERS
+
 
 class WithGIS:
 
@@ -56,8 +58,20 @@ class WithGIS:
         subprocess.run(['psql', '-f', '/usr/share/postgresql15/extension/kmeans.sql', '-d', test_database_name])
         
 
-    def get_cluster_cache(self, geometry_type, zoom, clustertype):
+    def get_cluster_cache(self, geometry_type, zoom, clustertype, filters):
 
-        cluster_cache = ClusterCache(geometry_type, zoom, clustertype)
+        cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters)
 
         return cluster_cache
+
+
+class WithFilters:
+
+    def get_test_filters(self):
+
+        filters = [
+            [],
+            VALID_FILTERS
+        ]
+
+        return filters

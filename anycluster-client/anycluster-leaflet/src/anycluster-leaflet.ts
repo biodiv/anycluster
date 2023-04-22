@@ -13,37 +13,14 @@ export {
     ClusterMethod
 };
 
-const defaultGridFillColors = {
-    5: "rgba(100, 75, 80, 1)",
-    10: "rgba(90, 50, 50, 1)",
-    50: "rgba(100, 50, 31, 1)",
-    100: "rgba(100, 65, 0, 1)",
-    1000: "rgba(255, 69, 0, 1)",
-    10000: "rgba(255, 0 , 0, 1)"
-};
-
-const defaultGridStrokeColors = {
-    5: "pink",
-    10: "lightcoral",
-    50: "coral",
-    100: "orange",
-    1000: "orangered",
-    10000: "red"
-};
-
 export class AnyclusterLeaflet extends AnyclusterClient {
 
     currentZoom: number
-    gridFillColors: Record<number, string>
-    gridStrokeColors: Record<number, string>
 
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings) {
         super(map, apiUrl, markerFolderPath, settings);
 
         this.currentZoom = this.getZoom();
-
-        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : defaultGridFillColors;
-        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : defaultGridStrokeColors;
 
     }
 
@@ -142,13 +119,17 @@ export class AnyclusterLeaflet extends AnyclusterClient {
 
             const roundedCount = this.roundMarkerCount(count);
 
-            const fillColor = defaultGridFillColors[roundedCount];
-            const strokeWeight = 0;
+            const fillColor = this.gridFillColors[roundedCount];
+            const strokeColor = this.gridStrokeColors[roundedCount];
+            const strokeWeight = 1;
 
             const cell = L.geoJSON(geojson, {
-                style:  {
-                    color: fillColor,
-                    stroke: true
+                style: {
+                    color: strokeColor,
+                    stroke: true,
+                    fillColor: fillColor,
+                    weight: strokeWeight,
+                    fillOpacity: 1,
                 }
             });
 

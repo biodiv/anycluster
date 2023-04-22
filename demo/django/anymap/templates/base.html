@@ -33,31 +33,50 @@
 				  <li class="nav-item">
 					<a class="nav-link" href="{% url 'google' %}">Google</a>
 				  </li>
+				  <li class="nav-item">
+					<a class="nav-link" href="https://anycluster.readthedocs.io/en/latest/index.html" target="blank">Documentation</a>
+				  </li>
+				  <li class="nav-item">
+					<a class="nav-link" href="https://github.com/biodiv/anycluster" target="blank">Github</a>
+				  </li>
 				</ul>
 			  </div>
 			</div>
 		  </nav>
-		{% block content %}
-			<div class="container">
-				<div class="row">
-					<div class="col-12 text-center">
-						<h1 class="my-5">anycluster demo</h1>
-						<div class="d-flex space-around">
-							<div class="text-center">
-								<a href="{% url 'openlayers' %}" class="btn btn-outline-primary">OpenLayers</a>
-							</div>
-							<div class="text-center">
-								<a href="{% url 'leaflet' %}" class="btn btn-outline-primary">Leaflet</a>
-							</div>
-							<div class="text-center">
-								<a href="{% url 'google' %}" class="btn btn-outline-primary">Google</a>
+		{% block warning %}
+		{% endblock %}
+		<div id="content">
+			{% block content %}
+				<div class="container">
+					<div class="row">
+						<div class="col-12 text-center">
+							<h1 class="my-5">anycluster demo</h1>
+							<div class="d-flex space-around">
+								<div class="text-center">
+									<a href="{% url 'openlayers' %}" class="btn btn-outline-primary">OpenLayers</a>
+								</div>
+								<div class="text-center">
+									<a href="{% url 'leaflet' %}" class="btn btn-outline-primary">Leaflet</a>
+								</div>
+								<div class="text-center">
+									<a href="{% url 'google' %}" class="btn btn-outline-primary">Google</a>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-		{% endblock %}
+			{% endblock %}
+		</div>
+		
 		{% block script %}{% endblock %}
+		<div class="footer text-center py-3">
+			<div class="px-3">
+				Legal Notice
+			</div>
+			<div class="px-3">
+				Privacy Policy
+			</div>
+		</div>
 	</body>
 
 </html>

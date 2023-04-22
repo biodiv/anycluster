@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -133,7 +133,7 @@ STATIC_URL = '/static/'
 ANYCLUSTER_GEODJANGO_MODEL = 'anymap.Gardens'
 ANYCLUSTER_COORDINATES_COLUMN = 'coordinates'
 ANYCLUSTER_COORDINATES_COLUMN_SRID = 3857
-ANYCLUSTER_FILTERS = ['rating', 'free_entrance', 'last_renewal']
+ANYCLUSTER_FILTERS = ['rating', 'free_entrance', 'last_renewal', 'style']
 ANYCLUSTER_PINCOLUMN = 'style'
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -143,3 +143,8 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = 'None'
 SESSION_COOKIE_SAMESITE = 'None'
+
+try:
+    from .google_maps import GOOGLE_MAPS_API_KEY
+except:
+    print('did not find google_maps.py')

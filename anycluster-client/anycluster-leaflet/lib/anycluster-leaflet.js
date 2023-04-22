@@ -1,29 +1,29 @@
-let $32b89fd7bc19b068$export$55fee9ea2526ad0d;
+let $aca83a355307fe8a$export$55fee9ea2526ad0d;
 (function(SRIDS) {
     SRIDS["EPSG4326"] = "EPSG:4326";
     SRIDS["EPSG3857"] = "EPSG:3857";
-})($32b89fd7bc19b068$export$55fee9ea2526ad0d || ($32b89fd7bc19b068$export$55fee9ea2526ad0d = {}));
-let $32b89fd7bc19b068$export$ae91e066970d978a;
+})($aca83a355307fe8a$export$55fee9ea2526ad0d || ($aca83a355307fe8a$export$55fee9ea2526ad0d = {}));
+let $aca83a355307fe8a$export$ae91e066970d978a;
 (function(ClusterMethod) {
     ClusterMethod["kmeans"] = "kmeans";
     ClusterMethod["grid"] = "grid";
-})($32b89fd7bc19b068$export$ae91e066970d978a || ($32b89fd7bc19b068$export$ae91e066970d978a = {}));
-let $32b89fd7bc19b068$export$8f4397a63c3cef66;
+})($aca83a355307fe8a$export$ae91e066970d978a || ($aca83a355307fe8a$export$ae91e066970d978a = {}));
+let $aca83a355307fe8a$export$8f4397a63c3cef66;
 (function(GeometryType) {
     GeometryType["viewport"] = "viewport";
     GeometryType["area"] = "area";
-})($32b89fd7bc19b068$export$8f4397a63c3cef66 || ($32b89fd7bc19b068$export$8f4397a63c3cef66 = {}));
-let $32b89fd7bc19b068$export$13ff1290a9e22e77;
+})($aca83a355307fe8a$export$8f4397a63c3cef66 || ($aca83a355307fe8a$export$8f4397a63c3cef66 = {}));
+let $aca83a355307fe8a$export$13ff1290a9e22e77;
 (function(IconType) {
     IconType["exact"] = "exact";
     IconType["rounded"] = "rounded";
-})($32b89fd7bc19b068$export$13ff1290a9e22e77 || ($32b89fd7bc19b068$export$13ff1290a9e22e77 = {}));
-let $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$9c3a9f8fbf06a34;
+})($aca83a355307fe8a$export$13ff1290a9e22e77 || ($aca83a355307fe8a$export$13ff1290a9e22e77 = {}));
+let $aca83a355307fe8a$export$9c3a9f8fbf06a34;
 (function(DefaultGridSizes) {
     DefaultGridSizes[DefaultGridSizes["grid"] = 64] = "grid";
     DefaultGridSizes[DefaultGridSizes["kmeans"] = 150] = "kmeans";
-})($32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$9c3a9f8fbf06a34 || ($32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$9c3a9f8fbf06a34 = {}));
-const $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$96b1907ff7fa3578 = {
+})($aca83a355307fe8a$export$9c3a9f8fbf06a34 || ($aca83a355307fe8a$export$9c3a9f8fbf06a34 = {}));
+const $aca83a355307fe8a$export$96b1907ff7fa3578 = {
     1: [
         24,
         39
@@ -53,26 +53,39 @@ const $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$96b1907ff7fa3578 = {
         60
     ]
 };
-const $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$2104d4dd9d4984b2 = Object.freeze({
+let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
+(function(Operators) {
+    Operators["in"] = "in";
+    Operators["notIn"] = "not in";
+    Operators["equals"] = "=";
+    Operators["unEquals"] = "!=";
+    Operators["largerThan"] = ">=";
+    Operators["smallerThan"] = "<=";
+    Operators["startswith"] = "startswith";
+    Operators["contains"] = "contains";
+})($aca83a355307fe8a$export$7fa100a28fbb5fe2 || ($aca83a355307fe8a$export$7fa100a28fbb5fe2 = {}));
+
+
+
+const $5660b38ff962cbfe$export$2104d4dd9d4984b2 = Object.freeze({
     minX: -179,
     maxX: 179,
     minY: -89,
     maxY: 89
 });
-const $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$6db2f048e15a981e = Object.freeze({
+const $5660b38ff962cbfe$export$6db2f048e15a981e = Object.freeze({
     minX: -20037500,
     maxX: 20037500,
     minY: -20048960,
     maxY: 20048960 //  20048966.1
 });
-class $32b89fd7bc19b068$export$5e01b9ff483562af {
+class $5660b38ff962cbfe$export$5e01b9ff483562af {
     constructor(apiUrl, gridSize, srid){
         this.apiUrl = apiUrl;
         this.gridSize = gridSize;
         this.srid = srid;
-        this.filters = [];
-        if (this.srid == $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG4326) this.maxBounds = $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$2104d4dd9d4984b2;
-        else if (this.srid == $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG3857) this.maxBounds = $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$6db2f048e15a981e;
+        if (this.srid == (0, $aca83a355307fe8a$export$55fee9ea2526ad0d).EPSG4326) this.maxBounds = $5660b38ff962cbfe$export$2104d4dd9d4984b2;
+        else if (this.srid == (0, $aca83a355307fe8a$export$55fee9ea2526ad0d).EPSG3857) this.maxBounds = $5660b38ff962cbfe$export$6db2f048e15a981e;
         else throw new Error(`invalid srid given: ${this.srid} `);
     }
     async getGridCluster(zoom, data) {
@@ -96,8 +109,6 @@ class $32b89fd7bc19b068$export$5e01b9ff483562af {
         return clusterContent;
     }
     getAreaContent() {}
-    addFilters() {}
-    removeFilters() {}
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -175,7 +186,27 @@ class $32b89fd7bc19b068$export$5e01b9ff483562af {
         else throw new Error(JSON.stringify(responseData));
     }
 }
-class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
+
+
+
+
+const $3e2183be5df4d9a4$var$defaultGridFillColors = {
+    5: "rgba(255, 192, 203, .5)",
+    10: "rgba(240, 128, 128, .5)",
+    50: "rgba(255, 127, 80, .5)",
+    100: "rgba(255, 165, 0, .5)",
+    1000: "rgba(255, 69, 0, .5)",
+    10000: "rgba(255, 0 , 0, .5)"
+};
+const $3e2183be5df4d9a4$var$defaultGridStrokeColors = {
+    5: "pink",
+    10: "lightcoral",
+    50: "coral",
+    100: "orange",
+    1000: "orangered",
+    10000: "red"
+};
+class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
     constructor(map, apiUrl, markerFolderPath, settings){
         this.map = map;
         this.apiUrl = apiUrl;
@@ -186,19 +217,21 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         this.markerFolderPath = markerFolderPath;
         settings = settings || {};
         // settings
-        this.srid = settings.srid ? settings.srid : $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG4326;
-        this.kmeansGridSize = settings.gridGridSize ? settings.gridGridSize : $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$9c3a9f8fbf06a34.kmeans;
-        this.gridGridSize = settings.gridGridSize ? settings.gridGridSize : $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$9c3a9f8fbf06a34.grid;
-        this.clusterMethod = settings.clusterMethod ? settings.clusterMethod : $32b89fd7bc19b068$export$ae91e066970d978a.kmeans;
-        this.geometryType = settings.geometryType ? settings.geometryType : $32b89fd7bc19b068$export$8f4397a63c3cef66.viewport;
+        this.srid = settings.srid ? settings.srid : (0, $aca83a355307fe8a$export$55fee9ea2526ad0d).EPSG4326;
+        this.kmeansGridSize = settings.gridGridSize ? settings.gridGridSize : (0, $aca83a355307fe8a$export$9c3a9f8fbf06a34).kmeans;
+        this.gridGridSize = settings.gridGridSize ? settings.gridGridSize : (0, $aca83a355307fe8a$export$9c3a9f8fbf06a34).grid;
+        this.clusterMethod = settings.clusterMethod ? settings.clusterMethod : (0, $aca83a355307fe8a$export$ae91e066970d978a).kmeans;
+        this.geometryType = settings.geometryType ? settings.geometryType : (0, $aca83a355307fe8a$export$8f4397a63c3cef66).viewport;
         this.area = settings.area ? settings.area : null;
-        this.iconType = settings.iconType ? settings.iconType : $32b89fd7bc19b068$export$13ff1290a9e22e77.rounded;
+        this.iconType = settings.iconType ? settings.iconType : (0, $aca83a355307fe8a$export$13ff1290a9e22e77).rounded;
         this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
-        this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$96b1907ff7fa3578;
+        this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $aca83a355307fe8a$export$96b1907ff7fa3578);
+        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $3e2183be5df4d9a4$var$defaultGridFillColors;
+        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $3e2183be5df4d9a4$var$defaultGridStrokeColors;
         if (this.area) this.setArea(this.area);
         const gridSize = this.getGridSize();
-        this.anycluster = new $32b89fd7bc19b068$export$5e01b9ff483562af(this.apiUrl, gridSize, this.srid);
+        this.anycluster = new (0, $5660b38ff962cbfe$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
         this.createClusterLayers();
         this.markerList = [];
         this.startClustering();
@@ -237,19 +270,19 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         throw new Error("NotImplementedError: getAreaContent");
     }
     getGridSize() {
-        if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) return this.gridGridSize;
+        if (this.clusterMethod == (0, $aca83a355307fe8a$export$ae91e066970d978a).grid) return this.gridGridSize;
         return this.kmeansGridSize;
     }
     setClusterMethod(clusterMethod) {
-        if (clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) {
+        if (clusterMethod == (0, $aca83a355307fe8a$export$ae91e066970d978a).grid) {
             this.area = null;
-            this.geometryType = $32b89fd7bc19b068$export$8f4397a63c3cef66.viewport;
+            this.geometryType = (0, $aca83a355307fe8a$export$8f4397a63c3cef66).viewport;
             this.removeArea();
         }
         this.removeAllMarkers();
         this.clusterMethod = clusterMethod;
         const gridSize = this.getGridSize();
-        this.anycluster = new $32b89fd7bc19b068$export$5e01b9ff483562af(this.apiUrl, gridSize, this.srid);
+        this.anycluster = new (0, $5660b38ff962cbfe$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
         this.markerList = [];
         this.getClusters(true);
     }
@@ -257,12 +290,12 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         this.area = geojson;
         this.removeArea();
         if (geojson == null) {
-            this.geometryType = $32b89fd7bc19b068$export$8f4397a63c3cef66.viewport;
-            this.setClusterMethod($32b89fd7bc19b068$export$ae91e066970d978a.kmeans);
+            this.geometryType = (0, $aca83a355307fe8a$export$8f4397a63c3cef66).viewport;
+            this.setClusterMethod((0, $aca83a355307fe8a$export$ae91e066970d978a).kmeans);
         } else {
             this.addArea(geojson);
-            this.geometryType = $32b89fd7bc19b068$export$8f4397a63c3cef66.area;
-            this.setClusterMethod($32b89fd7bc19b068$export$ae91e066970d978a.kmeans);
+            this.geometryType = (0, $aca83a355307fe8a$export$8f4397a63c3cef66).area;
+            this.setClusterMethod((0, $aca83a355307fe8a$export$ae91e066970d978a).kmeans);
         }
     }
     getSinglePinImageURL(cluster) {
@@ -282,7 +315,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         else if (count > 10) pinicon = "10";
         else if (count > 1) pinicon = "5";
         if (count > 1) {
-            if (this.iconType == $32b89fd7bc19b068$export$13ff1290a9e22e77.exact) markerImageUrl = `${this.markerFolderPath}${pinicon}_empty.png`;
+            if (this.iconType == (0, $aca83a355307fe8a$export$13ff1290a9e22e77).exact) markerImageUrl = `${this.markerFolderPath}${pinicon}_empty.png`;
             else markerImageUrl = `${this.markerFolderPath}${pinicon}.png`;
         }
         const size = this.markerImageSizes[pinicon];
@@ -351,7 +384,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         const x = marker.x;
         const y = marker.y;
         const ids = marker.ids;
-        if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.kmeans) {
+        if (this.clusterMethod == (0, $aca83a355307fe8a$export$ae91e066970d978a).kmeans) {
             const postData = {
                 "geometry_type": this.geometryType,
                 "input_srid": this.srid,
@@ -362,7 +395,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             };
             const data = await this.anycluster.getKmeansClusterContent(zoom, postData);
             this.onFinalClick(marker, data);
-        } else if (this.clusterMethod = $32b89fd7bc19b068$export$ae91e066970d978a.grid) {
+        } else if (this.clusterMethod = (0, $aca83a355307fe8a$export$ae91e066970d978a).grid) {
             if (marker.count == 1) {
                 const data = await this.anycluster.getDatasetContent(zoom, marker.id);
                 this.onFinalClick(marker, data);
@@ -385,10 +418,10 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
     }
     getClusterGeometry() {
         let geoJSON;
-        if (this.geometryType == $32b89fd7bc19b068$export$8f4397a63c3cef66.viewport) {
+        if (this.geometryType == (0, $aca83a355307fe8a$export$8f4397a63c3cef66).viewport) {
             const viewport = this.getViewport();
             geoJSON = this.anycluster.viewportToGeoJSON(viewport);
-        } else if (this.geometryType == $32b89fd7bc19b068$export$8f4397a63c3cef66.area && this.area) geoJSON = this.area;
+        } else if (this.geometryType == (0, $aca83a355307fe8a$export$8f4397a63c3cef66).area && this.area) geoJSON = this.area;
         else throw new Error("No cluster geometry found");
         return geoJSON;
     }
@@ -398,15 +431,16 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             "output_srid": this.srid,
             "geometry_type": this.geometryType,
             "geojson": geoJSON,
-            "clear_cache": clearCache
+            "clear_cache": clearCache,
+            "filters": this.filters
         };
         const zoom = this.getZoom();
-        if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.kmeans) {
+        if (this.clusterMethod == (0, $aca83a355307fe8a$export$ae91e066970d978a).kmeans) {
             const clusters = await this.anycluster.getKmeansCluster(zoom, postData);
             if (clusters.length > 0) clusters.forEach((cluster)=>{
                 this.drawMarker(cluster);
             });
-        } else if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) {
+        } else if (this.clusterMethod == (0, $aca83a355307fe8a$export$ae91e066970d978a).grid) {
             const clusters = await this.anycluster.getGridCluster(zoom, postData);
             if (clusters.length > 0) clusters.forEach((cluster)=>{
                 this.drawCell(cluster);
@@ -420,7 +454,67 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
     _onFinalClick(marker, data) {
         alert(JSON.stringify(data));
     }
+    filtersAreEqual(filter1, filter2) {
+        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        return false;
+    }
+    // filtering
+    filter(filter, reloadMarkers) {
+        this.filters = [
+            filter
+        ];
+        this.postFilterChange(reloadMarkers);
+    }
+    addFilter(filter, reloadMarkers) {
+        let filterExists = false;
+        for(let f = 0; f < this.filters.length; f++){
+            let existingFilter = this.filters[f];
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                filterExists = true;
+                break;
+            }
+        }
+        if (!filterExists) this.filters.push(filter);
+        this.postFilterChange(reloadMarkers);
+    }
+    addFilters(filtersToAdd, reloadMarkers) {
+        for(let fa = 0; fa < filtersToAdd.length; fa++){
+            let filter = filtersToAdd[fa];
+            this.addFilter(filter, false);
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    removeFilter(filter, reloadMarkers) {
+        for(let f = 0; f < this.filters.length; f++){
+            let existingFilter = this.filters[f];
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                this.filters.splice(f, 1);
+                break;
+            }
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    removeFilters(filtersToRemove, reloadMarkers) {
+        for(let fr = 0; fr < filtersToRemove.length; fr++){
+            let filter = filtersToRemove[fr];
+            this.removeFilter(filter, false);
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    resetFilters(reloadMarkers) {
+        this.filters = [];
+        this.postFilterChange(reloadMarkers);
+    }
+    postFilterChange(reloadMarkers) {
+        if (reloadMarkers != false) reloadMarkers = true;
+        if (reloadMarkers == true) {
+            this.removeAllMarkers();
+            this.getClusters(true);
+        }
+    }
 }
+
+
 
 
 var $bc65c9d81194eb95$exports = {};
@@ -10946,28 +11040,10 @@ var $bc65c9d81194eb95$exports = {};
 });
 
 
-const $a3011356d4483061$var$defaultGridFillColors = {
-    5: "rgba(100, 75, 80, 1)",
-    10: "rgba(90, 50, 50, 1)",
-    50: "rgba(100, 50, 31, 1)",
-    100: "rgba(100, 65, 0, 1)",
-    1000: "rgba(255, 69, 0, 1)",
-    10000: "rgba(255, 0 , 0, 1)"
-};
-const $a3011356d4483061$var$defaultGridStrokeColors = {
-    5: "pink",
-    10: "lightcoral",
-    50: "coral",
-    100: "orange",
-    1000: "orangered",
-    10000: "red"
-};
-class $a3011356d4483061$export$d28c3646e727c4c9 extends (0, $32b89fd7bc19b068$export$a09c19a7c4419c1) {
+class $a3011356d4483061$export$d28c3646e727c4c9 extends (0, $3e2183be5df4d9a4$export$a09c19a7c4419c1) {
     constructor(map, apiUrl, markerFolderPath, settings){
         super(map, apiUrl, markerFolderPath, settings);
         this.currentZoom = this.getZoom();
-        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $a3011356d4483061$var$defaultGridFillColors;
-        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $a3011356d4483061$var$defaultGridStrokeColors;
     }
     removeArea() {
         if (this.map.hasOwnProperty("areaLayer")) this.map.areaLayer.clearLayers();
@@ -11029,12 +11105,16 @@ class $a3011356d4483061$export$d28c3646e727c4c9 extends (0, $32b89fd7bc19b068$ex
                 }
             };
             const roundedCount = this.roundMarkerCount(count);
-            const fillColor = $a3011356d4483061$var$defaultGridFillColors[roundedCount];
-            const strokeWeight = 0;
+            const fillColor = this.gridFillColors[roundedCount];
+            const strokeColor = this.gridStrokeColors[roundedCount];
+            const strokeWeight = 1;
             const cell = $bc65c9d81194eb95$exports.geoJSON(geojson, {
                 style: {
-                    color: fillColor,
-                    stroke: true
+                    color: strokeColor,
+                    stroke: true,
+                    fillColor: fillColor,
+                    weight: strokeWeight,
+                    fillOpacity: 1
                 }
             });
             // add properties required by anycluster to marker
@@ -11094,5 +11174,5 @@ class $a3011356d4483061$export$d28c3646e727c4c9 extends (0, $32b89fd7bc19b068$ex
 
 
 
-export {$32b89fd7bc19b068$export$ae91e066970d978a as ClusterMethod, $a3011356d4483061$export$d28c3646e727c4c9 as AnyclusterLeaflet};
+export {$aca83a355307fe8a$export$ae91e066970d978a as ClusterMethod, $a3011356d4483061$export$d28c3646e727c4c9 as AnyclusterLeaflet};
 //# sourceMappingURL=anycluster-leaflet.js.map

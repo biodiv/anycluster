@@ -53,6 +53,17 @@ const $b4f6019a3c0f60c0$export$96b1907ff7fa3578 = {
         60
     ]
 };
+let $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2;
+(function(Operators) {
+    Operators["in"] = "in";
+    Operators["notIn"] = "not in";
+    Operators["equals"] = "=";
+    Operators["unEquals"] = "!=";
+    Operators["largerThan"] = ">=";
+    Operators["smallerThan"] = "<=";
+    Operators["startswith"] = "startswith";
+    Operators["contains"] = "contains";
+})($b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 || ($b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 = {}));
 
 
 
@@ -73,7 +84,6 @@ class $9ef97b21dccf4ee3$export$5e01b9ff483562af {
         this.apiUrl = apiUrl;
         this.gridSize = gridSize;
         this.srid = srid;
-        this.filters = [];
         if (this.srid == (0, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d).EPSG4326) this.maxBounds = $9ef97b21dccf4ee3$export$2104d4dd9d4984b2;
         else if (this.srid == (0, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d).EPSG3857) this.maxBounds = $9ef97b21dccf4ee3$export$6db2f048e15a981e;
         else throw new Error(`invalid srid given: ${this.srid} `);
@@ -99,8 +109,6 @@ class $9ef97b21dccf4ee3$export$5e01b9ff483562af {
         return clusterContent;
     }
     getAreaContent() {}
-    addFilters() {}
-    removeFilters() {}
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -182,6 +190,22 @@ class $9ef97b21dccf4ee3$export$5e01b9ff483562af {
 
 
 
+const $2a18f65d622cfe30$var$defaultGridFillColors = {
+    5: "rgba(255, 192, 203, .5)",
+    10: "rgba(240, 128, 128, .5)",
+    50: "rgba(255, 127, 80, .5)",
+    100: "rgba(255, 165, 0, .5)",
+    1000: "rgba(255, 69, 0, .5)",
+    10000: "rgba(255, 0 , 0, .5)"
+};
+const $2a18f65d622cfe30$var$defaultGridStrokeColors = {
+    5: "pink",
+    10: "lightcoral",
+    50: "coral",
+    100: "orange",
+    1000: "orangered",
+    10000: "red"
+};
 class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
     constructor(map, apiUrl, markerFolderPath, settings){
         this.map = map;
@@ -203,6 +227,8 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
         this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $b4f6019a3c0f60c0$export$96b1907ff7fa3578);
+        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $2a18f65d622cfe30$var$defaultGridFillColors;
+        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $2a18f65d622cfe30$var$defaultGridStrokeColors;
         if (this.area) this.setArea(this.area);
         const gridSize = this.getGridSize();
         this.anycluster = new (0, $9ef97b21dccf4ee3$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
@@ -405,7 +431,8 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
             "output_srid": this.srid,
             "geometry_type": this.geometryType,
             "geojson": geoJSON,
-            "clear_cache": clearCache
+            "clear_cache": clearCache,
+            "filters": this.filters
         };
         const zoom = this.getZoom();
         if (this.clusterMethod == (0, $b4f6019a3c0f60c0$export$ae91e066970d978a).kmeans) {
@@ -427,10 +454,68 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
     _onFinalClick(marker, data) {
         alert(JSON.stringify(data));
     }
+    filtersAreEqual(filter1, filter2) {
+        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        return false;
+    }
+    // filtering
+    filter(filter, reloadMarkers) {
+        this.filters = [
+            filter
+        ];
+        this.postFilterChange(reloadMarkers);
+    }
+    addFilter(filter, reloadMarkers) {
+        let filterExists = false;
+        for(let f = 0; f < this.filters.length; f++){
+            let existingFilter = this.filters[f];
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                filterExists = true;
+                break;
+            }
+        }
+        if (!filterExists) this.filters.push(filter);
+        this.postFilterChange(reloadMarkers);
+    }
+    addFilters(filtersToAdd, reloadMarkers) {
+        for(let fa = 0; fa < filtersToAdd.length; fa++){
+            let filter = filtersToAdd[fa];
+            this.addFilter(filter, false);
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    removeFilter(filter, reloadMarkers) {
+        for(let f = 0; f < this.filters.length; f++){
+            let existingFilter = this.filters[f];
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                this.filters.splice(f, 1);
+                break;
+            }
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    removeFilters(filtersToRemove, reloadMarkers) {
+        for(let fr = 0; fr < filtersToRemove.length; fr++){
+            let filter = filtersToRemove[fr];
+            this.removeFilter(filter, false);
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    resetFilters(reloadMarkers) {
+        this.filters = [];
+        this.postFilterChange(reloadMarkers);
+    }
+    postFilterChange(reloadMarkers) {
+        if (reloadMarkers != false) reloadMarkers = true;
+        if (reloadMarkers == true) {
+            this.removeAllMarkers();
+            this.getClusters(true);
+        }
+    }
 }
 
 
 
 
-export {$b4f6019a3c0f60c0$export$ae91e066970d978a as ClusterMethod, $b4f6019a3c0f60c0$export$8f4397a63c3cef66 as GeometryType, $b4f6019a3c0f60c0$export$13ff1290a9e22e77 as IconType, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d as SRIDS, $9ef97b21dccf4ee3$export$5e01b9ff483562af as Anycluster, $2a18f65d622cfe30$export$a09c19a7c4419c1 as AnyclusterClient};
+export {$b4f6019a3c0f60c0$export$ae91e066970d978a as ClusterMethod, $b4f6019a3c0f60c0$export$8f4397a63c3cef66 as GeometryType, $b4f6019a3c0f60c0$export$13ff1290a9e22e77 as IconType, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d as SRIDS, $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 as Operators, $9ef97b21dccf4ee3$export$5e01b9ff483562af as Anycluster, $2a18f65d622cfe30$export$a09c19a7c4419c1 as AnyclusterClient};
 //# sourceMappingURL=anycluster.js.map

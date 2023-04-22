@@ -1,4 +1,4 @@
-import { SRIDS, MaxBounds, ClusterMethod, GeometryType } from "./consts";
+import { SRIDS, MaxBounds, ClusterMethod, GeometryType, Operators } from "./consts";
 import { Point, GeoJSON, Coordinates, Viewport } from "./geometry";
 
 export const Bounds4326: MaxBounds = Object.freeze({
@@ -16,23 +16,21 @@ export const Bounds3857: MaxBounds = Object.freeze({
     maxY: 20048960 //  20048966.1
 })
 
-/*
-export interface AnyclusterSettings {
-    gridSize: number
-    srid: SRIDS
-    autostart?: boolean
-    filters?: []
-    initialCenter?: Point
-    clusterArea?: object
-}*/
+export interface Filter {
+    column: string
+    value: string | number | boolean
+    operator: Operators
+}
 
 export interface ClusterRequestData {
     output_srid: SRIDS
     geometry_type: GeometryType
     geojson: GeoJSON
     clear_cache: boolean
-    filters: object[]
+    filters: Filter[]
 }
+
+export type FilterList = Filter[]
 
 export interface GetKmeansClusterContentRequestData {
     geometry_type: GeometryType
@@ -45,7 +43,6 @@ export interface GetKmeansClusterContentRequestData {
 
 export class Anycluster {
 
-    filters: object[] = []
     maxBounds: MaxBounds
 
     constructor(private apiUrl: string, public gridSize: number, public srid: SRIDS) {
@@ -95,15 +92,6 @@ export class Anycluster {
     getAreaContent() {
 
     }
-
-    addFilters() {
-
-    }
-
-    removeFilters() {
-
-    }
-
 
     viewportToGeoJSON(viewport: Viewport) {
 

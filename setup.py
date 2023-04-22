@@ -11,13 +11,13 @@ install_requires = [
 
 setup(
     name="anycluster",
-    version='1.0.0',
+    version='2.0.0',
     description='anycluster provides Server-Side clustering of map markers for Geodjango',
     long_description=long_description,
     long_description_content_type="text/markdown",
     license='The MIT License',
     platforms=['OS Independent'],
-    keywords='django, cluster, k-means, grid, server-side clustering',
+    keywords='django, cluster, kmeans, grid, server-side clustering',
     author='Thomas Uher',
     author_email='thomas.uher@sisol-systems.com',
     url='https://github.com/biodiv/anycluster',

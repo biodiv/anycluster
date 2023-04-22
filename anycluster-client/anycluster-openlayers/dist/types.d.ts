@@ -2,10 +2,14 @@ import { AnyclusterClient, AnyclusterClientSettings, Viewport, Cluster, ClusterM
 import { Style } from "ol/style";
 import Feature from "ol/Feature";
 export { ClusterMethod };
+interface ExtendedFeature extends Feature {
+    x: number;
+    y: number;
+    count: number;
+    clustertype: string;
+}
 export class AnyclusterOpenLayers extends AnyclusterClient {
     currentZoom: number;
-    gridFillColors: Record<number, string>;
-    gridStrokeColors: Record<number, string>;
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings);
     removeArea(): void;
     getAreaStyle(feature: Feature, resolution: number): Style;
@@ -14,7 +18,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
     createAreaLayer(): void;
     getMarkerIcon(cluster: Cluster): Style;
     drawMarker(cluster: Cluster): void;
-    getCellStyle(feature: Feature, resolution: number): Style;
+    getCellStyle(feature: ExtendedFeature, resolution: number): Style;
     drawCell(cluster: Cluster): void;
     removeAllMarkers(): void;
     addMapEventListeners(): void;

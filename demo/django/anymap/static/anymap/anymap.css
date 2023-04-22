@@ -8,3 +8,16 @@
     border-radius: 1rem;
     aspect-ratio: 4/3;
 }
+
+#content {
+    min-height: 90vh;
+}
+
+.footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+}

@@ -4,7 +4,7 @@ import json
 
 class ClusterCache:
 
-    def __init__(self, geometry_type, zoom, clustertype, filters=[]):
+    def __init__(self, geometry_type, zoom, clustertype, filters):
 
         if geometry_type not in GEOMETRY_TYPES:
             raise ValueError('Invalid geometry_type: {0}'.format(geometry_type))
@@ -30,7 +30,7 @@ class ClusterCache:
         if geojson not in self.geometries:
             self.geometries.append(geojson)
 
-    # cache from reqzest.session['anycluster_cache'], as serialized by ClusterCache.serialize
+    # cache from request.session['anycluster_cache'], as serialized by ClusterCache.serialize
     def load_geometries(self, cache):
 
         if cache:
@@ -44,6 +44,7 @@ class ClusterCache:
 
             if load_geometries == True:
                 self.geometries = cache['geometries']
+
 
     def serialize(self):
 

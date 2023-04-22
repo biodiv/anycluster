@@ -13,28 +13,10 @@ import $hgUW1$olgeomPoint from "ol/geom/Point";
 
 
 
-const $899780519fbdbc61$var$defaultGridFillColors = {
-    5: "rgba(100, 75, 80, .3)",
-    10: "rgba(90, 50, 50, .3)",
-    50: "rgba(100, 50, 31, .3)",
-    100: "rgba(100, 65, 0, .3)",
-    1000: "rgba(255, 69, 0, .3)",
-    10000: "rgba(255, 0 , 0, .3)"
-};
-const $899780519fbdbc61$var$defaultGridStrokeColors = {
-    5: "pink",
-    10: "lightcoral",
-    50: "coral",
-    100: "orange",
-    1000: "orangered",
-    10000: "red"
-};
 class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterClient) {
     constructor(map, apiUrl, markerFolderPath, settings){
         super(map, apiUrl, markerFolderPath, settings);
         this.currentZoom = this.getZoom();
-        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $899780519fbdbc61$var$defaultGridFillColors;
-        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $899780519fbdbc61$var$defaultGridStrokeColors;
     }
     removeArea() {
         if (this.map.hasOwnProperty("areaLayer")) this.map.areaLayer.getSource().clear();
@@ -74,7 +56,6 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
             let hit = false;
             this.map.forEachFeatureAtPixel(event.pixel, (feature)=>{
                 if (hit == false) {
-                    console.log(feature);
                     if (feature.clustertype == "cell" || feature.clustertype == "marker") {
                         hit = true;
                         let zoom = this.getZoom();
@@ -128,7 +109,7 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
         this.markerList.push(extendedMarker);
     }
     getCellStyle(feature, resolution) {
-        const roundedCount = this.roundMarkerCount(feature.get("count"));
+        const roundedCount = this.roundMarkerCount(feature.count);
         const fillColor = this.gridFillColors[roundedCount];
         const strokeColor = this.gridStrokeColors[roundedCount];
         const strokeWeight = 2;

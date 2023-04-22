@@ -2,8 +2,6 @@ import { AnyclusterClient, AnyclusterClientSettings, Viewport, Cluster, ClusterM
 export { ClusterMethod };
 export class AnyclusterLeaflet extends AnyclusterClient {
     currentZoom: number;
-    gridFillColors: Record<number, string>;
-    gridStrokeColors: Record<number, string>;
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings);
     removeArea(): void;
     addArea(geojson: GeoJSON): void;

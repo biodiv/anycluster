@@ -1,0 +1,319 @@
+
+
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Basic Usage &mdash; anycluster 2.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.min.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.min.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="anycluster-client api" href="client-api.html" />
+    <link rel="prev" title="Installation and Configuration" href="installation.html" /> 
+
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <a class="site-nav-toggle hidden-lg-up"><i class="icon-menu"></i></a>
+            <a class="site-title" href="index.html">
+                anycluster
+            </a>
+        </div>
+    </header>
+
+
+<div class="breadcrumbs-outer hidden-xs-down">
+    <div class="container">
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="breadcrumbs">
+    
+      <li><a href="index.html">Docs</a></li>
+        
+      <li>Basic Usage</li>
+    
+    
+      <li class="breadcrumbs-aside">
+        
+            
+            <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+</div>
+    </div>
+</div>
+    <div class="main-outer">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-lg-3 site-nav">
+                    
+<div role="search">
+    <form class="search" action="search.html" method="get">
+        <div class="icon-input">
+            <input type="text" name="q" placeholder="Search" />
+            <span class="icon-search"></span>
+        </div>
+        <input type="submit" value="Go" class="d-hidden" />
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+                    <div class="site-nav-tree">
+                        
+                            
+                            
+                                <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#kmeans-postgis-exension">kmeans postgis exension</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#django-configuration">django configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Basic Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#openlayers">OpenLayers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#leaflet">Leaflet</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#google-maps">Google Maps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="client-api.html">anycluster-client api</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="client-api.html#instantiation">Instantiation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client-api.html#settings">settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="client-api.html#filtering">Filtering</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="demo.html">Running the demo</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="demo.html#installation">Installation</a></li>
+</ul>
+</li>
+</ul>
+
+                            
+                        
+                    </div>
+                </div>
+                <div class="col-12 col-lg-9">
+                    <div class="document">
+                        
+                            
+  <section id="basic-usage">
+<h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this heading">¶</a></h1>
+<section id="openlayers">
+<h2>OpenLayers<a class="headerlink" href="#openlayers" title="Permalink to this heading">¶</a></h2>
+<section id="install-or-download-the-anycluster-openlayers-client">
+<h3>1. Install or download the anycluster-openlayers client<a class="headerlink" href="#install-or-download-the-anycluster-openlayers-client" title="Permalink to this heading">¶</a></h3>
+<section id="npm">
+<h4>npm<a class="headerlink" href="#npm" title="Permalink to this heading">¶</a></h4>
+<p>You can install <code class="code docutils literal notranslate"><span class="pre">anycluster-openlayers</span> <span class="pre">from</span> <span class="pre">npm</span></code></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>npm install anycluster-openlayers
+</pre></div>
+</div>
+</section>
+<section id="js-module">
+<h4>js module<a class="headerlink" href="#js-module" title="Permalink to this heading">¶</a></h4>
+<p>Instead of using npm, you also can download and include the anycluster-openlayers client into your static files.
+Put the files <code class="code docutils literal notranslate"><span class="pre">anycluster-openlayers.js</span></code> and <code class="code docutils literal notranslate"><span class="pre">anycluster-openlayers.js.map</span></code> somewhere in your static files.</p>
+</section>
+</section>
+<section id="provide-marker-images">
+<h3>2. Provide marker images<a class="headerlink" href="#provide-marker-images" title="Permalink to this heading">¶</a></h3>
+<p>anycluster requires marker images which will be placed on the map. You can use your own images or download marker images here.</p>
+<p>You have to make the marker images accessible by anycluster-openlayers.</p>
+<p>If you are using django templates, put the marker images into your static files to make them accessible by anycluster.
+For example, put all marker images into the folder <code class="code docutils literal notranslate"><span class="pre">{somewhere}/static/anycluster/</span></code></p>
+</section>
+<section id="create-a-script-instantiating-anyclusteropenlayers">
+<h3>3. Create a script instantiating AnyclusterOpenLayers<a class="headerlink" href="#create-a-script-instantiating-anyclusteropenlayers" title="Permalink to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You have to use <code class="code docutils literal notranslate"><span class="pre">constrainResolution:</span> <span class="pre">true</span></code> on your <code class="code docutils literal notranslate"><span class="pre">ol.View</span></code>.
+This ensures that only integer zoom levels are used.</p>
+<p>The given example script is for the use-case of the js module in django templates.
+If you have installed anycluster-openlayers from <strong>npm</strong>, use
+<code class="code docutils literal notranslate"><span class="pre">import</span> <span class="pre">{</span> <span class="pre">AnyclusterOpenLayers</span> <span class="pre">}</span> <span class="pre">from</span> <span class="pre">'anycluster-openlayers';</span></code></p>
+<p><strong>Important:</strong> openlayers uses <code class="code docutils literal notranslate"><span class="pre">EPSG:3857</span></code> by default, so make sure to adjust the
+settings passed to <code class="code docutils literal notranslate"><span class="pre">AnyclusterOpenLayers</span></code> accordingly.</p>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">AnyclusterOpenLayers</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;/static/anycluster-openlayers.js&#39;</span><span class="p">;</span><span class="w"></span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nb">Map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ol</span><span class="p">.</span><span class="nb">Map</span><span class="p">;</span><span class="w"></span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">TileLayer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ol</span><span class="p">.</span><span class="nx">layer</span><span class="p">.</span><span class="nx">Tile</span><span class="p">;</span><span class="w"></span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">OSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ol</span><span class="p">.</span><span class="nx">source</span><span class="p">.</span><span class="nx">OSM</span><span class="p">;</span><span class="w"></span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">View</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ol</span><span class="p">.</span><span class="nx">View</span><span class="p">;</span><span class="w"></span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">fromLonLat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">ol</span><span class="p">.</span><span class="nx">proj</span><span class="p">.</span><span class="nx">fromLonLat</span><span class="w"></span>
+
+<span class="kd">let</span><span class="w"> </span><span class="nx">map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Map</span><span class="p">({</span><span class="w"></span>
+<span class="w">    </span><span class="nx">target</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;map&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">layers</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="w"></span>
+<span class="w">        </span><span class="ow">new</span><span class="w"> </span><span class="nx">TileLayer</span><span class="p">({</span><span class="w"></span>
+<span class="w">            </span><span class="nx">source</span><span class="o">:</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">OSM</span><span class="p">(),</span><span class="w"></span>
+<span class="w">        </span><span class="p">}),</span><span class="w"></span>
+<span class="w">    </span><span class="p">],</span><span class="w"></span>
+<span class="w">    </span><span class="nx">view</span><span class="o">:</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">View</span><span class="p">({</span><span class="w"></span>
+<span class="w">        </span><span class="nx">center</span><span class="o">:</span><span class="w"> </span><span class="nx">fromLonLat</span><span class="p">([</span><span class="mf">10.3</span><span class="p">,</span><span class="w"> </span><span class="mf">47.4</span><span class="p">]),</span><span class="w"></span>
+<span class="w">        </span><span class="nx">zoom</span><span class="o">:</span><span class="w"> </span><span class="mf">3</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">minZoom</span><span class="o">:</span><span class="w"> </span><span class="mf">3</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="nx">constrainResolution</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="p">}),</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">apiUrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;URL_TO_YOUR_SERVER_RUNNING_ANYCLUSTER&#39;</span><span class="p">;</span><span class="w"></span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">settings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">srid</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;EPSG:3857&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">onFinalClick</span><span class="o">:</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="p">(</span><span class="nx">marker</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nx">alert</span><span class="p">(</span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">data</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">markerFolderPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/static/anycluster/images/&#39;</span><span class="p">;</span><span class="w"></span>
+
+<span class="kd">let</span><span class="w"> </span><span class="nx">anyclusterOpenLayers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">AnyclusterOpenLayers</span><span class="p">(</span><span class="nx">map</span><span class="p">,</span><span class="w"> </span><span class="nx">apiUrl</span><span class="p">,</span><span class="w"> </span><span class="nx">markerFolderPath</span><span class="p">,</span><span class="w"> </span><span class="nx">settings</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>Put the script in the appropriate django template or javascript file.</p>
+<p><strong>That’s it. Your OpenLayers map markers are now being clustered!</strong></p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="leaflet">
+<h2>Leaflet<a class="headerlink" href="#leaflet" title="Permalink to this heading">¶</a></h2>
+<section id="download-the-anycluster-leaflet-client">
+<h3>1. Download the anycluster-leaflet client<a class="headerlink" href="#download-the-anycluster-leaflet-client" title="Permalink to this heading">¶</a></h3>
+</section>
+<section id="include-the-anycluster-leaflet-client-into-your-static-files">
+<h3>2. Include the anycluster-leaflet client into your static files<a class="headerlink" href="#include-the-anycluster-leaflet-client-into-your-static-files" title="Permalink to this heading">¶</a></h3>
+<p>Put the files <code class="code docutils literal notranslate"><span class="pre">anycluster-leaflet.js</span></code> and <code class="code docutils literal notranslate"><span class="pre">anycluster-leaflet.js.map</span></code> somewhere in your static files.</p>
+</section>
+<section id="id1">
+<h3>3. Provide marker images<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<p>anycluster requires marker images which are placed on the map.
+You can use your own images or download marker images here.</p>
+<p>Put the marker images into your static files to make them accessible by anycluster.
+For example, put all marker images into the folder <code class="code docutils literal notranslate"><span class="pre">{somewhere}/static/anycluster/</span></code></p>
+</section>
+<section id="create-a-script-instantiating-anyclusterleaflet">
+<h3>4. Create a script instantiating AnyclusterLeaflet<a class="headerlink" href="#create-a-script-instantiating-anyclusterleaflet" title="Permalink to this heading">¶</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The given example script is for the use-case of the js module in django templates.
+If you have installed anycluster-leaflet from <strong>npm</strong>, use
+<code class="code docutils literal notranslate"><span class="pre">import</span> <span class="pre">{</span> <span class="pre">AnyclusterLeaflet</span> <span class="pre">}</span> <span class="pre">from</span> <span class="pre">'anycluster-leaflet';</span></code></p>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">AnyclusterLeaflet</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;/static/anycluster-leaflet.js&#39;</span><span class="p">;</span><span class="w"></span>
+
+<span class="kd">let</span><span class="w"> </span><span class="nx">map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">L</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="s1">&#39;map&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">center</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="mf">47.4</span><span class="p">,</span><span class="w"> </span><span class="mf">10.3</span><span class="p">],</span><span class="w"></span>
+<span class="w">    </span><span class="nx">zoom</span><span class="o">:</span><span class="w"> </span><span class="mf">3</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">minZoom</span><span class="o">:</span><span class="w"> </span><span class="mf">3</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">worldCopyJump</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"></span>
+<span class="p">});</span><span class="w"></span>
+
+<span class="nx">L</span><span class="p">.</span><span class="nx">tileLayer</span><span class="p">(</span><span class="s1">&#39;https://tile.openstreetmap.org/{z}/{x}/{y}.png&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">maxZoom</span><span class="o">:</span><span class="w"> </span><span class="mf">19</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="nx">attribution</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;&amp;copy; &lt;a href=&quot;http://www.openstreetmap.org/copyright&quot;&gt;OpenStreetMap&lt;/a&gt;&#39;</span><span class="w"></span>
+<span class="p">}).</span><span class="nx">addTo</span><span class="p">(</span><span class="nx">map</span><span class="p">);</span><span class="w"></span>
+
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">apiUrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;URL_TO_YOUR_SERVER_RUNNING_ANYCLUSTER&#39;</span><span class="p">;</span><span class="w"></span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">settings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="nx">onFinalClick</span><span class="o">:</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="p">(</span><span class="nx">marker</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="nx">alert</span><span class="p">(</span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">data</span><span class="p">))</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">markerFolderPath</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;/static/anycluster/images/&#39;</span><span class="p">;</span><span class="w"></span>
+
+<span class="kd">let</span><span class="w"> </span><span class="nx">anyclusterLeaflet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">AnyclusterLeaflet</span><span class="p">(</span><span class="nx">map</span><span class="p">,</span><span class="w"> </span><span class="nx">apiUrl</span><span class="p">,</span><span class="w"> </span><span class="nx">markerFolderPath</span><span class="p">,</span><span class="w"> </span><span class="nx">settings</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="google-maps">
+<h2>Google Maps<a class="headerlink" href="#google-maps" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>    
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'2.0',
+            LANGUAGE:'en',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+    <div class="footer" role="contentinfo">
+        <div class="container">
+            &#169; Copyright 2023, biodiv (MIT licence).
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.1.1.
+        </div>
+    </div>  
+
+</body>
+</html>

@@ -1,5 +1,5 @@
-import { ClusterMethod, AnyclusterOpenLayers } from "/static/anycluster-openlayers.js";
-
+import { AnyclusterOpenLayers } from "/static/anycluster-openlayers.js";
+import { MapInteractions } from "/static/anymap/map-interactions.js";
 
 const Map = ol.Map;
 const TileLayer = ol.layer.Tile;
@@ -44,36 +44,4 @@ const markerFolderPath = '/static/anycluster/images/';
 
 const anyclusterOpenLayers = new AnyclusterOpenLayers(map, apiUrl, markerFolderPath, settings);
 
-const kmeansButton = document.getElementById("kmeans-button");
-const gridButton = document.getElementById("grid-button");
-
-kmeansButton.addEventListener("click", function (event) {
-    anyclusterOpenLayers.setClusterMethod(ClusterMethod.kmeans);
-});
-
-gridButton.addEventListener("click", function (event) {
-    areaButton.checked = false;
-    viewportButton.checked = true;
-    anyclusterOpenLayers.setClusterMethod(ClusterMethod.grid);
-});
-
-let bavaria = null;
-
-fetch("/static/anymap/bavaria.geojson")
-    .then((response) => response.json())
-    .then((data) => {
-        bavaria = data;
-    });
-
-const viewportButton = document.getElementById("geometry-viewport");
-const areaButton = document.getElementById("geometry-area");
-
-viewportButton.addEventListener("click", function (event) {
-    anyclusterOpenLayers.setArea(null);
-});
-
-areaButton.addEventListener("click", function (event) {
-    gridButton.checked = false;
-    kmeansButton.checked = true;
-    anyclusterOpenLayers.setArea(bavaria);
-});
+const mapInteractions = new MapInteractions(anyclusterOpenLayers);

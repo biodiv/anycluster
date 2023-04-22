@@ -2,3 +2,6 @@ include LICENSE
 include README.md
 recursive-include anycluster/templates *
 recursive-include anycluster/static *
+recursive-include anycluster/api *
+recursive-include anycluster/tests *
+recursive-exclude */__pycache__ *

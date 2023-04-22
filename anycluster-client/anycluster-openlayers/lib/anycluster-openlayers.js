@@ -56,6 +56,17 @@ const $aca83a355307fe8a$export$96b1907ff7fa3578 = {
         60
     ]
 };
+let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
+(function(Operators) {
+    Operators["in"] = "in";
+    Operators["notIn"] = "not in";
+    Operators["equals"] = "=";
+    Operators["unEquals"] = "!=";
+    Operators["largerThan"] = ">=";
+    Operators["smallerThan"] = "<=";
+    Operators["startswith"] = "startswith";
+    Operators["contains"] = "contains";
+})($aca83a355307fe8a$export$7fa100a28fbb5fe2 || ($aca83a355307fe8a$export$7fa100a28fbb5fe2 = {}));
 
 
 
@@ -76,7 +87,6 @@ class $5660b38ff962cbfe$export$5e01b9ff483562af {
         this.apiUrl = apiUrl;
         this.gridSize = gridSize;
         this.srid = srid;
-        this.filters = [];
         if (this.srid == (0, $aca83a355307fe8a$export$55fee9ea2526ad0d).EPSG4326) this.maxBounds = $5660b38ff962cbfe$export$2104d4dd9d4984b2;
         else if (this.srid == (0, $aca83a355307fe8a$export$55fee9ea2526ad0d).EPSG3857) this.maxBounds = $5660b38ff962cbfe$export$6db2f048e15a981e;
         else throw new Error(`invalid srid given: ${this.srid} `);
@@ -102,8 +112,6 @@ class $5660b38ff962cbfe$export$5e01b9ff483562af {
         return clusterContent;
     }
     getAreaContent() {}
-    addFilters() {}
-    removeFilters() {}
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -185,6 +193,22 @@ class $5660b38ff962cbfe$export$5e01b9ff483562af {
 
 
 
+const $3e2183be5df4d9a4$var$defaultGridFillColors = {
+    5: "rgba(255, 192, 203, .5)",
+    10: "rgba(240, 128, 128, .5)",
+    50: "rgba(255, 127, 80, .5)",
+    100: "rgba(255, 165, 0, .5)",
+    1000: "rgba(255, 69, 0, .5)",
+    10000: "rgba(255, 0 , 0, .5)"
+};
+const $3e2183be5df4d9a4$var$defaultGridStrokeColors = {
+    5: "pink",
+    10: "lightcoral",
+    50: "coral",
+    100: "orange",
+    1000: "orangered",
+    10000: "red"
+};
 class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
     constructor(map, apiUrl, markerFolderPath, settings){
         this.map = map;
@@ -206,6 +230,8 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
         this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $aca83a355307fe8a$export$96b1907ff7fa3578);
+        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $3e2183be5df4d9a4$var$defaultGridFillColors;
+        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $3e2183be5df4d9a4$var$defaultGridStrokeColors;
         if (this.area) this.setArea(this.area);
         const gridSize = this.getGridSize();
         this.anycluster = new (0, $5660b38ff962cbfe$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
@@ -408,7 +434,8 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
             "output_srid": this.srid,
             "geometry_type": this.geometryType,
             "geojson": geoJSON,
-            "clear_cache": clearCache
+            "clear_cache": clearCache,
+            "filters": this.filters
         };
         const zoom = this.getZoom();
         if (this.clusterMethod == (0, $aca83a355307fe8a$export$ae91e066970d978a).kmeans) {
@@ -429,6 +456,64 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
     }
     _onFinalClick(marker, data) {
         alert(JSON.stringify(data));
+    }
+    filtersAreEqual(filter1, filter2) {
+        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        return false;
+    }
+    // filtering
+    filter(filter, reloadMarkers) {
+        this.filters = [
+            filter
+        ];
+        this.postFilterChange(reloadMarkers);
+    }
+    addFilter(filter, reloadMarkers) {
+        let filterExists = false;
+        for(let f = 0; f < this.filters.length; f++){
+            let existingFilter = this.filters[f];
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                filterExists = true;
+                break;
+            }
+        }
+        if (!filterExists) this.filters.push(filter);
+        this.postFilterChange(reloadMarkers);
+    }
+    addFilters(filtersToAdd, reloadMarkers) {
+        for(let fa = 0; fa < filtersToAdd.length; fa++){
+            let filter = filtersToAdd[fa];
+            this.addFilter(filter, false);
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    removeFilter(filter, reloadMarkers) {
+        for(let f = 0; f < this.filters.length; f++){
+            let existingFilter = this.filters[f];
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                this.filters.splice(f, 1);
+                break;
+            }
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    removeFilters(filtersToRemove, reloadMarkers) {
+        for(let fr = 0; fr < filtersToRemove.length; fr++){
+            let filter = filtersToRemove[fr];
+            this.removeFilter(filter, false);
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+    resetFilters(reloadMarkers) {
+        this.filters = [];
+        this.postFilterChange(reloadMarkers);
+    }
+    postFilterChange(reloadMarkers) {
+        if (reloadMarkers != false) reloadMarkers = true;
+        if (reloadMarkers == true) {
+            this.removeAllMarkers();
+            this.getClusters(true);
+        }
     }
 }
 
@@ -20234,28 +20319,10 @@ var $c572408571109165$export$2e2bcd8739ae039 = $c572408571109165$var$GeoJSON;
 
 
 
-const $2bda5b0f3abd2a22$var$defaultGridFillColors = {
-    5: "rgba(100, 75, 80, .3)",
-    10: "rgba(90, 50, 50, .3)",
-    50: "rgba(100, 50, 31, .3)",
-    100: "rgba(100, 65, 0, .3)",
-    1000: "rgba(255, 69, 0, .3)",
-    10000: "rgba(255, 0 , 0, .3)"
-};
-const $2bda5b0f3abd2a22$var$defaultGridStrokeColors = {
-    5: "pink",
-    10: "lightcoral",
-    50: "coral",
-    100: "orange",
-    1000: "orangered",
-    10000: "red"
-};
 class $2bda5b0f3abd2a22$export$e7e1d3d8299bc13e extends (0, $3e2183be5df4d9a4$export$a09c19a7c4419c1) {
     constructor(map, apiUrl, markerFolderPath, settings){
         super(map, apiUrl, markerFolderPath, settings);
         this.currentZoom = this.getZoom();
-        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $2bda5b0f3abd2a22$var$defaultGridFillColors;
-        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $2bda5b0f3abd2a22$var$defaultGridStrokeColors;
     }
     removeArea() {
         if (this.map.hasOwnProperty("areaLayer")) this.map.areaLayer.getSource().clear();
@@ -20295,7 +20362,6 @@ class $2bda5b0f3abd2a22$export$e7e1d3d8299bc13e extends (0, $3e2183be5df4d9a4$ex
             let hit = false;
             this.map.forEachFeatureAtPixel(event.pixel, (feature)=>{
                 if (hit == false) {
-                    console.log(feature);
                     if (feature.clustertype == "cell" || feature.clustertype == "marker") {
                         hit = true;
                         let zoom = this.getZoom();
@@ -20349,7 +20415,7 @@ class $2bda5b0f3abd2a22$export$e7e1d3d8299bc13e extends (0, $3e2183be5df4d9a4$ex
         this.markerList.push(extendedMarker);
     }
     getCellStyle(feature, resolution) {
-        const roundedCount = this.roundMarkerCount(feature.get("count"));
+        const roundedCount = this.roundMarkerCount(feature.count);
         const fillColor = this.gridFillColors[roundedCount];
         const strokeColor = this.gridStrokeColors[roundedCount];
         const strokeWeight = 2;

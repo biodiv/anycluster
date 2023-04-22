@@ -66,7 +66,7 @@ from django.db import connections
 from django.contrib.gis.db.models.fields import BaseSpatialField
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from django.contrib.gis.geos import Point, GEOSGeometry
-from anycluster import MapTools, ClusterCache
+from anycluster import MapTools, ClusterCache, FilterComposer
 from anycluster.definitions import (CLUSTER_TYPE_KMEANS, CLUSTER_TYPE_GRID, GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA,
                                     MAX_BOUNDS)
 
@@ -146,24 +146,6 @@ class MapClusterer():
                 db_srid = 4326
 
         return db_srid
-
-    '''---------------------------------------------------------------------------------------------------------------------
-        LOADING THE AJAX INPUT
-
-        - The variables and filters coming from the ajax request are transformed into python-usables like lists and
-          dictionaries
-        - anycluster receives a json object containing geojson and filters
-    ---------------------------------------------------------------------------------------------------------------------'''
-    '''
-    def load_json(self, request):
-        json_str = request.body.decode(encoding='UTF-8')
-        params = json.loads(json_str)
-
-        if 'geojson' in params:
-            request.session['geojson'] = params['geojson']
-
-        return params
-    '''
 
     '''---------------------------------------------------------------------------------------------------------------------
         CONVERTING QUADKEY CELLS TO POSTGIS USABLE POLYGONS
@@ -274,41 +256,6 @@ class MapClusterer():
             geos_geometries = self.convert_geojson_feature_to_geos(geojson)
 
         return geos_geometries
-
-    '''---------------------------------------------------------------------------------------------------------------------
-        GET CLUSTER GEOMETRIES AND CACHING MECHANISM
-
-        The input is always a geojson Polygon or MultiPolygon.
-
-        A: geometry_type == 'viewport':
-        1. The envelope of this Polygon or MultiPolygon is calculated
-        2. The envelope ist snapped to the grid and split into cells
-        3. if the MP was not a rectangle, each cell is merged with the polygon
-        4. the resulting set of polygons is the clusterGeometry AS GEOS
-
-        B: geometry_type == 'area':
-        1. the geometries are not changed (evnelope etc.), but are themselves the cluster_geometries
-
-        compare with cache:
-        - always cluster all areas (cells, polygons) if zoom has changed
-        - always cluster all areas (cells, polygons) if filters have changed
-        - only cluster uncached areas (cells, polygons) if neither zoom nor filter changed
-
-        cache format:
-        dict: {'filters':{}, 'geometries':[geojson,geojson,geojson], 'zoom':1, 'clustertype': 'grid' or 'kmeans'}
-    ---------------------------------------------------------------------------------------------------------------------'''       
-    ''' moved to ClusterCache
-    def get_cluster_cache(self, geometry_type, zoom, clustertype, filters, clear_cache):
-
-        cluster_cache = self.cluster_cache
-
-        new_cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=filters)
-
-        if clear_cache == True or zoom != self.cluster_cache.zoom or geometry_type != self.cluster_cache.geometry_type or clustertype != self.cluster_cache.clustertype or filters != self.cluster_cache.filters:
-            return new_cluster_cache
-
-        return cluster_cache
-    '''
 
 
     '''
@@ -546,7 +493,8 @@ class MapClusterer():
 
         if cluster_geometries:
 
-            filterstring = filters.as_sql()
+            filter_composer = FilterComposer(filters)
+            filterstring = filter_composer.as_sql()
 
             for geos_geometry in cluster_geometries:
 
@@ -619,7 +567,8 @@ class MapClusterer():
 
         if cluster_geometries:
 
-            filterstring = filters.as_sql()
+            filter_composer = FilterComposer(filters)
+            filterstring = filter_composer.as_sql()
 
             cursor = connections['default'].cursor()
 
@@ -770,7 +719,8 @@ class MapClusterer():
         if not query_geometry:
             raise ValueError('cluster not found in cache')
 
-        filterstring = filters.as_sql()
+        filter_composer = FilterComposer(filters)
+        filterstring = filter_composer.as_sql()
 
         kmeans_list = ids
         kmeans_string = (',').join(str(k) for k in kmeans_list)
@@ -797,7 +747,9 @@ class MapClusterer():
     def get_area_content(self, geojson, filters):
 
         geomfilterstring = self.get_geom_filterstring(geojson)
-        filterstring = filters.as_sql()
+
+        filter_composer = FilterComposer(filters)
+        filterstring = filter_composer.as_sql()
 
         gis_fields_str = self.get_gis_fields_str()
 

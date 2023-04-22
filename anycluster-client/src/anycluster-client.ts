@@ -1,8 +1,26 @@
 
 import { ClusterMethod, GeometryType, IconType, SRIDS, DefaultGridSizes, DefaultMarkerImageSizes } from "./consts";
 import { GeoJSON, Marker, Cluster, Viewport } from "./geometry";
-import { Anycluster, GetKmeansClusterContentRequestData, ClusterRequestData } from "./anycluster";
+import { Anycluster, GetKmeansClusterContentRequestData, ClusterRequestData, Filter, FilterList } from "./anycluster";
 
+
+const defaultGridFillColors = {
+    5: "rgba(255, 192, 203, .5)",
+    10: "rgba(240, 128, 128, .5)",
+    50: "rgba(255, 127, 80, .5)",
+    100: "rgba(255, 165, 0, .5)",
+    1000: "rgba(255, 69, 0, .5)",
+    10000: "rgba(255, 0 , 0, .5)"
+};
+
+const defaultGridStrokeColors = {
+    5: "pink",
+    10: "lightcoral",
+    50: "coral",
+    100: "orange",
+    1000: "orangered",
+    10000: "red"
+};
 
 export interface AnyclusterClientSettings {
     srid?: SRIDS // srid of the map
@@ -37,7 +55,10 @@ export class AnyclusterClient {
 
     markerImageSizes: Record<string, number[]>
 
-    filters: any[] = []
+    gridFillColors: Record<number, string>
+    gridStrokeColors: Record<number, string>
+
+    filters: FilterList = []
 
 
     constructor(public map: any, public apiUrl: string, public markerFolderPath: string, settings: AnyclusterClientSettings) {
@@ -51,8 +72,8 @@ export class AnyclusterClient {
 
         // settings
         this.srid = settings.srid ? settings.srid : SRIDS.EPSG4326;
-        this.kmeansGridSize = settings.gridGridSize ? settings.gridGridSize: DefaultGridSizes.kmeans;
-        this.gridGridSize = settings.gridGridSize ? settings.gridGridSize: DefaultGridSizes.grid;
+        this.kmeansGridSize = settings.gridGridSize ? settings.gridGridSize : DefaultGridSizes.kmeans;
+        this.gridGridSize = settings.gridGridSize ? settings.gridGridSize : DefaultGridSizes.grid;
 
         this.clusterMethod = settings.clusterMethod ? settings.clusterMethod : ClusterMethod.kmeans;
         this.geometryType = settings.geometryType ? settings.geometryType : GeometryType.viewport;
@@ -65,7 +86,10 @@ export class AnyclusterClient {
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
 
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : DefaultMarkerImageSizes;
-        
+
+        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : defaultGridFillColors;
+        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : defaultGridStrokeColors;
+
 
         if (this.area) {
             this.setArea(this.area);
@@ -261,7 +285,7 @@ export class AnyclusterClient {
         }
 
         if (cluster.hasOwnProperty("geojson")) {
-            
+
             /*const geojson = {
                 "type": "Feature",
                 "count": cluster.count,
@@ -383,7 +407,8 @@ export class AnyclusterClient {
             "output_srid": this.srid,
             "geometry_type": this.geometryType,
             "geojson": geoJSON,
-            "clear_cache": clearCache
+            "clear_cache": clearCache,
+            "filters": this.filters
         } as ClusterRequestData;
 
         const zoom = this.getZoom();
@@ -420,6 +445,90 @@ export class AnyclusterClient {
 
     _onFinalClick(marker: Marker, data: any) {
         alert(JSON.stringify(data));
+    }
+
+    filtersAreEqual(filter1: Filter, filter2: Filter): boolean {
+        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) {
+            return true;
+        }
+
+        return false;
+    }
+
+    // filtering
+    filter(filter: Filter, reloadMarkers?: boolean) {
+        this.filters = [filter];
+        this.postFilterChange(reloadMarkers);
+    }
+
+    addFilter(filter: Filter, reloadMarkers?: boolean) {
+
+        let filterExists = false;
+
+        for (let f = 0; f < this.filters.length; f++) {
+            let existingFilter = this.filters[f];
+
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                filterExists = true;
+                break;
+            }
+
+        }
+
+        if (!filterExists) {
+            this.filters.push(filter);
+        }
+
+        this.postFilterChange(reloadMarkers);
+    }
+
+    addFilters(filtersToAdd: FilterList, reloadMarkers?: boolean) {
+
+        for (let fa = 0; fa < filtersToAdd.length; fa++) {
+            let filter = filtersToAdd[fa];
+            this.addFilter(filter, false);
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+
+    removeFilter(filter: Filter, reloadMarkers?: boolean) {
+
+        for (let f = 0; f < this.filters.length; f++) {
+            let existingFilter = this.filters[f];
+
+            if (this.filtersAreEqual(filter, existingFilter)) {
+                this.filters.splice(f, 1);
+                break;
+            }
+        }
+        this.postFilterChange(reloadMarkers);
+    }
+
+    removeFilters(filtersToRemove: FilterList, reloadMarkers?: boolean) {
+
+        for (let fr = 0; fr < filtersToRemove.length; fr++) {
+
+            let filter = filtersToRemove[fr];
+
+            this.removeFilter(filter, false);
+        }
+
+        this.postFilterChange(reloadMarkers);
+    }
+
+    resetFilters(reloadMarkers?: boolean) {
+        this.filters = [];
+        this.postFilterChange(reloadMarkers);
+    }
+
+    postFilterChange(reloadMarkers?: boolean) {
+        if (reloadMarkers != false){
+            reloadMarkers = true;
+        }
+        if (reloadMarkers == true) {
+            this.removeAllMarkers();
+            this.getClusters(true);
+        }
     }
 
 }

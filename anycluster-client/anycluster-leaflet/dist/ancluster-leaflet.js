@@ -3,28 +3,10 @@ import {geoJSON as $hgUW1$geoJSON, layerGroup as $hgUW1$layerGroup, icon as $hgU
 
 
 
-const $34187c1d26cab582$var$defaultGridFillColors = {
-    5: "rgba(100, 75, 80, 1)",
-    10: "rgba(90, 50, 50, 1)",
-    50: "rgba(100, 50, 31, 1)",
-    100: "rgba(100, 65, 0, 1)",
-    1000: "rgba(255, 69, 0, 1)",
-    10000: "rgba(255, 0 , 0, 1)"
-};
-const $34187c1d26cab582$var$defaultGridStrokeColors = {
-    5: "pink",
-    10: "lightcoral",
-    50: "coral",
-    100: "orange",
-    1000: "orangered",
-    10000: "red"
-};
 class $34187c1d26cab582$export$d28c3646e727c4c9 extends (0, $hgUW1$AnyclusterClient) {
     constructor(map, apiUrl, markerFolderPath, settings){
         super(map, apiUrl, markerFolderPath, settings);
         this.currentZoom = this.getZoom();
-        this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $34187c1d26cab582$var$defaultGridFillColors;
-        this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $34187c1d26cab582$var$defaultGridStrokeColors;
     }
     removeArea() {
         if (this.map.hasOwnProperty("areaLayer")) this.map.areaLayer.clearLayers();
@@ -86,12 +68,16 @@ class $34187c1d26cab582$export$d28c3646e727c4c9 extends (0, $hgUW1$AnyclusterCli
                 }
             };
             const roundedCount = this.roundMarkerCount(count);
-            const fillColor = $34187c1d26cab582$var$defaultGridFillColors[roundedCount];
-            const strokeWeight = 0;
+            const fillColor = this.gridFillColors[roundedCount];
+            const strokeColor = this.gridStrokeColors[roundedCount];
+            const strokeWeight = 1;
             const cell = $hgUW1$geoJSON(geojson, {
                 style: {
-                    color: fillColor,
-                    stroke: true
+                    color: strokeColor,
+                    stroke: true,
+                    fillColor: fillColor,
+                    weight: strokeWeight,
+                    fillOpacity: 1
                 }
             });
             // add properties required by anycluster to marker

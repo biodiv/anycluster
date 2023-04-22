@@ -20,6 +20,16 @@ export enum IconType {
     exact = "exact",
     rounded = "rounded"
 }
+export enum Operators {
+    in = "in",
+    notIn = "not in",
+    equals = "=",
+    unEquals = "!=",
+    largerThan = ">=",
+    smallerThan = "<=",
+    startswith = "startswith",
+    contains = "contains"
+}
 interface Viewport {
     left: number;
     top: number;
@@ -66,13 +76,19 @@ interface Cluster {
     geojson?: Geometry;
     pinimg?: string;
 }
+interface Filter {
+    column: string;
+    value: string | number | boolean;
+    operator: Operators;
+}
 interface ClusterRequestData {
     output_srid: SRIDS;
     geometry_type: GeometryType;
     geojson: GeoJSON;
     clear_cache: boolean;
-    filters: object[];
+    filters: Filter[];
 }
+type FilterList = Filter[];
 interface GetKmeansClusterContentRequestData {
     geometry_type: GeometryType;
     input_srid: SRIDS;
@@ -83,7 +99,6 @@ interface GetKmeansClusterContentRequestData {
 export class Anycluster {
     gridSize: number;
     srid: SRIDS;
-    filters: object[];
     maxBounds: MaxBounds;
     constructor(apiUrl: string, gridSize: number, srid: SRIDS);
     getGridCluster(zoom: number, data: ClusterRequestData): Promise<any>;
@@ -91,8 +106,6 @@ export class Anycluster {
     getKmeansClusterContent(zoom: number, data: GetKmeansClusterContentRequestData): Promise<any>;
     getDatasetContent(zoom: number, datasetId: number): Promise<any>;
     getAreaContent(): void;
-    addFilters(): void;
-    removeFilters(): void;
     viewportToGeoJSON(viewport: Viewport): {
         type: string;
         geometry: {
@@ -139,7 +152,9 @@ export class AnyclusterClient {
     onFinalClick: Function;
     singlePinImages?: Record<string, string>;
     markerImageSizes: Record<string, number[]>;
-    filters: any[];
+    gridFillColors: Record<number, string>;
+    gridStrokeColors: Record<number, string>;
+    filters: FilterList;
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings);
     createClusterLayers(): void;
     addArea(geojson: object): void;
@@ -183,6 +198,14 @@ export class AnyclusterClient {
     getClusters(clearCache?: boolean): Promise<void>;
     startClustering(): void;
     _onFinalClick(marker: Marker, data: any): void;
+    filtersAreEqual(filter1: Filter, filter2: Filter): boolean;
+    filter(filter: Filter, reloadMarkers?: boolean): void;
+    addFilter(filter: Filter, reloadMarkers?: boolean): void;
+    addFilters(filtersToAdd: FilterList, reloadMarkers?: boolean): void;
+    removeFilter(filter: Filter, reloadMarkers?: boolean): void;
+    removeFilters(filtersToRemove: FilterList, reloadMarkers?: boolean): void;
+    resetFilters(reloadMarkers?: boolean): void;
+    postFilterChange(reloadMarkers?: boolean): void;
 }
 
 //# sourceMappingURL=index.d.ts.map

@@ -6,3 +6,4 @@ node_modules
 *.pyc
 *.directory
 *.sqlite3
+google_maps.py

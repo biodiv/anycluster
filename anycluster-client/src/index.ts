@@ -2,7 +2,8 @@ export {
     ClusterMethod,
     GeometryType,
     IconType,
-    SRIDS
+    SRIDS,
+    Operators
 } from "./consts";
 
 export { 
