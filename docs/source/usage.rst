@@ -96,15 +96,27 @@ Put the script in the appropriate django template or javascript file.
 Leaflet
 -------
 
-1. Download the anycluster-leaflet client
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. Install or Download the anycluster-leaflet client
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2. Include the anycluster-leaflet client into your static files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+npm
+"""
 
+You can install :code:`anycluster-leaflet from npm`
+
+.. code-block:: shell
+
+    npm install anycluster-leaflet
+
+
+js module
+"""""""""
+
+Instead of using npm, you also can download and include the anycluster-openlayers client into your static files.
 Put the files :code:`anycluster-leaflet.js` and :code:`anycluster-leaflet.js.map` somewhere in your static files.
 
-3. Provide marker images
+
+2. Provide marker images
 ^^^^^^^^^^^^^^^^^^^^^^^^
 anycluster requires marker images which are placed on the map.
 You can use your own images or download marker images here.
@@ -112,7 +124,7 @@ You can use your own images or download marker images here.
 Put the marker images into your static files to make them accessible by anycluster.
 For example, put all marker images into the folder :code:`{somewhere}/static/anycluster/`
 
-4. Create a script instantiating AnyclusterLeaflet
+3. Create a script instantiating AnyclusterLeaflet
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -154,3 +166,71 @@ For example, put all marker images into the folder :code:`{somewhere}/static/any
 
 Google Maps
 -----------
+
+1. Install or download the anycluster-google client
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+npm
+"""
+
+You can install :code:`anycluster-google from npm`
+
+.. code-block:: shell
+
+    npm install anycluster-google
+
+
+js module
+"""""""""
+
+Instead of using npm, you also can download and include the anycluster-openlayers client into your static files.
+Put the files :code:`anycluster-google.js` and :code:`anycluster-google.js.map` somewhere in your static files.
+
+2. Provide marker images
+^^^^^^^^^^^^^^^^^^^^^^^^
+anycluster requires marker images which are placed on the map.
+You can use your own images or download marker images here.
+
+Put the marker images into your static files to make them accessible by anycluster.
+For example, put all marker images into the folder :code:`{somewhere}/static/anycluster/`
+
+3. Create a script instantiating AnyclusterGoogle
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+    The given example script is for the use-case of the js module in django templates.
+    If you have installed anycluster-google from **npm**, use
+    :code:`import { AnyclusterGoogle } from 'anycluster-google';`
+
+.. code-block:: javascript
+
+    import { AnyclusterGoogle } from "/static/anycluster-google.js";
+
+    const map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 3,
+        center: { lat: 47.4, lng: 10.3 },
+    });
+
+    const singlePinImages = {
+        'imperial': '/static/anycluster/pin_imperial.png',
+        'stone': '/static/anycluster/pin_stone.png',
+        'wild': '/static/anycluster/pin_wild.png',
+        'japanese': '/static/anycluster/pin_japan.png',
+        'flower': '/static/anycluster/pin_flower.png'
+    }
+
+    const apiUrl = "http://localhost:8080/anycluster/";
+
+    const settings = {
+        singlePinImages: singlePinImages,
+        onFinalClick: function (marker, data) {
+            alert(JSON.stringify(data))
+        }
+    };
+
+    const markerFolderPath = '/static/anycluster/images/';
+
+    google.maps.event.addListenerOnce(map, 'bounds_changed', function() {
+        const anyclusterGoogle = new AnyclusterGoogle('{{ google_maps_api_key }}', map, apiUrl, markerFolderPath, settings);
+    });
+
