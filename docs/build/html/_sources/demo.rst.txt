@@ -1,5 +1,0 @@
-Running the demo
-================
-
-Installation
-------------
