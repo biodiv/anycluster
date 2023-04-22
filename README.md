@@ -9,6 +9,12 @@ Depending on your server and personal feeling, it works very well with 200.000 t
 The postgis version is recommended. There is a mysql version with limited functionality: https://github.com/biodiv/anycluster-mysql
 
 
+Documentation
+-------------
+
+http://anycluster.readthedocs.org/en/latest/
+
+
 ChangeLog
 ---------
 - [22.04.2023] anycluster 2.0 (breaking changes, see docs), npm, Django 4.x, updated docs
@@ -35,12 +41,6 @@ And lots of optional customization possibilities:
 - define gridsize and other cluster parameters
 - apply filters to your clusters
 - use specialized markers/pins if count is 1
-
-
-Documentation
--------------
-
-http://anycluster.readthedocs.org/en/latest/
 
 
 Performance Tips
