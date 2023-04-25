@@ -29,6 +29,10 @@ class MapClusterViewBase:
         return output_srid
 
 
+    def get_schema_name(self, request):
+        return 'public'
+
+
     def get_map_clusterer(self, geometry_type, clustertype, filters, clear_cache, output_srid, request, **kwargs):
 
         grid_size = kwargs['grid_size']
@@ -38,7 +42,9 @@ class MapClusterViewBase:
             cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=filters)
         else:
             cluster_cache = self.get_cache(geometry_type, zoom, clustertype, request, filters)
-        clusterer = MapClusterer(cluster_cache, grid_size=grid_size, output_srid=output_srid)
+
+        schema_name = self.get_schema_name(request)
+        clusterer = MapClusterer(cluster_cache, grid_size=grid_size, output_srid=output_srid, schema_name=schema_name)
         return clusterer
 
 

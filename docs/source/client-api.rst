@@ -193,7 +193,7 @@ Examples
         "operator": "=" 
     };
 
-    anyclusterLeaflet.filter(styleFilter, false);
+    anyclusterLeaflet.addFilter(styleFilter, false);
 
     const entranceFilter = {
         "column": "free_entrance",
@@ -201,7 +201,7 @@ Examples
         "operator": "=" 
     };
 
-    anyclusterLeaflet.filter(entranceFilter);
+    anyclusterLeaflet.addFilter(entranceFilter);
 
 3. Applying a list filter and refreshing the map. This equals an :code:`OR` lookup.
    
