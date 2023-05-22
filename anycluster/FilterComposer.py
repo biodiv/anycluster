@@ -59,34 +59,77 @@ class FilterComposer:
         else:
             return value
 
+
+    def parse_filter(self, filter):
+
+        filterstring = ''
+
+        column = filter['column']
+        comparison_operator = filter['operator']
+        value = filter['value']
+
+        filterstring += '('
+
+        if isinstance(value, list):
+            parsed_operator = self.list_operator_mapping[comparison_operator]
+
+            sql_value = str(tuple(value))
+
+            filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=parsed_operator,
+                                                                    sql_value=sql_value)
+
+        else:
+            parsed_operator = self.operator_mapping[comparison_operator]
+
+            sql_value = self.parse_filter_value(comparison_operator, value)
+
+            filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=parsed_operator,
+                                                                    sql_value=sql_value)
+
+        filterstring += ')'
+
+        return filterstring
+
+
+    def parse_filters(self, filters):
+
+        filterstring = ''
+
+        if len(filters) > 1:
+                filterstring += '('
+
+        for counter, filter in enumerate(filters, 0):
+
+            is_nested = 'filters' in filter
+
+            logical_operator = filter.get('logicalOperator', 'AND')
+
+            if counter > 0:
+                filterstring += ' {logical_operator} '.format(logical_operator=logical_operator)
+
+            if is_nested == False:
+                filterstring += self.parse_filter(filter)
+
+            else:
+                nested_filter_composer = FilterComposer(filter['filters'])
+                filterstring += nested_filter_composer.parse_filters(filter['filters'])
+            
+
+        
+        if len(filters) > 1:
+            filterstring += ')'
+
+        return filterstring
+
+
     def as_sql(self):
 
         filterstring = ''
 
-        for filter in self.filters:
+        if self.filters:
 
-            column = filter['column']
-            operator = filter['operator']
-            value = filter['value']
+            filterstring = ' AND '
 
-            filterstring += ' AND ('
-
-            if isinstance(value, list):
-                parsed_operator = self.list_operator_mapping[operator]
-
-                sql_value = str(tuple(value))
-
-                filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=parsed_operator,
-                                                                         sql_value=sql_value)
-
-            else:
-                parsed_operator = self.operator_mapping[operator]
-
-                sql_value = self.parse_filter_value(operator, value)
-
-                filterstring += '{column} {operator} {sql_value}'.format(column=column, operator=parsed_operator,
-                                                                         sql_value=sql_value)
-
-            filterstring += ')'
+            filterstring += self.parse_filters(self.filters)
 
         return filterstring

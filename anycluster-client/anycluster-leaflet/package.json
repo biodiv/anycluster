@@ -1,10 +1,10 @@
 {
   "name": "anycluster-leaflet",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "anycluster client for Leaflet",
   "main": "dist/main.js",
   "lib": "lib/anycluster-leaflet.js",
-  "module": "dist/ancluster-leaflet.js",
+  "module": "dist/anycluster-leaflet.js",
   "types": "dist/types.d.ts",
   "source": "src/index.ts",
   "scripts": {

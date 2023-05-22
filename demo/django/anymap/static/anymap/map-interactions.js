@@ -62,10 +62,11 @@ const areaButton = document.getElementById("geometry-area");
 const entranceButtons = document.querySelectorAll('input[name="entrance-fee"]');
 const gardenTypeButtons = document.querySelectorAll('input[name="gardentype"]');
 
-
+const nestedFilterButton = document.getElementById('nested-button');
 
 let activeGardenFilter = null;
 let activeEntranceFilter = null;
+let activeNestedFilter = false;
 
 
 export class MapInteractions {
@@ -102,9 +103,15 @@ export class MapInteractions {
         entranceButtons.forEach(button => {
             button.addEventListener("click", this.applyEntranceFeeFilter.bind(this));
         });
+
+        nestedFilterButton.addEventListener("click", this.applyNestedFilter.bind(this));
     }
 
     applyEntranceFeeFilter(event){
+
+        if (activeNestedFilter){
+            this.anyclusterClient.resetFilters(false);
+        }
         
         const entranceFee = document.querySelector('input[name="entrance-fee"]:checked').value;
 
@@ -130,6 +137,10 @@ export class MapInteractions {
 
     applyGardenStyleFilter(event){
 
+        if (activeNestedFilter){
+            this.anyclusterClient.resetFilters(false);
+        }
+
         const gardenStyle = document.querySelector('input[name="gardentype"]:checked').value;
 
         if (activeGardenFilter != null) {
@@ -150,6 +161,54 @@ export class MapInteractions {
             this.anyclusterClient.addFilter(filterToAdd);
             activeGardenFilter = filterToAdd;
         }
+    }
+
+    applyNestedFilter(event) {
+        // flower and free OR stone and paid
+        const filters = [
+            {
+                "filters": [
+                    {
+                        "column": "style",
+                        "value": "flower",
+                        "operator" : "="
+                    },
+                    {
+                        "column": "free_entrance",
+                        "value": true,
+                        "operator" : "="
+                    }   
+                ]
+            },
+            {
+                "logicalOperator": "OR",
+                "filters": [
+                    {
+                        "column": "style",
+                        "value": "stone",
+                        "operator" : "=",
+                        "logicalOperator": 'AND'
+                    },
+                    {
+                        "column": "free_entrance",
+                        "value": false,
+                        "operator" : "="
+                    }
+                ]
+            }
+        ];
+
+        gardenTypeButtons.forEach(button => {
+            button.checked = false;
+        });
+
+        entranceButtons.forEach(button => {
+            button.checked = false;
+        });
+
+        this.anyclusterClient.filter(filters);
+
+        activeNestedFilter = true;
     }
 
 

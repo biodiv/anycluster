@@ -138,4 +138,4 @@ class $34187c1d26cab582$export$d28c3646e727c4c9 extends (0, $hgUW1$AnyclusterCli
 
 
 export {$34187c1d26cab582$re_export$ClusterMethod as ClusterMethod, $34187c1d26cab582$export$d28c3646e727c4c9 as AnyclusterLeaflet};
-//# sourceMappingURL=ancluster-leaflet.js.map
+//# sourceMappingURL=anycluster-leaflet.js.map

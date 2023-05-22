@@ -463,7 +463,8 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
     }
     // filtering
     filter(filter, reloadMarkers) {
-        this.filters = [
+        if (Array.isArray(filter)) this.filters = filter;
+        else this.filters = [
             filter
         ];
         this.postFilterChange(reloadMarkers);

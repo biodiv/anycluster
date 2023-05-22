@@ -5,7 +5,7 @@ const Map = ol.Map;
 const TileLayer = ol.layer.Tile;
 const OSM = ol.source.OSM;
 const View = ol.View;
-const fromLonLat = ol.proj.fromLonLat
+const fromLonLat = ol.proj.fromLonLat;
 
 const singlePinImages = {
     'imperial': '/static/anycluster/pin_imperial.png', //optional, use in conjunction with django settings: 'ANYCLUSTER_PINCOLUMN'

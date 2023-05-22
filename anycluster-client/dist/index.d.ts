@@ -199,7 +199,7 @@ export class AnyclusterClient {
     startClustering(): void;
     _onFinalClick(marker: Marker, data: any): void;
     filtersAreEqual(filter1: Filter, filter2: Filter): boolean;
-    filter(filter: Filter, reloadMarkers?: boolean): void;
+    filter(filter: Filter | Filter[], reloadMarkers?: boolean): void;
     addFilter(filter: Filter, reloadMarkers?: boolean): void;
     addFilters(filtersToAdd: FilterList, reloadMarkers?: boolean): void;
     removeFilter(filter: Filter, reloadMarkers?: boolean): void;

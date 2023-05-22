@@ -456,8 +456,14 @@ export class AnyclusterClient {
     }
 
     // filtering
-    filter(filter: Filter, reloadMarkers?: boolean) {
-        this.filters = [filter];
+    filter(filter: Filter | Filter[], reloadMarkers?: boolean) {
+
+        if (Array.isArray(filter)){
+            this.filters = filter;
+        }
+        else {
+            this.filters = [filter];
+        }
         this.postFilterChange(reloadMarkers);
     }
 

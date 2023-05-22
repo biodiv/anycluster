@@ -86,6 +86,7 @@ class Testfilters(TestCase):
     def test_string_as_sql(self):
 
         string_value = 'flower'
+        string_value_2 = 'stone'
         
         equals_filter = {
             'column': 'style',
@@ -101,7 +102,7 @@ class Testfilters(TestCase):
         
         unequals_filter = {
             'column': 'style',
-            'value': string_value,
+            'value': string_value_2,
             'operator': '!=',
         }
 
@@ -109,7 +110,7 @@ class Testfilters(TestCase):
 
         unequals_sql = filter_composer.as_sql()
         
-        self.assertEqual(unequals_sql, " AND (style != 'flower')")
+        self.assertEqual(unequals_sql, " AND (style != 'stone')")
 
         # list
         list_value = ['flower', 'stone']
@@ -136,3 +137,88 @@ class Testfilters(TestCase):
         not_in_list_sql = filter_composer.as_sql()
         
         self.assertEqual(not_in_list_sql, " AND (style NOT IN ('flower', 'stone'))")
+
+        # test multiple filters
+        filter_composer = FilterComposer([equals_filter, unequals_filter])
+
+        equals_sql = filter_composer.as_sql()
+        
+        self.assertEqual(equals_sql, " AND ((style = 'flower') AND (style != 'stone'))")
+
+
+    def test_nested_filter(self):
+        
+        nested_filter = {
+            'filters' : [
+                {
+                    'column': 'style',
+                    'value': 'flower',
+                    'operator': '=',
+                },
+                {
+                    'column': 'style',
+                    'value': 'stone',
+                    'operator': '=',
+                    'logicalOperator': 'OR'
+                }
+            ],
+        }
+
+        filter_composer = FilterComposer([nested_filter])
+
+        nested_sql = filter_composer.as_sql()
+        
+        self.assertEqual(nested_sql, " AND ((style = 'flower') OR (style = 'stone'))")
+
+        equals_filter = {
+            'column': 'free_entrance',
+            'value': True,
+            'operator': '=',
+        }
+
+        nested_filter_2 = {
+            'filters' : [
+                {
+                    'column': 'style',
+                    'value': 'flower',
+                    'operator': '=',
+                },
+                {
+                    'column': 'free_entrance',
+                    'value': True,
+                    'operator': '=',
+                    'logicalOperator': 'AND'
+                }
+            ],
+        }
+
+        nested_filter_3 = {
+            'logicalOperator': 'OR',
+            'filters' : [
+                {
+                    'column': 'style',
+                    'value': 'stone',
+                    'operator': '=',
+                },
+                {
+                    'column': 'free_entrance',
+                    'value': False,
+                    'operator': '=',
+                    'logicalOperator': 'AND'
+                }
+            ],
+        }
+
+
+        filter_composer = FilterComposer([nested_filter_2, nested_filter_3])
+
+        nested_sql = filter_composer.as_sql()
+        
+        self.assertEqual(nested_sql, " AND (((style = 'flower') AND (free_entrance = TRUE)) OR ((style = 'stone') AND (free_entrance = FALSE)))")
+
+
+        filter_composer = FilterComposer([nested_filter_2, nested_filter_3, equals_filter])
+
+        nested_sql = filter_composer.as_sql()
+
+        self.assertEqual(nested_sql, " AND (((style = 'flower') AND (free_entrance = TRUE)) OR ((style = 'stone') AND (free_entrance = FALSE)) AND (free_entrance = TRUE))")

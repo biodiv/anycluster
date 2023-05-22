@@ -11,12 +11,19 @@ from anycluster.definitions import GEOMETRY_TYPES, GEOMETRY_TYPE_VIEWPORT
 def filters_are_allowed(filters):
 
     for filter in filters:
-        column = filter.get('column', None)
-        if not column:
-            raise serializers.ValidationError('Filter require a column')
+
+        is_nested = 'filters' in filter
+
+        if is_nested == False:
+            column = filter.get('column', None)
+            if not column:
+                raise serializers.ValidationError('Filter require a column')
         
-        if column not in settings.ANYCLUSTER_FILTERS:
-            raise serializers.ValidationError('It is not allowed to filter Column {0}'.format(column))
+            if column not in settings.ANYCLUSTER_FILTERS:
+                raise serializers.ValidationError('It is not allowed to filter Column {0}'.format(column))
+        
+        else:
+            filters_are_allowed(filter['filters'])
 
 # needs to supprt FeatureCollection and Multipolygon
 class ClusterRequestSerializer(serializers.Serializer):

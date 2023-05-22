@@ -460,7 +460,8 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
     }
     // filtering
     filter(filter, reloadMarkers) {
-        this.filters = [
+        if (Array.isArray(filter)) this.filters = filter;
+        else this.filters = [
             filter
         ];
         this.postFilterChange(reloadMarkers);
