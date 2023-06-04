@@ -1,24 +1,24 @@
-let $aca83a355307fe8a$export$55fee9ea2526ad0d;
+var $aca83a355307fe8a$export$55fee9ea2526ad0d;
 (function(SRIDS) {
     SRIDS["EPSG4326"] = "EPSG:4326";
     SRIDS["EPSG3857"] = "EPSG:3857";
 })($aca83a355307fe8a$export$55fee9ea2526ad0d || ($aca83a355307fe8a$export$55fee9ea2526ad0d = {}));
-let $aca83a355307fe8a$export$ae91e066970d978a;
+var $aca83a355307fe8a$export$ae91e066970d978a;
 (function(ClusterMethod) {
     ClusterMethod["kmeans"] = "kmeans";
     ClusterMethod["grid"] = "grid";
 })($aca83a355307fe8a$export$ae91e066970d978a || ($aca83a355307fe8a$export$ae91e066970d978a = {}));
-let $aca83a355307fe8a$export$8f4397a63c3cef66;
+var $aca83a355307fe8a$export$8f4397a63c3cef66;
 (function(GeometryType) {
     GeometryType["viewport"] = "viewport";
     GeometryType["area"] = "area";
 })($aca83a355307fe8a$export$8f4397a63c3cef66 || ($aca83a355307fe8a$export$8f4397a63c3cef66 = {}));
-let $aca83a355307fe8a$export$13ff1290a9e22e77;
+var $aca83a355307fe8a$export$13ff1290a9e22e77;
 (function(IconType) {
     IconType["exact"] = "exact";
     IconType["rounded"] = "rounded";
 })($aca83a355307fe8a$export$13ff1290a9e22e77 || ($aca83a355307fe8a$export$13ff1290a9e22e77 = {}));
-let $aca83a355307fe8a$export$9c3a9f8fbf06a34;
+var $aca83a355307fe8a$export$9c3a9f8fbf06a34;
 (function(DefaultGridSizes) {
     DefaultGridSizes[DefaultGridSizes["grid"] = 64] = "grid";
     DefaultGridSizes[DefaultGridSizes["kmeans"] = 150] = "kmeans";
@@ -53,7 +53,7 @@ const $aca83a355307fe8a$export$96b1907ff7fa3578 = {
         60
     ]
 };
-let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
+var $aca83a355307fe8a$export$7fa100a28fbb5fe2;
 (function(Operators) {
     Operators["in"] = "in";
     Operators["notIn"] = "not in";
@@ -64,6 +64,11 @@ let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
     Operators["startswith"] = "startswith";
     Operators["contains"] = "contains";
 })($aca83a355307fe8a$export$7fa100a28fbb5fe2 || ($aca83a355307fe8a$export$7fa100a28fbb5fe2 = {}));
+var $aca83a355307fe8a$export$9a28c02ac0f6fc9d;
+(function(LogicalOperators) {
+    LogicalOperators["AND"] = "AND";
+    LogicalOperators["OR"] = "OR";
+})($aca83a355307fe8a$export$9a28c02ac0f6fc9d || ($aca83a355307fe8a$export$9a28c02ac0f6fc9d = {}));
 
 
 
@@ -108,7 +113,16 @@ class $5660b38ff962cbfe$export$5e01b9ff483562af {
         const clusterContent = await this.get(url);
         return clusterContent;
     }
-    getAreaContent() {}
+    async getMapContentCount(zoom, data) {
+        const url = `${this.apiUrl}get-map-content-count/${zoom}/${this.gridSize}/`;
+        const mapContentCount = await this.post(url, data);
+        return mapContentCount;
+    }
+    async getGroupedMapContents(zoom, data) {
+        const url = `${this.apiUrl}get-grouped-map-contents/${zoom}/${this.gridSize}/`;
+        const groupedMapContents = await this.post(url, data);
+        return groupedMapContents;
+    }
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -224,11 +238,13 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
         this.geometryType = settings.geometryType ? settings.geometryType : (0, $aca83a355307fe8a$export$8f4397a63c3cef66).viewport;
         this.area = settings.area ? settings.area : null;
         this.iconType = settings.iconType ? settings.iconType : (0, $aca83a355307fe8a$export$13ff1290a9e22e77).rounded;
-        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $aca83a355307fe8a$export$96b1907ff7fa3578);
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $3e2183be5df4d9a4$var$defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $3e2183be5df4d9a4$var$defaultGridStrokeColors;
+        // hooks
+        this.onGotClusters = settings.onGotClusters ? settings.onGotClusters : this._onGotClusters;
+        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         if (this.area) this.setArea(this.area);
         const gridSize = this.getGridSize();
         this.anycluster = new (0, $5660b38ff962cbfe$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
@@ -446,16 +462,16 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
                 this.drawCell(cluster);
             });
         } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
+        this.onGotClusters();
     }
     startClustering() {
         this.getClusters(true);
         this.addMapEventListeners();
     }
-    _onFinalClick(marker, data) {
-        alert(JSON.stringify(data));
-    }
     filtersAreEqual(filter1, filter2) {
-        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        if ("column" in filter1 && "column" in filter2) {
+            if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        } else if (JSON.stringify(filter1) === JSON.stringify(filter2)) return true;
         return false;
     }
     // filtering
@@ -513,6 +529,41 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
             this.getClusters(true);
         }
     }
+    /**
+     * methods for getting counts of objects on the current map / geometry
+     */ async getMapContentCount(modulations) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "modulations": modulations
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getMapContentCount(zoom, postData);
+        return data;
+    }
+    async getGroupedMapContents(groupBy) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "group_by": groupBy
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+        return data;
+    }
+    // hooks
+    _onFinalClick(marker, data) {
+        alert(JSON.stringify(data));
+    }
+    _onGotClusters() {}
 }
 
 
@@ -520,13 +571,13 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
 
 var $bc65c9d81194eb95$exports = {};
 /* @preserve
- * Leaflet 1.9.3, a JS library for interactive maps. https://leafletjs.com
- * (c) 2010-2022 Vladimir Agafonkin, (c) 2010-2011 CloudMade
+ * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
+ * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade
  */ (function(global, factory) {
     factory($bc65c9d81194eb95$exports);
 })($bc65c9d81194eb95$exports, function(exports1) {
     "use strict";
-    var version = "1.9.3";
+    var version = "1.9.4";
     /*
    * @namespace Util
    *
@@ -2455,15 +2506,15 @@ var $bc65c9d81194eb95$exports = {};
         if (!element.style) return;
         restoreOutline();
         _outlineElement = element;
-        _outlineStyle = element.style.outline;
-        element.style.outline = "none";
+        _outlineStyle = element.style.outlineStyle;
+        element.style.outlineStyle = "none";
         on(window, "keydown", restoreOutline);
     }
     // @function restoreOutline()
     // Cancels the effects of a previous [`L.DomUtil.preventOutline`]().
     function restoreOutline() {
         if (!_outlineElement) return;
-        _outlineElement.style.outline = _outlineStyle;
+        _outlineElement.style.outlineStyle = _outlineStyle;
         _outlineElement = undefined;
         _outlineStyle = undefined;
         off(window, "keydown", restoreOutline);
@@ -3998,7 +4049,7 @@ var $bc65c9d81194eb95$exports = {};
             // don't animate if the zoom origin isn't within one screen from the current center, unless forced
             if (options.animate !== true && !this.getSize().contains(offset)) return false;
             requestAnimFrame(function() {
-                this._moveStart(true, false)._animateZoom(center, zoom, true);
+                this._moveStart(true, options.noMoveStart || false)._animateZoom(center, zoom, true);
             }, this);
             return true;
         },
@@ -4232,6 +4283,7 @@ var $bc65c9d81194eb95$exports = {};
             this._layers = [];
             this._lastZIndex = 0;
             this._handlingClick = false;
+            this._preventClick = false;
             for(var i in baseLayers)this._addLayer(baseLayers[i], i);
             for(i in overlays)this._addLayer(overlays[i], i, true);
         },
@@ -4414,6 +4466,8 @@ var $bc65c9d81194eb95$exports = {};
             return label;
         },
         _onInputClick: function() {
+            // expanding the control on mobile with a click can cause adding a layer - we don't want this
+            if (this._preventClick) return;
             var inputs = this._layerControlInputs, input, layer;
             var addedLayers = [], removedLayers = [];
             this._handlingClick = true;
@@ -4443,10 +4497,13 @@ var $bc65c9d81194eb95$exports = {};
         },
         _expandSafely: function() {
             var section = this._section;
+            this._preventClick = true;
             on(section, "click", preventDefault);
             this.expand();
+            var that = this;
             setTimeout(function() {
                 off(section, "click", preventDefault);
+                that._preventClick = false;
             });
         }
     });
@@ -4931,16 +4988,132 @@ var $bc65c9d81194eb95$exports = {};
             off(document, "mouseup touchend touchcancel", this._onUp, this);
             enableImageDrag();
             enableTextSelection();
-            if (this._moved && this._moving) // @event dragend: DragEndEvent
+            var fireDragend = this._moved && this._moving;
+            this._moving = false;
+            Draggable._dragging = false;
+            if (fireDragend) // @event dragend: DragEndEvent
             // Fired when the drag ends.
             this.fire("dragend", {
                 noInertia: noInertia,
                 distance: this._newPos.distanceTo(this._startPos)
             });
-            this._moving = false;
-            Draggable._dragging = false;
         }
     });
+    /*
+   * @namespace PolyUtil
+   * Various utility functions for polygon geometries.
+   */ /* @function clipPolygon(points: Point[], bounds: Bounds, round?: Boolean): Point[]
+   * Clips the polygon geometry defined by the given `points` by the given bounds (using the [Sutherland-Hodgman algorithm](https://en.wikipedia.org/wiki/Sutherland%E2%80%93Hodgman_algorithm)).
+   * Used by Leaflet to only show polygon points that are on the screen or near, increasing
+   * performance. Note that polygon points needs different algorithm for clipping
+   * than polyline, so there's a separate method for it.
+   */ function clipPolygon(points, bounds, round) {
+        var clippedPoints, edges = [
+            1,
+            4,
+            2,
+            8
+        ], i, j, k, a, b, len, edge, p;
+        for(i = 0, len = points.length; i < len; i++)points[i]._code = _getBitCode(points[i], bounds);
+        // for each edge (left, bottom, right, top)
+        for(k = 0; k < 4; k++){
+            edge = edges[k];
+            clippedPoints = [];
+            for(i = 0, len = points.length, j = len - 1; i < len; j = i++){
+                a = points[i];
+                b = points[j];
+                // if a is inside the clip window
+                if (!(a._code & edge)) {
+                    // if b is outside the clip window (a->b goes out of screen)
+                    if (b._code & edge) {
+                        p = _getEdgeIntersection(b, a, edge, bounds, round);
+                        p._code = _getBitCode(p, bounds);
+                        clippedPoints.push(p);
+                    }
+                    clippedPoints.push(a);
+                // else if b is inside the clip window (a->b enters the screen)
+                } else if (!(b._code & edge)) {
+                    p = _getEdgeIntersection(b, a, edge, bounds, round);
+                    p._code = _getBitCode(p, bounds);
+                    clippedPoints.push(p);
+                }
+            }
+            points = clippedPoints;
+        }
+        return points;
+    }
+    /* @function polygonCenter(latlngs: LatLng[], crs: CRS): LatLng
+   * Returns the center ([centroid](http://en.wikipedia.org/wiki/Centroid)) of the passed LatLngs (first ring) from a polygon.
+   */ function polygonCenter(latlngs, crs) {
+        var i, j, p1, p2, f, area, x, y, center;
+        if (!latlngs || latlngs.length === 0) throw new Error("latlngs not passed");
+        if (!isFlat(latlngs)) {
+            console.warn("latlngs are not flat! Only the first ring will be used");
+            latlngs = latlngs[0];
+        }
+        var centroidLatLng = toLatLng([
+            0,
+            0
+        ]);
+        var bounds = toLatLngBounds(latlngs);
+        var areaBounds = bounds.getNorthWest().distanceTo(bounds.getSouthWest()) * bounds.getNorthEast().distanceTo(bounds.getNorthWest());
+        // tests showed that below 1700 rounding errors are happening
+        if (areaBounds < 1700) // getting a inexact center, to move the latlngs near to [0, 0] to prevent rounding errors
+        centroidLatLng = centroid(latlngs);
+        var len = latlngs.length;
+        var points = [];
+        for(i = 0; i < len; i++){
+            var latlng = toLatLng(latlngs[i]);
+            points.push(crs.project(toLatLng([
+                latlng.lat - centroidLatLng.lat,
+                latlng.lng - centroidLatLng.lng
+            ])));
+        }
+        area = x = y = 0;
+        // polygon centroid algorithm;
+        for(i = 0, j = len - 1; i < len; j = i++){
+            p1 = points[i];
+            p2 = points[j];
+            f = p1.y * p2.x - p2.y * p1.x;
+            x += (p1.x + p2.x) * f;
+            y += (p1.y + p2.y) * f;
+            area += f * 3;
+        }
+        if (area === 0) // Polygon is so small that all points are on same pixel.
+        center = points[0];
+        else center = [
+            x / area,
+            y / area
+        ];
+        var latlngCenter = crs.unproject(toPoint(center));
+        return toLatLng([
+            latlngCenter.lat + centroidLatLng.lat,
+            latlngCenter.lng + centroidLatLng.lng
+        ]);
+    }
+    /* @function centroid(latlngs: LatLng[]): LatLng
+   * Returns the 'center of mass' of the passed LatLngs.
+   */ function centroid(coords) {
+        var latSum = 0;
+        var lngSum = 0;
+        var len = 0;
+        for(var i = 0; i < coords.length; i++){
+            var latlng = toLatLng(coords[i]);
+            latSum += latlng.lat;
+            lngSum += latlng.lng;
+            len++;
+        }
+        return toLatLng([
+            latSum / len,
+            lngSum / len
+        ]);
+    }
+    var PolyUtil = {
+        __proto__: null,
+        clipPolygon: clipPolygon,
+        polygonCenter: polygonCenter,
+        centroid: centroid
+    };
     /*
    * @namespace LineUtil
    *
@@ -5106,9 +5279,24 @@ var $bc65c9d81194eb95$exports = {};
             console.warn("latlngs are not flat! Only the first ring will be used");
             latlngs = latlngs[0];
         }
+        var centroidLatLng = toLatLng([
+            0,
+            0
+        ]);
+        var bounds = toLatLngBounds(latlngs);
+        var areaBounds = bounds.getNorthWest().distanceTo(bounds.getSouthWest()) * bounds.getNorthEast().distanceTo(bounds.getNorthWest());
+        // tests showed that below 1700 rounding errors are happening
+        if (areaBounds < 1700) // getting a inexact center, to move the latlngs near to [0, 0] to prevent rounding errors
+        centroidLatLng = centroid(latlngs);
+        var len = latlngs.length;
         var points = [];
-        for(var j in latlngs)points.push(crs.project(toLatLng(latlngs[j])));
-        var len = points.length;
+        for(i = 0; i < len; i++){
+            var latlng = toLatLng(latlngs[i]);
+            points.push(crs.project(toLatLng([
+                latlng.lat - centroidLatLng.lat,
+                latlng.lng - centroidLatLng.lng
+            ])));
+        }
         for(i = 0, halfDist = 0; i < len - 1; i++)halfDist += points[i].distanceTo(points[i + 1]) / 2;
         // The line is so small in the current view that all points are on the same pixel.
         if (halfDist === 0) center = points[0];
@@ -5126,7 +5314,11 @@ var $bc65c9d81194eb95$exports = {};
                 break;
             }
         }
-        return crs.unproject(toPoint(center));
+        var latlngCenter = crs.unproject(toPoint(center));
+        return toLatLng([
+            latlngCenter.lat + centroidLatLng.lat,
+            latlngCenter.lng + centroidLatLng.lng
+        ]);
     }
     var LineUtil = {
         __proto__: null,
@@ -5140,84 +5332,6 @@ var $bc65c9d81194eb95$exports = {};
         isFlat: isFlat,
         _flat: _flat,
         polylineCenter: polylineCenter
-    };
-    /*
-   * @namespace PolyUtil
-   * Various utility functions for polygon geometries.
-   */ /* @function clipPolygon(points: Point[], bounds: Bounds, round?: Boolean): Point[]
-   * Clips the polygon geometry defined by the given `points` by the given bounds (using the [Sutherland-Hodgman algorithm](https://en.wikipedia.org/wiki/Sutherland%E2%80%93Hodgman_algorithm)).
-   * Used by Leaflet to only show polygon points that are on the screen or near, increasing
-   * performance. Note that polygon points needs different algorithm for clipping
-   * than polyline, so there's a separate method for it.
-   */ function clipPolygon(points, bounds, round) {
-        var clippedPoints, edges = [
-            1,
-            4,
-            2,
-            8
-        ], i, j, k, a, b, len, edge, p;
-        for(i = 0, len = points.length; i < len; i++)points[i]._code = _getBitCode(points[i], bounds);
-        // for each edge (left, bottom, right, top)
-        for(k = 0; k < 4; k++){
-            edge = edges[k];
-            clippedPoints = [];
-            for(i = 0, len = points.length, j = len - 1; i < len; j = i++){
-                a = points[i];
-                b = points[j];
-                // if a is inside the clip window
-                if (!(a._code & edge)) {
-                    // if b is outside the clip window (a->b goes out of screen)
-                    if (b._code & edge) {
-                        p = _getEdgeIntersection(b, a, edge, bounds, round);
-                        p._code = _getBitCode(p, bounds);
-                        clippedPoints.push(p);
-                    }
-                    clippedPoints.push(a);
-                // else if b is inside the clip window (a->b enters the screen)
-                } else if (!(b._code & edge)) {
-                    p = _getEdgeIntersection(b, a, edge, bounds, round);
-                    p._code = _getBitCode(p, bounds);
-                    clippedPoints.push(p);
-                }
-            }
-            points = clippedPoints;
-        }
-        return points;
-    }
-    /* @function polygonCenter(latlngs: LatLng[] crs: CRS): LatLng
-   * Returns the center ([centroid](http://en.wikipedia.org/wiki/Centroid)) of the passed LatLngs (first ring) from a polygon.
-   */ function polygonCenter(latlngs, crs) {
-        var i, j, p1, p2, f, area, x, y, center;
-        if (!latlngs || latlngs.length === 0) throw new Error("latlngs not passed");
-        if (!isFlat(latlngs)) {
-            console.warn("latlngs are not flat! Only the first ring will be used");
-            latlngs = latlngs[0];
-        }
-        var points = [];
-        for(var k in latlngs)points.push(crs.project(toLatLng(latlngs[k])));
-        var len = points.length;
-        area = x = y = 0;
-        // polygon centroid algorithm;
-        for(i = 0, j = len - 1; i < len; j = i++){
-            p1 = points[i];
-            p2 = points[j];
-            f = p1.y * p2.x - p2.y * p1.x;
-            x += (p1.x + p2.x) * f;
-            y += (p1.y + p2.y) * f;
-            area += f * 3;
-        }
-        if (area === 0) // Polygon is so small that all points are on same pixel.
-        center = points[0];
-        else center = [
-            x / area,
-            y / area
-        ];
-        return crs.unproject(toPoint(center));
-    }
-    var PolyUtil = {
-        __proto__: null,
-        clipPolygon: clipPolygon,
-        polygonCenter: polygonCenter
     };
     /*
    * @namespace Projection
@@ -7150,7 +7264,7 @@ var $bc65c9d81194eb95$exports = {};
         var coords = [];
         for(var i = 0, len = latlngs.length; i < len; i++)// Check for flat arrays required to ensure unbalanced arrays are correctly converted in recursion
         coords.push(levelsDeep ? latLngsToCoords(latlngs[i], isFlat(latlngs[i]) ? 0 : levelsDeep - 1, closed, precision) : latLngToCoords(latlngs[i], precision));
-        if (!levelsDeep && closed) coords.push(coords[0].slice());
+        if (!levelsDeep && closed && coords.length > 0) coords.push(coords[0].slice());
         return coords;
     }
     function getFeature(layer, newGeometry) {
@@ -8490,7 +8604,7 @@ var $bc65c9d81194eb95$exports = {};
             else if (this.eachLayer) this.eachLayer(this._addFocusListenersOnLayer, this);
         },
         _addFocusListenersOnLayer: function(layer) {
-            var el = layer.getElement();
+            var el = typeof layer.getElement === "function" && layer.getElement();
             if (el) {
                 on(el, "focus", function() {
                     this._tooltip._source = layer;
@@ -8500,11 +8614,21 @@ var $bc65c9d81194eb95$exports = {};
             }
         },
         _setAriaDescribedByOnLayer: function(layer) {
-            var el = layer.getElement();
+            var el = typeof layer.getElement === "function" && layer.getElement();
             if (el) el.setAttribute("aria-describedby", this._tooltip._container.id);
         },
         _openTooltip: function(e) {
-            if (!this._tooltip || !this._map || this._map.dragging && this._map.dragging.moving()) return;
+            if (!this._tooltip || !this._map) return;
+            // If the map is moving, we will show the tooltip after it's done.
+            if (this._map.dragging && this._map.dragging.moving() && !this._openOnceFlag) {
+                this._openOnceFlag = true;
+                var that = this;
+                this._map.once("moveend", function() {
+                    that._openOnceFlag = false;
+                    that._openTooltip(e);
+                });
+                return;
+            }
             this._tooltip._source = e.layer || e.target;
             this.openTooltip(this._tooltip.options.sticky ? e.latlng : undefined);
         },
@@ -9559,7 +9683,8 @@ var $bc65c9d81194eb95$exports = {};
         onAdd: function() {
             if (!this._container) {
                 this._initContainer(); // defined by renderer implementations
-                if (this._zoomAnimated) addClass(this._container, "leaflet-zoom-animated");
+                // always keep transform-origin as 0 0
+                addClass(this._container, "leaflet-zoom-animated");
             }
             this.getPane().appendChild(this._container);
             this._update();

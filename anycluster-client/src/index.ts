@@ -3,7 +3,8 @@ export {
     GeometryType,
     IconType,
     SRIDS,
-    Operators
+    Operators,
+    LogicalOperators,
 } from "./consts";
 
 export { 

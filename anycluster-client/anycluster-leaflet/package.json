@@ -1,6 +1,6 @@
 {
   "name": "anycluster-leaflet",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "anycluster client for Leaflet",
   "main": "dist/main.js",
   "lib": "lib/anycluster-leaflet.js",

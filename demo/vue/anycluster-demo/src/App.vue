@@ -23,7 +23,7 @@ onMounted( () => {
     }),
   });
 
-  const apiUrl = "http://localhost:8080/api/anycluster/";
+  const apiUrl = "https://tomwork.sisol:8080/anycluster/";
 
   const singlePinImages = {
     'imperial': '/images/anycluster/pin_imperial.png',
@@ -79,9 +79,37 @@ onMounted( () => {
 }
 
 #map {
+    width: 100vw;
+    border-radius: 1rem;
+    aspect-ratio: 3/4;
+}
+
+
+@media (min-width: 640px) {
+
+}
+/* md */
+@media (min-width: 768px) {
+
+}
+
+/* lg */
+@media (min-width: 1024px) { 
+  #map {
     width: 800px;
     border: .5rem solid black;
-    border-radius: 1rem;
     aspect-ratio: 4/3;
+  }
 }
+
+/* xl */
+@media (min-width: 1280px) {
+
+}
+
+/* 2xl */
+@media (min-width: 1536px) {
+
+}
+
 </style>

@@ -65,7 +65,7 @@ from django.conf import settings
 from django.db import connections
 from django.contrib.gis.db.models.fields import BaseSpatialField
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
-from django.contrib.gis.geos import Point, GEOSGeometry
+from django.contrib.gis.geos import Point, GEOSGeometry, GeometryCollection, Polygon
 from anycluster import MapTools, ClusterCache, FilterComposer
 from anycluster.definitions import (CLUSTER_TYPE_KMEANS, CLUSTER_TYPE_GRID, GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA,
                                     MAX_BOUNDS)
@@ -773,6 +773,105 @@ class MapClusterer():
 
         return queryset
 
+
+    def get_map_content_counts(self, geojson, geometry_type, filters, zoom, modulations):
+
+        result = {
+            'count': 0,
+            'modulations' : {},
+        }
+
+        # currently, the geometry type for counting is always set to GEOMETRY_TYPE_AREA,
+        # because otherwise pins which are outside the current viewport, but inside the cluster geometry would be counted
+        # the pins visible on the map would not always be the returned count if GEOMETRY_TYPE_VIEWPORT was supported
+        geometry_type = GEOMETRY_TYPE_AREA
+
+        geometries_for_counting = self.get_geometries_for_counting(geojson, geometry_type, zoom)
+
+        unmodulated_count = self.query_map_content_count(geometries_for_counting, filters)
+        result['count'] = unmodulated_count
+
+        for modulation_name, modulation_filters in modulations.items():
+
+            combined_filters = filters + modulation_filters['filters']
+            modulated_count = self.query_map_content_count(geometries_for_counting, combined_filters)
+            result['modulations'][modulation_name] = {
+                'count': modulated_count
+            }
+
+        return result
+
+
+    def query_map_content_count(self, geometries_for_counting, filters):
+
+        count = 0
+
+        filter_composer = FilterComposer(filters)
+        filterstring = filter_composer.as_sql()
+
+        geom_filterstring = self.get_geom_filter_string_from_geos(geometries_for_counting)
+
+        content_count_sql = '''
+            SELECT count(*) AS count
+            FROM {schema_name}.{geo_table}
+                WHERE {geo_column_str} IS NOT NULL
+                    AND {geom_filterstring} {filterstring};
+        '''.format(schema_name=self.schema_name, geo_table=geo_table, geo_column_str=geo_column_str,
+                    geom_filterstring=geom_filterstring, filterstring=filterstring)
+
+        cursor = connections['default'].cursor()
+        cursor.execute(content_count_sql)
+        query_result = cursor.fetchone()
+
+        count += query_result[0]
+
+        return count
+
+
+    def get_grouped_map_contents(self, geojson, geometry_type, zoom, filters, group_by):
+
+        # currently, the geometry type for counting is always set to GEOMETRY_TYPE_AREA,
+        # because otherwise pins which are outside the current viewport, but inside the cluster geometry would be counted
+        # the pins visible on the map would not always be the returned count if GEOMETRY_TYPE_VIEWPORT was supported
+        geometry_type = GEOMETRY_TYPE_AREA
+
+        geometries_for_counting = self.get_geometries_for_counting(geojson, geometry_type, zoom)
+
+        geom_filterstring = self.get_geom_filter_string_from_geos(geometries_for_counting)
+        
+        filter_composer = FilterComposer(filters)
+        filterstring = filter_composer.as_sql()
+
+        groups = {}
+
+        grouped_count_sql = '''
+            SELECT COUNT(id), {group_by}
+            FROM {schema_name}.{geo_table}
+                WHERE {geo_column_str} IS NOT NULL
+                    AND {geom_filterstring} {filterstring}
+                        GROUP BY {group_by} ORDER BY {group_by} ASC;
+        '''.format(schema_name=self.schema_name, geo_table=geo_table, geo_column_str=geo_column_str,
+                    geom_filterstring=geom_filterstring, filterstring=filterstring, group_by=group_by)
+
+        cursor = connections['default'].cursor()
+        cursor.execute(grouped_count_sql)
+        results = cursor.fetchall()
+        
+        for result in results:
+            count = result[0]
+            group_name = result[1]
+
+            if group_name not in groups:
+                groups[group_name] = {
+                    'count' : count,
+                }
+
+            else:
+                groups[group_name]['count'] += count
+        
+        return groups
+
+
     '''---------------------------------------------------------------------------------------------------------------------
         COSTRUCT A FILTERSTRING FOR GEOMETRIES
 
@@ -788,19 +887,61 @@ class MapClusterer():
 
         geos_geometries = self.convert_geojson_to_geos(geojson)
 
-        geomfilterstring = ''
+        return self.get_geom_filter_string_from_geos(geos_geometries)
 
-        geomfilterstring += '('
+
+    def get_geom_filter_string_from_geos(self, geos_geometries):
+
+        geomfilterstring = '('
 
         for counter, geos in enumerate(geos_geometries):
             if counter > 0:
                 geomfilterstring += ' OR '
+                
             geomfilterstring += " ST_Intersects({geo_column}, ST_GeometryFromText('{geometry}', {srid}) ) ".format(
                 geo_column=geo_column_str, geometry=geos.wkt, srid=self.db_srid)
 
         geomfilterstring += ')'
 
         return geomfilterstring
+
+
+    '''---------------------------------------------------------------------------------------------------------------------
+        get non-cell-based geometries, eg fr cointing and grouping
+    ---------------------------------------------------------------------------------------------------------------------'''
+    # return a list of geometries
+    def get_geometries_for_counting(self, geojson, geometry_type, zoom):
+
+        geos_geometries = self.convert_geojson_to_geos(geojson)
+
+        if geometry_type == GEOMETRY_TYPE_VIEWPORT:
+            snapped_viewport = self.snap_viewport_to_grid(geos_geometries, zoom)
+            geometries_for_counting = [snapped_viewport]
+        else:
+            geometries_for_counting = geos_geometries
+
+        return geometries_for_counting
+
+
+    def snap_viewport_to_grid(self, geos_geometries, zoom):
+
+        srid = geos_geometries[0].srid
+
+        viewport_geometry = GeometryCollection(*geos_geometries, srid=srid)
+
+        envelope = viewport_geometry.envelope
+        
+        cells = self.rectangle_to_clustercells(envelope, zoom)
+
+        first_cell = cells[0]
+        last_cell = cells[-1]
+
+        cells = GeometryCollection(first_cell, last_cell, srid=viewport_geometry.srid)
+
+        grid_rectangle = cells.envelope
+
+        return grid_rectangle
+
 
     '''---------------------------------------------------------------------------------------------------------------------
         K Calculation

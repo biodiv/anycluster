@@ -1,27 +1,27 @@
 function $parcel$interopDefault(a) {
   return a && a.__esModule ? a.default : a;
 }
-let $aca83a355307fe8a$export$55fee9ea2526ad0d;
+var $aca83a355307fe8a$export$55fee9ea2526ad0d;
 (function(SRIDS) {
     SRIDS["EPSG4326"] = "EPSG:4326";
     SRIDS["EPSG3857"] = "EPSG:3857";
 })($aca83a355307fe8a$export$55fee9ea2526ad0d || ($aca83a355307fe8a$export$55fee9ea2526ad0d = {}));
-let $aca83a355307fe8a$export$ae91e066970d978a;
+var $aca83a355307fe8a$export$ae91e066970d978a;
 (function(ClusterMethod) {
     ClusterMethod["kmeans"] = "kmeans";
     ClusterMethod["grid"] = "grid";
 })($aca83a355307fe8a$export$ae91e066970d978a || ($aca83a355307fe8a$export$ae91e066970d978a = {}));
-let $aca83a355307fe8a$export$8f4397a63c3cef66;
+var $aca83a355307fe8a$export$8f4397a63c3cef66;
 (function(GeometryType) {
     GeometryType["viewport"] = "viewport";
     GeometryType["area"] = "area";
 })($aca83a355307fe8a$export$8f4397a63c3cef66 || ($aca83a355307fe8a$export$8f4397a63c3cef66 = {}));
-let $aca83a355307fe8a$export$13ff1290a9e22e77;
+var $aca83a355307fe8a$export$13ff1290a9e22e77;
 (function(IconType) {
     IconType["exact"] = "exact";
     IconType["rounded"] = "rounded";
 })($aca83a355307fe8a$export$13ff1290a9e22e77 || ($aca83a355307fe8a$export$13ff1290a9e22e77 = {}));
-let $aca83a355307fe8a$export$9c3a9f8fbf06a34;
+var $aca83a355307fe8a$export$9c3a9f8fbf06a34;
 (function(DefaultGridSizes) {
     DefaultGridSizes[DefaultGridSizes["grid"] = 64] = "grid";
     DefaultGridSizes[DefaultGridSizes["kmeans"] = 150] = "kmeans";
@@ -56,7 +56,7 @@ const $aca83a355307fe8a$export$96b1907ff7fa3578 = {
         60
     ]
 };
-let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
+var $aca83a355307fe8a$export$7fa100a28fbb5fe2;
 (function(Operators) {
     Operators["in"] = "in";
     Operators["notIn"] = "not in";
@@ -67,6 +67,11 @@ let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
     Operators["startswith"] = "startswith";
     Operators["contains"] = "contains";
 })($aca83a355307fe8a$export$7fa100a28fbb5fe2 || ($aca83a355307fe8a$export$7fa100a28fbb5fe2 = {}));
+var $aca83a355307fe8a$export$9a28c02ac0f6fc9d;
+(function(LogicalOperators) {
+    LogicalOperators["AND"] = "AND";
+    LogicalOperators["OR"] = "OR";
+})($aca83a355307fe8a$export$9a28c02ac0f6fc9d || ($aca83a355307fe8a$export$9a28c02ac0f6fc9d = {}));
 
 
 
@@ -111,7 +116,16 @@ class $5660b38ff962cbfe$export$5e01b9ff483562af {
         const clusterContent = await this.get(url);
         return clusterContent;
     }
-    getAreaContent() {}
+    async getMapContentCount(zoom, data) {
+        const url = `${this.apiUrl}get-map-content-count/${zoom}/${this.gridSize}/`;
+        const mapContentCount = await this.post(url, data);
+        return mapContentCount;
+    }
+    async getGroupedMapContents(zoom, data) {
+        const url = `${this.apiUrl}get-grouped-map-contents/${zoom}/${this.gridSize}/`;
+        const groupedMapContents = await this.post(url, data);
+        return groupedMapContents;
+    }
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -227,11 +241,13 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
         this.geometryType = settings.geometryType ? settings.geometryType : (0, $aca83a355307fe8a$export$8f4397a63c3cef66).viewport;
         this.area = settings.area ? settings.area : null;
         this.iconType = settings.iconType ? settings.iconType : (0, $aca83a355307fe8a$export$13ff1290a9e22e77).rounded;
-        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $aca83a355307fe8a$export$96b1907ff7fa3578);
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $3e2183be5df4d9a4$var$defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $3e2183be5df4d9a4$var$defaultGridStrokeColors;
+        // hooks
+        this.onGotClusters = settings.onGotClusters ? settings.onGotClusters : this._onGotClusters;
+        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         if (this.area) this.setArea(this.area);
         const gridSize = this.getGridSize();
         this.anycluster = new (0, $5660b38ff962cbfe$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
@@ -449,16 +465,16 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
                 this.drawCell(cluster);
             });
         } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
+        this.onGotClusters();
     }
     startClustering() {
         this.getClusters(true);
         this.addMapEventListeners();
     }
-    _onFinalClick(marker, data) {
-        alert(JSON.stringify(data));
-    }
     filtersAreEqual(filter1, filter2) {
-        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        if ("column" in filter1 && "column" in filter2) {
+            if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        } else if (JSON.stringify(filter1) === JSON.stringify(filter2)) return true;
         return false;
     }
     // filtering
@@ -516,6 +532,41 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
             this.getClusters(true);
         }
     }
+    /**
+     * methods for getting counts of objects on the current map / geometry
+     */ async getMapContentCount(modulations) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "modulations": modulations
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getMapContentCount(zoom, postData);
+        return data;
+    }
+    async getGroupedMapContents(groupBy) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "group_by": groupBy
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+        return data;
+    }
+    // hooks
+    _onFinalClick(marker, data) {
+        alert(JSON.stringify(data));
+    }
+    _onGotClusters() {}
 }
 
 
@@ -669,23 +720,36 @@ function $69c1cc8ae30f997f$export$fcb633242ef15540(a, b) {
     return a > b ? 1 : a < b ? -1 : 0;
 }
 function $69c1cc8ae30f997f$export$8a3786cc03fdb777(arr, target, direction) {
-    const n = arr.length;
     if (arr[0] <= target) return 0;
-    else if (target <= arr[n - 1]) return n - 1;
-    let i;
-    if (direction > 0) for(i = 1; i < n; ++i){
-        if (arr[i] < target) return i - 1;
-    }
-    else if (direction < 0) for(i = 1; i < n; ++i){
-        if (arr[i] <= target) return i;
-    }
-    else for(i = 1; i < n; ++i){
-        if (arr[i] == target) return i;
-        else if (arr[i] < target) {
-            if (typeof direction === "function") {
-                if (direction(target, arr[i - 1], arr[i]) > 0) return i - 1;
+    const n = arr.length;
+    if (target <= arr[n - 1]) return n - 1;
+    if (typeof direction === "function") {
+        for(let i = 1; i < n; ++i){
+            const candidate = arr[i];
+            if (candidate === target) return i;
+            if (candidate < target) {
+                if (direction(target, arr[i - 1], candidate) > 0) return i - 1;
                 return i;
-            } else if (arr[i - 1] - target < target - arr[i]) return i - 1;
+            }
+        }
+        return n - 1;
+    }
+    if (direction > 0) {
+        for(let i = 1; i < n; ++i){
+            if (arr[i] < target) return i - 1;
+        }
+        return n - 1;
+    }
+    if (direction < 0) {
+        for(let i = 1; i < n; ++i){
+            if (arr[i] <= target) return i;
+        }
+        return n - 1;
+    }
+    for(let i = 1; i < n; ++i){
+        if (arr[i] == target) return i;
+        if (arr[i] < target) {
+            if (arr[i - 1] - target < target - arr[i]) return i - 1;
             return i;
         }
     }
@@ -1134,7 +1198,7 @@ var $0a5ecae53e50aa57$export$2e2bcd8739ae039 = $0a5ecae53e50aa57$var$Observable;
 function $ae7eaaa2c9c1e05d$export$5e82334337e0f204(obj) {
     return obj.ol_uid || (obj.ol_uid = String(++$ae7eaaa2c9c1e05d$var$uidCounter_));
 }
-const $ae7eaaa2c9c1e05d$export$a4ad2735b021c132 = "7.3.0";
+const $ae7eaaa2c9c1e05d$export$a4ad2735b021c132 = "7.4.0";
 
 
 
@@ -1733,8 +1797,9 @@ function $57ec69d152197e1d$export$803ce6b71a0a94b2(n, decimals) {
         return (0, $ae7eaaa2c9c1e05d$export$817eb92a8194bab0)();
     }
     /**
-   * Return the visibility of the layer (`true` or `false`).
-   * @return {boolean} The visibility of the layer.
+   * Return the value of this layer's `visible` property. To find out whether the layer
+   * is visible on a map, use `isVisible()` instead.
+   * @return {boolean} The value of the `visible` property of the layer.
    * @observable
    * @api
    */ getVisible() {
@@ -2746,6 +2811,7 @@ function $84be800ca44e672c$export$a6a5a7a461419425(extent, start, end) {
     return intersects;
 }
 function $84be800ca44e672c$export$9f9dcb98c894b623(extent, transformFn, dest, stops) {
+    if ($84be800ca44e672c$export$dd1bc94b04021eeb(extent)) return $84be800ca44e672c$export$3e2152b047719fa1(dest);
     let coordinates = [];
     if (stops > 1) {
         const width = extent[2] - extent[0];
@@ -2804,7 +2870,7 @@ function $84be800ca44e672c$export$9031237f01de0947(extent, projection) {
                 extent[3]
             ]
         ];
-        else if (extent[0] < projectionExtent[0]) // the extent crosses the anti meridian, so it needs to be sliced
+        if (extent[0] < projectionExtent[0]) // the extent crosses the anti meridian, so it needs to be sliced
         return [
             [
                 extent[0] + worldWidth,
@@ -2819,7 +2885,7 @@ function $84be800ca44e672c$export$9031237f01de0947(extent, projection) {
                 extent[3]
             ]
         ];
-        else if (extent[2] > projectionExtent[2]) // the extent crosses the anti meridian, so it needs to be sliced
+        if (extent[2] > projectionExtent[2]) // the extent crosses the anti meridian, so it needs to be sliced
         return [
             [
                 extent[0],
@@ -3283,7 +3349,7 @@ function $983289ae1d13cd2a$export$4860237d10380594() {
 }
 function $983289ae1d13cd2a$export$549167224996a0fb(projection, defaultCode) {
     if (!projection) return $983289ae1d13cd2a$export$3988ae62b71be9a3(defaultCode);
-    else if (typeof projection === "string") return $983289ae1d13cd2a$export$3988ae62b71be9a3(projection);
+    if (typeof projection === "string") return $983289ae1d13cd2a$export$3988ae62b71be9a3(projection);
     return /** @type {Projection} */ projection;
 }
 function $983289ae1d13cd2a$export$6b4aafd331159e0d(coordTransform) {
@@ -5820,7 +5886,7 @@ function $8fedf7da5a76e7a9$export$87d6a1539a56e47f(polygon, center, radius, angl
  * between 0 and 1 representing the progress toward the destination state.
  */ /**
  * @typedef {Object} State
- * @property {import("./coordinate.js").Coordinate} center Center.
+ * @property {import("./coordinate.js").Coordinate} center Center (in view projection coordinates).
  * @property {import("./proj/Projection.js").default} projection Projection.
  * @property {number} resolution Resolution.
  * @property {import("./coordinate.js").Coordinate} [nextCenter] The next center during an animation series.
@@ -5830,9 +5896,10 @@ function $8fedf7da5a76e7a9$export$87d6a1539a56e47f(polygon, center, radius, angl
  * @property {number} zoom Zoom.
  */ /**
  * Like {@link import("./Map.js").FrameState}, but just `viewState` and `extent`.
- * @typedef {Object} ViewStateAndExtent
+ * @typedef {Object} ViewStateLayerStateExtent
  * @property {State} viewState View state.
- * @property {import("./extent.js").Extent} extent Extent.
+ * @property {import("./extent.js").Extent} extent Extent (in user projection coordinates).
+ * @property {Array<import("./layer/Layer.js").State>} [layerStatesArray] Layer states.
  */ /**
  * Default min zoom level for the map view.
  * @type {number}
@@ -6633,7 +6700,7 @@ function $8fedf7da5a76e7a9$export$87d6a1539a56e47f(polygon, center, radius, angl
         };
     }
     /**
-   * @return {ViewStateAndExtent} Like `FrameState`, but just `viewState` and `extent`.
+   * @return {ViewStateLayerStateExtent} Like `FrameState`, but just `viewState` and `extent`.
    */ getViewStateAndExtent() {
         return {
             viewState: this.getState(),
@@ -7173,8 +7240,8 @@ function $5c065e8fdff88e40$export$4eeaa08dd550e3c0(options) {
     if (enableRotation) {
         const constrainRotation = options.constrainRotation;
         if (constrainRotation === undefined || constrainRotation === true) return (0, $4412a0460d6cbb1d$export$17a6e6f3448b17e8)();
-        else if (constrainRotation === false) return 0, $4412a0460d6cbb1d$export$f883a24d5edde77c;
-        else if (typeof constrainRotation === "number") return (0, $4412a0460d6cbb1d$export$9ba78806de831083)(constrainRotation);
+        if (constrainRotation === false) return 0, $4412a0460d6cbb1d$export$f883a24d5edde77c;
+        if (typeof constrainRotation === "number") return (0, $4412a0460d6cbb1d$export$9ba78806de831083)(constrainRotation);
         return 0, $4412a0460d6cbb1d$export$f883a24d5edde77c;
     }
     return 0, $4412a0460d6cbb1d$export$e20fbacbb41798b;
@@ -7419,24 +7486,33 @@ var $5c065e8fdff88e40$export$2e2bcd8739ae039 = $5c065e8fdff88e40$var$View;
         return this.renderer_.getData(pixel);
     }
     /**
-   * The layer is visible in the given view, i.e. within its min/max resolution or zoom and
-   * extent, and `getVisible()` is `true`.
-   * @param {View|import("../View.js").ViewStateAndExtent} view View or {@link import("../Map.js").FrameState}.
-   * @return {boolean} The layer is visible in the current view.
+   * The layer is visible on the map view, i.e. within its min/max resolution or zoom and
+   * extent, not set to `visible: false`, and not inside a layer group that is set
+   * to `visible: false`.
+   * @param {View|import("../View.js").ViewStateLayerStateExtent} [view] View or {@link import("../Map.js").FrameState}.
+   * Only required when the layer is not added to a map.
+   * @return {boolean} The layer is visible in the map view.
    * @api
    */ isVisible(view) {
         let frameState;
+        const map = this.getMapInternal();
+        if (!view && map) view = map.getView();
         if (view instanceof (0, $5c065e8fdff88e40$export$2e2bcd8739ae039)) frameState = {
             viewState: view.getState(),
             extent: view.calculateExtent()
         };
         else frameState = view;
+        if (!frameState.layerStatesArray && map) frameState.layerStatesArray = map.getLayerGroup().getLayerStatesArray();
+        let layerState;
+        if (frameState.layerStatesArray) layerState = frameState.layerStatesArray.find((layerState)=>layerState.layer === this);
+        else layerState = this.getLayerState();
         const layerExtent = this.getExtent();
-        return this.getVisible() && $14019fcc7ba24fd5$export$acb1e9cb9ce4ca56(this.getLayerState(), frameState.viewState) && (!layerExtent || (0, $84be800ca44e672c$export$7b0a31e10bbff018)(layerExtent, frameState.extent));
+        return $14019fcc7ba24fd5$export$acb1e9cb9ce4ca56(layerState, frameState.viewState) && (!layerExtent || (0, $84be800ca44e672c$export$7b0a31e10bbff018)(layerExtent, frameState.extent));
     }
     /**
    * Get the attributions of the source of this layer for the given view.
-   * @param {View|import("../View.js").ViewStateAndExtent} view View or  {@link import("../Map.js").FrameState}.
+   * @param {View|import("../View.js").ViewStateLayerStateExtent} [view] View or {@link import("../Map.js").FrameState}.
+   * Only required when the layer is not added to a map.
    * @return {Array<string>} Attributions for this layer at the given view.
    * @api
    */ getAttributions(view) {
@@ -7458,13 +7534,14 @@ var $5c065e8fdff88e40$export$2e2bcd8739ae039 = $5c065e8fdff88e40$var$View;
    * @param {?import("../Map.js").FrameState} frameState Frame state.
    * @param {HTMLElement} target Target which the renderer may (but need not) use
    * for rendering its content.
-   * @return {HTMLElement} The rendered element.
+   * @return {HTMLElement|null} The rendered element.
    */ render(frameState, target) {
         const layerRenderer = this.getRenderer();
         if (layerRenderer.prepareFrame(frameState)) {
             this.rendered = true;
             return layerRenderer.renderFrame(frameState, target);
         }
+        return null;
     }
     /**
    * Called when a layer is not visible during a map render.
@@ -8903,7 +8980,7 @@ function $ba06fcc662408736$export$3cb6f3a6e49cc0ee(context, transform, opacity, 
         const e = Math.sqrt(a * a + d * d);
         const miterRatio = e / a;
         if (lineJoin === "miter" && miterRatio <= miterLimit) return miterRatio * strokeWidth;
-        // Calculate the distnce from center to the stroke corner where
+        // Calculate the distance from center to the stroke corner where
         // it was cut short because of the miter limit.
         //              l
         //        ----+---- <= distance from center to here is maxr
@@ -10415,6 +10492,21 @@ var $064229adb158691e$export$2e2bcd8739ae039 = $064229adb158691e$var$IconImage;
  * @property {string} [src] Image source URI.
  * @property {"declutter"|"obstacle"|"none"|undefined} [declutterMode] Declutter mode.
  */ /**
+ * @param {number} width The width.
+ * @param {number} height The height.
+ * @param {number|undefined} wantedWidth The wanted width.
+ * @param {number|undefined} wantedHeight The wanted height.
+ * @return {number|Array<number>} The scale.
+ */ function $4dd3b6f7e2acb5b2$var$calculateScale(width, height, wantedWidth, wantedHeight) {
+    if (wantedWidth !== undefined && wantedHeight !== undefined) return [
+        wantedWidth / width,
+        wantedHeight / height
+    ];
+    if (wantedWidth !== undefined) return wantedWidth / width;
+    if (wantedHeight !== undefined) return wantedHeight / height;
+    return 1;
+}
+/**
  * @classdesc
  * Set icon style for vector features.
  * @api
@@ -10520,20 +10612,28 @@ var $064229adb158691e$export$2e2bcd8739ae039 = $064229adb158691e$var$IconImage;
      * @type {import("../size.js").Size}
      */ this.size_ = options.size !== undefined ? options.size : null;
         /**
-     * @type {number|undefined}
-     */ this.width_ = options.width;
-        /**
-     * @type {number|undefined}
-     */ this.height_ = options.height;
-        /**
-     * Recalculate the scale if width or height were given.
-     */ if (this.width_ !== undefined || this.height_ !== undefined) {
-            const image = this.getImage(1);
-            const setScale = ()=>{
-                this.updateScaleFromWidthAndHeight(this.width_, this.height_);
-            };
-            if (image.width > 0) this.updateScaleFromWidthAndHeight(this.width_, this.height_);
-            else image.addEventListener("load", setScale);
+     * Calculate the scale if width or height were given.
+     */ if (options.width !== undefined || options.height !== undefined) {
+            let width, height;
+            if (options.size) [width, height] = options.size;
+            else {
+                const image = this.getImage(1);
+                if (image instanceof HTMLCanvasElement || image.src && image.complete) {
+                    width = image.width;
+                    height = image.height;
+                } else {
+                    this.initialOptions_ = options;
+                    const onload = ()=>{
+                        this.unlistenImageChange(onload);
+                        if (!this.initialOptions_) return;
+                        const imageSize = this.iconImage_.getSize();
+                        this.setScale($4dd3b6f7e2acb5b2$var$calculateScale(imageSize[0], imageSize[1], options.width, options.height));
+                    };
+                    this.listenImageChange(onload);
+                    return;
+                }
+            }
+            if (width !== undefined) this.setScale($4dd3b6f7e2acb5b2$var$calculateScale(width, height, options.width, options.height));
         }
     }
     /**
@@ -10541,11 +10641,15 @@ var $064229adb158691e$export$2e2bcd8739ae039 = $064229adb158691e$var$IconImage;
    * @return {Icon} The cloned style.
    * @api
    */ clone() {
-        let scale = this.getScale();
-        scale = Array.isArray(scale) ? scale.slice() : scale;
-        // if either width or height are defined, do not pass scale.
-        if (this.width_ !== undefined || this.height_ !== undefined) scale = undefined;
-        return new $4dd3b6f7e2acb5b2$var$Icon({
+        let scale, width, height;
+        if (this.initialOptions_) {
+            width = this.initialOptions_.width;
+            height = this.initialOptions_.height;
+        } else {
+            scale = this.getScale();
+            scale = Array.isArray(scale) ? scale.slice() : scale;
+        }
+        const clone = new $4dd3b6f7e2acb5b2$var$Icon({
             anchor: this.anchor_.slice(),
             anchorOrigin: this.anchorOrigin_,
             anchorXUnits: this.anchorXUnits_,
@@ -10559,39 +10663,14 @@ var $064229adb158691e$export$2e2bcd8739ae039 = $064229adb158691e$var$IconImage;
             rotateWithView: this.getRotateWithView(),
             rotation: this.getRotation(),
             scale: scale,
+            width: width,
+            height: height,
             size: this.size_ !== null ? this.size_.slice() : undefined,
             src: this.getSrc(),
             displacement: this.getDisplacement().slice(),
-            declutterMode: this.getDeclutterMode(),
-            width: this.width_,
-            height: this.height_
+            declutterMode: this.getDeclutterMode()
         });
-    }
-    /**
-   * Set the scale of the Icon by calculating it from given width and height and the
-   * width and height of the image.
-   *
-   * @private
-   * @param {number} width The width.
-   * @param {number} height The height.
-   */ updateScaleFromWidthAndHeight(width, height) {
-        const image = this.getImage(1);
-        if (width !== undefined && height !== undefined) super.setScale([
-            width / image.width,
-            height / image.height
-        ]);
-        else if (width !== undefined) super.setScale([
-            width / image.width,
-            width / image.width
-        ]);
-        else if (height !== undefined) super.setScale([
-            height / image.height,
-            height / image.height
-        ]);
-        else super.setScale([
-            1,
-            1
-        ]);
+        return clone;
     }
     /**
    * Get the anchor point in pixels. The anchor determines the center point for the
@@ -10707,50 +10786,33 @@ var $064229adb158691e$export$2e2bcd8739ae039 = $064229adb158691e$var$IconImage;
         return !this.size_ ? this.iconImage_.getSize() : this.size_;
     }
     /**
-   * Get the width of the icon (in pixels).
+   * Get the width of the icon (in pixels). Will return undefined when the icon image is not yet loaded.
    * @return {number} Icon width (in pixels).
    * @api
    */ getWidth() {
-        return this.width_;
+        const scale = this.getScaleArray();
+        if (this.size_) return this.size_[0] * scale[0];
+        if (this.iconImage_.getImageState() == (0, $d5d27ccbbbef5bf5$export$2e2bcd8739ae039).LOADED) return this.iconImage_.getSize()[0] * scale[0];
+        return undefined;
     }
     /**
-   * Get the height of the icon (in pixels).
+   * Get the height of the icon (in pixels). Will return undefined when the icon image is not yet loaded.
    * @return {number} Icon height (in pixels).
    * @api
    */ getHeight() {
-        return this.height_;
+        const scale = this.getScaleArray();
+        if (this.size_) return this.size_[1] * scale[1];
+        if (this.iconImage_.getImageState() == (0, $d5d27ccbbbef5bf5$export$2e2bcd8739ae039).LOADED) return this.iconImage_.getSize()[1] * scale[1];
+        return undefined;
     }
     /**
-   * Set the width of the icon in pixels.
-   *
-   * @param {number} width The width to set.
-   */ setWidth(width) {
-        this.width_ = width;
-        this.updateScaleFromWidthAndHeight(width, this.height_);
-    }
-    /**
-   * Set the height of the icon in pixels.
-   *
-   * @param {number} height The height to set.
-   */ setHeight(height) {
-        this.height_ = height;
-        this.updateScaleFromWidthAndHeight(this.width_, height);
-    }
-    /**
-   * Set the scale and updates the width and height correspondingly.
+   * Set the scale.
    *
    * @param {number|import("../size.js").Size} scale Scale.
-   * @override
    * @api
    */ setScale(scale) {
+        delete this.initialOptions_;
         super.setScale(scale);
-        const image = this.getImage(1);
-        if (image) {
-            const widthScale = Array.isArray(scale) ? scale[0] : scale;
-            if (widthScale !== undefined) this.width_ = widthScale * image.width;
-            const heightScale = Array.isArray(scale) ? scale[1] : scale;
-            if (heightScale !== undefined) this.height_ = heightScale * image.height;
-        }
     }
     /**
    * @param {function(import("../events/Event.js").default): void} listener Listener function.
@@ -10807,8 +10869,8 @@ var $4dd3b6f7e2acb5b2$export$2e2bcd8739ae039 = $4dd3b6f7e2acb5b2$var$Icon;
  * @property {boolean} [overflow=false] For polygon labels or when `placement` is set to `'line'`, allow text to exceed
  * the width of the polygon at the label position or the length of the path that it follows.
  * @property {TextPlacement} [placement='point'] Text placement.
- * @property {number} [repeat] Repeat interval in pixels. When set, the text will be repeated at this interval. Only available
- * when `placement` is set to `'line'`. Overrides 'textAlign'.
+ * @property {number} [repeat] Repeat interval. When set, the text will be repeated at this interval, which specifies
+ * the distance between two text anchors in pixels. Only available when `placement` is set to `'line'`. Overrides 'textAlign'.
  * @property {number|import("../size.js").Size} [scale] Scale.
  * @property {boolean} [rotateWithView=false] Whether to rotate the text with the view.
  * @property {number} [rotation=0] Rotation in radians (positive rotation clockwise).
@@ -11337,6 +11399,8 @@ function $b0dc507c91f0d524$export$b7b312ddf6b38c9f(flatStyle) {
             displacement: flatStyle["icon-displacement"],
             opacity: flatStyle["icon-opacity"],
             scale: flatStyle["icon-scale"],
+            width: flatStyle["icon-width"],
+            height: flatStyle["icon-height"],
             rotation: flatStyle["icon-rotation"],
             rotateWithView: flatStyle["icon-rotate-with-view"],
             size: flatStyle["icon-size"],
@@ -11571,9 +11635,15 @@ function $b0dc507c91f0d524$export$b7b312ddf6b38c9f(flatStyle) {
    * `setStyle()` without arguments to reset to the default style. See
    * [the ol/style/Style module]{@link module:ol/style/Style~Style} for information on the default style.
    *
-   * If your layer has a static style, you can use "flat" style object literals instead of
-   * using the `Style` and symbolizer constructors (`Fill`, `Stroke`, etc.).  See the documentation
-   * for the [flat style types]{@link module:ol/style/flat~FlatStyle} to see what properties are supported.
+   * If your layer has a static style, you can use [flat style]{@link module:ol/style/flat~FlatStyle} object
+   * literals instead of using the `Style` and symbolizer constructors (`Fill`, `Stroke`, etc.):
+   * ```js
+   * vectorLayer.setStyle({
+   *   "fill-color": "yellow",
+   *   "stroke-color": "black",
+   *   "stroke-width": 4
+   * })
+   * ```
    *
    * @param {import("../style/Style.js").StyleLike|import("../style/flat.js").FlatStyleLike|null} [style] Layer style.
    * @api
@@ -15256,6 +15326,7 @@ var $9ab3bb4278f389ba$export$2e2bcd8739ae039 = $9ab3bb4278f389ba$var$ExecutorGro
    * @param {import("../../geom/Circle.js").default} geometry Circle geometry.
    * @api
    */ drawCircle(geometry) {
+        if (this.squaredTolerance_) geometry = /** @type {import("../../geom/Circle.js").default} */ geometry.simplifyTransformed(this.squaredTolerance_, this.userTransform_);
         if (!(0, $84be800ca44e672c$export$7b0a31e10bbff018)(this.extent_, geometry.getExtent())) return;
         if (this.fillState_ || this.strokeState_) {
             if (this.fillState_) this.setContextFillState_(this.fillState_);
@@ -15335,7 +15406,7 @@ var $9ab3bb4278f389ba$export$2e2bcd8739ae039 = $9ab3bb4278f389ba$var$ExecutorGro
    * @api
    */ drawFeature(feature, style) {
         const geometry = style.getGeometryFunction()(feature);
-        if (!geometry || !(0, $84be800ca44e672c$export$7b0a31e10bbff018)(this.extent_, geometry.getExtent())) return;
+        if (!geometry) return;
         this.setStyle(style);
         this.drawGeometry(geometry);
     }
@@ -17005,10 +17076,10 @@ var $15b6a1746ef633ad$export$2e2bcd8739ae039 = $15b6a1746ef633ad$var$RBush;
  * @typedef {'undefined' | 'loading' | 'ready' | 'error'} State
  * State of the source, one of 'undefined', 'loading', 'ready' or 'error'.
  */ /**
- * A function that takes a {@link import("../View.js").ViewStateAndExtent} and returns a string or
+ * A function that takes a {@link import("../View.js").ViewStateLayerStateExtent} and returns a string or
  * an array of strings representing source attributions.
  *
- * @typedef {function(import("../View.js").ViewStateAndExtent): (string|Array<string>)} Attribution
+ * @typedef {function(import("../View.js").ViewStateLayerStateExtent): (string|Array<string>)} Attribution
  */ /**
  * A type that can be used to provide attribution information for data sources.
  *
@@ -17735,7 +17806,7 @@ class $3b942f73954bd0a6$export$d402fd02dc2b661c extends (0, $f22c10e3757627da$ex
    * @api
    */ forEachFeature(callback) {
         if (this.featuresRtree_) return this.featuresRtree_.forEach(callback);
-        else if (this.featuresCollection_) this.featuresCollection_.forEach(callback);
+        if (this.featuresCollection_) this.featuresCollection_.forEach(callback);
     }
     /**
    * Iterate through all features whose geometries contain the provided
@@ -17781,7 +17852,7 @@ class $3b942f73954bd0a6$export$d402fd02dc2b661c extends (0, $f22c10e3757627da$ex
    * @api
    */ forEachFeatureInExtent(extent, callback) {
         if (this.featuresRtree_) return this.featuresRtree_.forEachInExtent(extent, callback);
-        else if (this.featuresCollection_) this.featuresCollection_.forEach(callback);
+        if (this.featuresCollection_) this.featuresCollection_.forEach(callback);
     }
     /**
    * Iterate through all features whose geometry intersects the provided extent,
@@ -17863,7 +17934,8 @@ class $3b942f73954bd0a6$export$d402fd02dc2b661c extends (0, $f22c10e3757627da$ex
             if (!multiWorld) return this.featuresRtree_.getInExtent(extent);
             const extents = (0, $84be800ca44e672c$export$9031237f01de0947)(extent, projection);
             return [].concat(...extents.map((anExtent)=>this.featuresRtree_.getInExtent(anExtent)));
-        } else if (this.featuresCollection_) return this.featuresCollection_.getArray().slice(0);
+        }
+        if (this.featuresCollection_) return this.featuresCollection_.getArray().slice(0);
         return [];
     }
     /**
@@ -19004,7 +19076,8 @@ function $8d80c6b1ee03d123$export$d3e9e4b1c7f2405c(extent, options) {
     if (typeof source === "string") {
         const object = JSON.parse(source);
         return object ? /** @type {Object} */ object : null;
-    } else if (source !== null) return source;
+    }
+    if (source !== null) return source;
     return null;
 }
 var $f791690b01dc2280$export$2e2bcd8739ae039 = $f791690b01dc2280$var$JSONFeature;
@@ -19068,7 +19141,8 @@ function $9add6a1a9444b11b$export$8f44c3c220ef6f09(flatCoordinates, offset, end,
             return coordinate;
         }
         return null;
-    } else if (flatCoordinates[end - 1] < m) {
+    }
+    if (flatCoordinates[end - 1] < m) {
         if (extrapolate) {
             coordinate = flatCoordinates.slice(end - stride, end);
             coordinate[stride - 1] = m;
@@ -19117,7 +19191,7 @@ function $9add6a1a9444b11b$export$6a3300857e9ef453(flatCoordinates, offset, ends
         const end = ends[i];
         if (offset == end) continue;
         if (m < flatCoordinates[offset + stride - 1]) return null;
-        else if (m <= flatCoordinates[end - 1]) return $9add6a1a9444b11b$export$8f44c3c220ef6f09(flatCoordinates, offset, end, stride, m, false);
+        if (m <= flatCoordinates[end - 1]) return $9add6a1a9444b11b$export$8f44c3c220ef6f09(flatCoordinates, offset, end, stride, m, false);
         offset = end;
     }
     return null;

@@ -13,6 +13,10 @@ urlpatterns = [
         name='get_area_content'),
     path('get-dataset-content/<int:zoom>/<int:grid_size>/<int:dataset_id>/', views.GetDatasetContent.as_view(),
         name='get_dataset_content'),
+    path('get-map-content-count/<int:zoom>/<int:grid_size>/', views.GetMapContentCount.as_view(),
+        name='get_map_content_count'),
+    path('get-grouped-map-contents/<int:zoom>/<int:grid_size>/', views.GetGroupedMapContents.as_view(),
+        name='get_grouped_map_contents'),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=['json'])

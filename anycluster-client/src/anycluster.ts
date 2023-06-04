@@ -1,4 +1,4 @@
-import { SRIDS, MaxBounds, ClusterMethod, GeometryType, Operators } from "./consts";
+import { SRIDS, MaxBounds, ClusterMethod, GeometryType, Operators, LogicalOperators } from "./consts";
 import { Point, GeoJSON, Coordinates, Viewport } from "./geometry";
 
 export const Bounds4326: MaxBounds = Object.freeze({
@@ -20,17 +20,27 @@ export interface Filter {
     column: string
     value: string | number | boolean
     operator: Operators
+    logicalOperator?: LogicalOperators
 }
+
+export interface NestedFilter {
+    filters : Filter[]
+    logicalOperator?: LogicalOperators
+}
+
+export type FilterOrNestedFilter = Filter | NestedFilter;
 
 export interface ClusterRequestData {
     output_srid: SRIDS
     geometry_type: GeometryType
     geojson: GeoJSON
     clear_cache: boolean
-    filters: Filter[]
+    filters: FilterOrNestedFilter[]
 }
 
-export type FilterList = Filter[]
+export type FilterList = Filter[];
+
+export type FilterOrNestedFilterList = FilterOrNestedFilter[];
 
 export interface GetKmeansClusterContentRequestData {
     geometry_type: GeometryType
@@ -40,6 +50,17 @@ export interface GetKmeansClusterContentRequestData {
     ids: number[]
 }
 
+export interface Modulations {
+    [name:string] : Filter | NestedFilter
+}
+
+export interface MapContentCountRequestData extends ClusterRequestData {
+    modulations?: Modulations
+}
+
+export interface GroupedMapContentRequestData extends ClusterRequestData {
+    group_by: string
+}
 
 export class Anycluster {
 
@@ -89,7 +110,20 @@ export class Anycluster {
         return clusterContent;
     }
 
-    getAreaContent() {
+    async getMapContentCount(zoom: number, data: MapContentCountRequestData) {
+        const url = `${this.apiUrl}get-map-content-count/${zoom}/${this.gridSize}/`;
+
+        const mapContentCount = await this.post(url, data)
+
+        return mapContentCount;
+    }
+
+    async getGroupedMapContents(zoom: number, data: GroupedMapContentRequestData) {
+        const url = `${this.apiUrl}get-grouped-map-contents/${zoom}/${this.gridSize}/`;
+
+        const groupedMapContents = await this.post(url, data);
+
+        return groupedMapContents;
 
     }
 

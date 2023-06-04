@@ -1,7 +1,19 @@
 
 import { ClusterMethod, GeometryType, IconType, SRIDS, DefaultGridSizes, DefaultMarkerImageSizes } from "./consts";
 import { GeoJSON, Marker, Cluster, Viewport } from "./geometry";
-import { Anycluster, GetKmeansClusterContentRequestData, ClusterRequestData, Filter, FilterList } from "./anycluster";
+import {
+    Anycluster,
+    GetKmeansClusterContentRequestData,
+    ClusterRequestData,
+    MapContentCountRequestData,
+    GroupedMapContentRequestData,
+    Filter,
+    FilterList,
+    NestedFilter,
+    FilterOrNestedFilter,
+    FilterOrNestedFilterList,
+    Modulations
+} from "./anycluster";
 
 
 const defaultGridFillColors = {
@@ -35,6 +47,7 @@ export interface AnyclusterClientSettings {
     markerImageSizes?: Record<string, number[]>
     gridFillColors?: Record<number, string>
     gridStrokeColors?: Record<number, string>
+    onGotClusters?: () => void
 }
 
 export class AnyclusterClient {
@@ -51,6 +64,7 @@ export class AnyclusterClient {
     anycluster: Anycluster
     markerList: any[]
     onFinalClick: Function
+    onGotClusters: Function
     singlePinImages?: Record<string, string>
 
     markerImageSizes: Record<string, number[]>
@@ -58,7 +72,7 @@ export class AnyclusterClient {
     gridFillColors: Record<number, string>
     gridStrokeColors: Record<number, string>
 
-    filters: FilterList = []
+    filters: FilterOrNestedFilterList = []
 
 
     constructor(public map: any, public apiUrl: string, public markerFolderPath: string, settings: AnyclusterClientSettings) {
@@ -81,14 +95,16 @@ export class AnyclusterClient {
         this.area = settings.area ? settings.area : null;
         this.iconType = settings.iconType ? settings.iconType : IconType.rounded;
 
-        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
-
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
 
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : DefaultMarkerImageSizes;
 
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : defaultGridStrokeColors;
+
+        // hooks
+        this.onGotClusters = settings.onGotClusters ? settings.onGotClusters : this._onGotClusters;
+        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
 
 
         if (this.area) {
@@ -436,6 +452,9 @@ export class AnyclusterClient {
         else {
             throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
         }
+
+        this.onGotClusters();
+
     }
 
     startClustering() {
@@ -443,12 +462,14 @@ export class AnyclusterClient {
         this.addMapEventListeners();
     }
 
-    _onFinalClick(marker: Marker, data: any) {
-        alert(JSON.stringify(data));
-    }
-
-    filtersAreEqual(filter1: Filter, filter2: Filter): boolean {
-        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) {
+    filtersAreEqual(filter1: FilterOrNestedFilter, filter2: FilterOrNestedFilter): boolean {
+        if ('column' in filter1 && 'column' in filter2) {
+            if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) {
+                return true;
+            }
+        }
+        // testing with json.stringify is not ideal because {"a":1,"b":2} === {"b":2,"a":1} returns false
+        else if (JSON.stringify(filter1) === JSON.stringify(filter2)) {
             return true;
         }
 
@@ -456,9 +477,9 @@ export class AnyclusterClient {
     }
 
     // filtering
-    filter(filter: Filter | Filter[], reloadMarkers?: boolean) {
+    filter(filter: Filter | NestedFilter | FilterOrNestedFilter[], reloadMarkers?: boolean) {
 
-        if (Array.isArray(filter)){
+        if (Array.isArray(filter)) {
             this.filters = filter;
         }
         else {
@@ -472,7 +493,7 @@ export class AnyclusterClient {
         let filterExists = false;
 
         for (let f = 0; f < this.filters.length; f++) {
-            let existingFilter = this.filters[f];
+            let existingFilter: FilterOrNestedFilter = this.filters[f];
 
             if (this.filtersAreEqual(filter, existingFilter)) {
                 filterExists = true;
@@ -500,7 +521,7 @@ export class AnyclusterClient {
     removeFilter(filter: Filter, reloadMarkers?: boolean) {
 
         for (let f = 0; f < this.filters.length; f++) {
-            let existingFilter = this.filters[f];
+            let existingFilter: FilterOrNestedFilter = this.filters[f];
 
             if (this.filtersAreEqual(filter, existingFilter)) {
                 this.filters.splice(f, 1);
@@ -528,7 +549,7 @@ export class AnyclusterClient {
     }
 
     postFilterChange(reloadMarkers?: boolean) {
-        if (reloadMarkers != false){
+        if (reloadMarkers != false) {
             reloadMarkers = true;
         }
         if (reloadMarkers == true) {
@@ -536,5 +557,57 @@ export class AnyclusterClient {
             this.getClusters(true);
         }
     }
+
+    /**
+     * methods for getting counts of objects on the current map / geometry
+     */
+
+    async getMapContentCount(modulations?: Modulations) {
+
+        const geoJSON = this.getClusterGeometry()
+
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "modulations": modulations,
+        } as MapContentCountRequestData;
+
+        const zoom = this.getZoom();
+
+        const data = await this.anycluster.getMapContentCount(zoom, postData);
+
+        return data;
+    }
+
+    async getGroupedMapContents(groupBy: string) {
+
+        const geoJSON = this.getClusterGeometry()
+
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "group_by": groupBy,
+        } as GroupedMapContentRequestData;
+
+        const zoom = this.getZoom();
+
+        const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+
+        return data;
+
+    }
+
+    // hooks
+    _onFinalClick(marker: Marker, data: any) {
+        alert(JSON.stringify(data));
+    }
+
+    _onGotClusters() { }
 
 }

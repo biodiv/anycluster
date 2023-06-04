@@ -8,13 +8,14 @@ from anycluster import MapTools
 from anycluster.definitions import (CLUSTER_TYPES, GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA, GEOMETRY_TYPES,
                                     CLUSTER_TYPE_KMEANS, CLUSTER_TYPE_GRID)
 from anycluster.tests.common import GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION
-from anycluster.tests.mixins import WithGIS, WithFilters
+from anycluster.tests.mixins import WithGIS, WithFilters, WithGardens
 
 from anymap.models import Gardens
 
 import json
 
 TEST_ZOOM_LEVEL = 7
+TEST_GRID_SIZE = 256
 
 class TestMapClusterer(WithFilters, WithGIS, TestCase):
 
@@ -463,7 +464,6 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
 
                 self.assertEqual(getattr(garden, field_name), getattr(garden_, field_name))
 
-
     def test_panned_request(self):
         pass
 
@@ -475,3 +475,265 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
 
     def test_clear_cache(self):
         pass
+
+
+
+class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
+    def test_get_map_content_count(self):
+
+        zoom = 10
+
+        # test modulations
+        filters = [
+            {
+                'column': 'style',
+                'value': 'stone',
+                'operator': '=',
+            }
+        ]
+
+        modulations = {
+            'free' : {
+
+                'filters' : [
+                    {
+                        'column': 'free_entrance',
+                        'value': True,
+                        'operator': '=',
+                    }
+                ]
+            },
+            'paid' : {
+                'filters' : [
+                    {
+                        'column': 'free_entrance',
+                        'value': True,
+                        'operator': '!=',
+                    }
+                ]
+            }
+        }
+
+        
+        for clustertype in CLUSTER_TYPES:
+            for geometry_type in GEOMETRY_TYPES:
+
+                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+                    if clustertype == CLUSTER_TYPE_GRID and geometry_type != GEOMETRY_TYPE_VIEWPORT:
+                        continue
+
+                    if geometry_type == GEOMETRY_TYPE_VIEWPORT and geojson != GEOJSON_RECTANGLE:
+                        continue
+
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+                    map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+                    result = map_clusterer.get_map_content_counts(geojson, geometry_type, filters, zoom, modulations)
+
+                    expected_result = {
+                        'count': 0,
+                        'modulations':  {
+                            'free' : {
+                                'count': 0,
+                            },
+                            'paid' : {
+                                'count': 0,
+                            }
+                        },
+                    }
+                    self.assertEqual(result, expected_result)
+
+                    if geometry_type == GEOMETRY_TYPE_VIEWPORT:
+
+                        self.create_point('name 1', 'stone')
+                        self.create_point('name 2', 'flower')
+
+                        result = map_clusterer.get_map_content_counts(geojson, geometry_type, filters, zoom, modulations)
+
+                        expected_result = {
+                            'count': 1,
+                            'modulations': {
+                                'free': {
+                                    'count': 0
+                                    },
+                                'paid': {
+                                    'count': 1
+                                }
+                            }
+                        }
+
+                        # print(result)
+
+                        self.assertEqual(result, expected_result)
+                    
+                    gardens = Gardens.objects.all()
+                    for garden in gardens:
+                        garden.delete()
+
+
+                    gardens = Gardens.objects.all()
+
+                    self.assertEqual(gardens.count(), 0)
+
+
+    def test_query_map_content_count(self):
+
+        zoom = 10
+        geometry_type = GEOMETRY_TYPE_VIEWPORT
+        clustertype = CLUSTER_TYPE_KMEANS
+
+        
+        filters = []
+
+        cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+        map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+        geojson = GEOJSON_RECTANGLE
+
+        geometries_for_counting = map_clusterer.get_geometries_for_counting(geojson, geometry_type, zoom)
+
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        self.assertEqual(count, 0)
+
+        self.create_point('name 1', 'stone')
+        
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        self.assertEqual(count, 1)
+
+        self.create_point('name 2', 'flower')
+
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        self.assertEqual(count, 2)
+
+
+        filters = [
+            {
+                'column': 'style',
+                'value': 'stone',
+                'operator': '=',
+            }
+        ]
+
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        self.assertEqual(count, 1)
+
+        filters = [
+            {
+                'column': 'style',
+                'value': 'stone',
+                'operator': '=',
+            },
+            {
+                'column': 'style',
+                'value': 'flower',
+                'operator': '=',
+                'logicalOperator': 'OR',
+            }
+        ]
+
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        self.assertEqual(count, 2)
+
+        gardens = Gardens.objects.all()
+        for garden in gardens:
+            garden.delete()
+
+
+        gardens = Gardens.objects.all()
+
+        self.assertEqual(gardens.count(), 0)
+
+
+    def test_get_geometries_for_counting(self):
+        
+        zoom = 10
+        
+        for clustertype in CLUSTER_TYPES:
+            for geometry_type in GEOMETRY_TYPES:
+
+                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+                    if clustertype == CLUSTER_TYPE_GRID and geometry_type != GEOMETRY_TYPE_VIEWPORT:
+                        continue
+
+                    if geometry_type == GEOMETRY_TYPE_VIEWPORT and geojson != GEOJSON_RECTANGLE:
+                        continue
+
+                    filters = []
+
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+                    map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+                    geos_geometries = map_clusterer.get_geometries_for_counting(geojson, geometry_type, zoom)
+
+                    self.assertTrue(isinstance(geos_geometries, list))
+
+                    for geometry in geos_geometries:
+                        #print(geometry)
+                        self.assertTrue('POLYGON' in geometry.wkt)
+
+
+    def test_snap_viewport_to_grid(self):
+        
+        filters = []
+        zoom = 10
+
+        for clustertype in CLUSTER_TYPES:
+            for geometry_type in GEOMETRY_TYPES:
+        
+                cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+
+                map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+                # rectangle is 4326
+                geos_geometries = map_clusterer.convert_geojson_to_geos(GEOJSON_RECTANGLE)
+
+                grid_rectangle = map_clusterer.snap_viewport_to_grid(geos_geometries, zoom)
+
+                self.assertEqual(str(grid_rectangle), 'SRID=3857;POLYGON ((978393.96205 5948635.289016, 1565430.33928 5948635.289016, 1565430.33928 6574807.424728, 978393.96205 6574807.424728, 978393.96205 5948635.289016))')
+                self.assertEqual(grid_rectangle.srid, 3857)
+
+                grid_rectangle.transform(4326)
+
+                polygon_4326 = 'SRID=4326;POLYGON ((8.7890624999977 47.04018214327889, 14.06249999999632 47.04018214327889, 14.06249999999632 50.7364551355909, 8.7890624999977 50.7364551355909, 8.7890624999977 47.04018214327889))'
+
+                self.assertEqual(polygon_4326, str(grid_rectangle))
+
+
+    def test_get_grouped_map_contents(self):
+
+        zoom = 10
+        filters = []
+
+        self.create_point('name 1', 'stone')
+        self.create_point('name 2', 'flower')
+        
+        for clustertype in CLUSTER_TYPES:
+            for geometry_type in GEOMETRY_TYPES:
+
+                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+
+                    map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+                    group_by = 'style'
+
+                    result = map_clusterer.get_grouped_map_contents(geojson, geometry_type, zoom, filters, group_by)
+
+                    if geometry_type == GEOMETRY_TYPE_VIEWPORT:
+
+                        expected_result = {
+                            'stone' : {
+                                'count': 1
+                            },
+                            'flower' : {
+                                'count': 1
+                            }
+                        }
+
+                        self.assertEqual(result, expected_result)
+
+                    gardens = Gardens.objects.all()
+                    self.assertEqual(gardens.count(), 2)

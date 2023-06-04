@@ -52,3 +52,8 @@ export enum Operators {
     startswith = 'startswith',
     contains = 'contains',
 }
+
+export enum LogicalOperators {
+    AND = 'AND',
+    OR = 'OR',
+}

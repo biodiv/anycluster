@@ -7,10 +7,16 @@ from anycluster.MapClusterer import MapClusterer
 from anycluster.definitions import (CLUSTER_TYPES, GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA, GEOMETRY_TYPES,
                                     CLUSTER_TYPE_KMEANS, CLUSTER_TYPE_GRID)
 
-from anycluster.tests.mixins import WithGIS, WithFilters
+from anycluster.tests.mixins import WithGIS, WithFilters, WithGardens
 from anycluster.tests.common import GEOJSON_RECTANGLE, GEOJSON_POLYGON, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION
 
-from anycluster.api.views import MapClusterViewBase, KmeansCluster, GridCluster, GetClusterContent, GetAreaContent 
+from anycluster.api.views import (MapClusterViewBase, KmeansCluster, GridCluster, GetClusterContent, GetAreaContent,
+                                    GetMapContentCount)
+
+
+from anymap.models import Gardens
+
+import json
 
 MAP_TILESIZE = 256
 GRID_SIZE = 256
@@ -315,3 +321,142 @@ class TestGetAreaContent(WithGIS, WithFilters, APITestCase):
                     print(response.data)
                     
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+
+class TestGetMapContentCount(WithGardens, WithFilters, APITestCase):
+
+    def test_post(self):
+
+        self.create_points()
+        
+        url_kwargs = {
+            'zoom': ZOOM,
+            'grid_size': GRID_SIZE,
+        }
+
+        url = reverse('get_map_content_count', kwargs=url_kwargs)
+
+        filter_lists = self.get_test_filters()
+        
+        for geojson in [GEOJSON_RECTANGLE, GEOJSON_POLYGON, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+            for filters in filter_lists:
+
+                post_data = {
+                    'geometry_type': GEOMETRY_TYPE_AREA,
+                    'geojson': geojson,
+                    'filters': filters,
+                }
+
+                response = self.client.post(url, post_data, format='json')
+
+                if response.status_code != status.HTTP_200_OK:
+                    print(geojson)
+                    print(response.data)
+
+                # print(json.loads(response.content))
+                    
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+    def test_post_modulated(self):
+        
+        modulations = {
+            'stone' : {
+                'filters' : [
+                    {
+                        'column': 'style',
+                        'value': 'stone',
+                        'operator': '=',
+                    }
+                ]
+            },
+            'flower' : {
+                'filters' : [
+                    {
+                        'column': 'style',
+                        'value': 'flower',
+                        'operator': '=',
+                    }
+                ]
+            }
+        }
+
+        self.create_points()
+        
+        url_kwargs = {
+            'zoom': ZOOM,
+            'grid_size': GRID_SIZE,
+        }
+
+        url = reverse('get_map_content_count', kwargs=url_kwargs)
+
+        for geojson in [GEOJSON_RECTANGLE, GEOJSON_POLYGON, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+            filter_lists = self.get_test_filters()
+
+            for filters in filter_lists:
+
+                post_data = {
+                    'geometry_type': GEOMETRY_TYPE_AREA,
+                    'geojson': geojson,
+                    'filters': filters,
+                    'modulations': modulations
+                }
+
+                response = self.client.post(url, post_data, format='json')
+
+                if response.status_code != status.HTTP_200_OK:
+                    print(geojson)
+                    print(response.data)
+
+                parsed_response = json.loads(response.content)
+                #print(parsed_response)
+                self.assertIn('modulations', parsed_response)
+                self.assertIn('stone', parsed_response['modulations'])
+                self.assertIn('flower', parsed_response['modulations'])
+                    
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class TestGetGroupedMapContents(WithGardens, WithFilters, APITestCase):
+
+    def test_post(self):
+
+        self.create_points()
+        
+        url_kwargs = {
+            'zoom': ZOOM,
+            'grid_size': GRID_SIZE,
+        }
+
+        url = reverse('get_grouped_map_contents', kwargs=url_kwargs)
+
+        filters = []
+
+        stone_gardens = Gardens.objects.filter(style='stone')
+        self.assertTrue(stone_gardens.count() > 0)
+        
+        for geojson in [GEOJSON_RECTANGLE, GEOJSON_POLYGON, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+            post_data = {
+                'geometry_type': GEOMETRY_TYPE_AREA,
+                'geojson': geojson,
+                'filters': filters,
+                'group_by': 'style'
+            }
+
+            response = self.client.post(url, post_data, format='json')
+
+            if response.status_code != status.HTTP_200_OK:
+                print(geojson)
+                print(response.data)
+
+            parsed_response = json.loads(response.content)
+            styles = Gardens.objects.all().values_list('style', flat=True)
+
+            for style in styles:
+                self.assertIn(style, parsed_response)
+                
+            self.assertEqual(response.status_code, status.HTTP_200_OK)

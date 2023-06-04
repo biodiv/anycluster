@@ -64,6 +64,10 @@ const gardenTypeButtons = document.querySelectorAll('input[name="gardentype"]');
 
 const nestedFilterButton = document.getElementById('nested-button');
 
+const totalCount = document.getElementById('total-garden-count');
+const stoneCount = document.getElementById('stone-garden-count');
+const flowerCount = document.getElementById('flower-garden-count');
+
 let activeGardenFilter = null;
 let activeEntranceFilter = null;
 let activeNestedFilter = false;
@@ -72,6 +76,37 @@ let activeNestedFilter = false;
 export class MapInteractions {
 
     constructor(anyclusterClient){
+
+        const modulations = {
+            'stone' : {
+                'filters' : [{
+                    'column': 'style',
+                    'value': 'stone',
+                    'operator': '=',
+                }]
+            },
+            'flower': {
+                'filters': [{
+                    'column': 'style',
+                    'value': 'flower',
+                    'operator': '=',
+                }]
+            }
+        };
+
+        anyclusterClient.onGotClusters = async function(){
+
+            const counts = await anyclusterClient.getMapContentCount(modulations);
+
+            totalCount.textContent = counts['count'];
+            flowerCount.textContent = counts['modulations']['flower']['count'];
+            stoneCount.textContent = counts['modulations']['stone']['count'];
+
+
+            const groups = anyclusterClient.getGroupedMapContents('style');
+            console.log(groups);
+            
+        }
 
         this.anyclusterClient = anyclusterClient;
     
@@ -111,6 +146,7 @@ export class MapInteractions {
 
         if (activeNestedFilter){
             this.anyclusterClient.resetFilters(false);
+            activeNestedFilter = false;
         }
         
         const entranceFee = document.querySelector('input[name="entrance-fee"]:checked').value;
@@ -139,6 +175,7 @@ export class MapInteractions {
 
         if (activeNestedFilter){
             this.anyclusterClient.resetFilters(false);
+            activeNestedFilter = false;
         }
 
         const gardenStyle = document.querySelector('input[name="gardentype"]:checked').value;

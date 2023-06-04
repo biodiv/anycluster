@@ -64,6 +64,11 @@ let $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2;
     Operators["startswith"] = "startswith";
     Operators["contains"] = "contains";
 })($b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 || ($b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 = {}));
+let $b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d;
+(function(LogicalOperators) {
+    LogicalOperators["AND"] = "AND";
+    LogicalOperators["OR"] = "OR";
+})($b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d || ($b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d = {}));
 
 
 
@@ -108,7 +113,16 @@ class $9ef97b21dccf4ee3$export$5e01b9ff483562af {
         const clusterContent = await this.get(url);
         return clusterContent;
     }
-    getAreaContent() {}
+    async getMapContentCount(zoom, data) {
+        const url = `${this.apiUrl}get-map-content-count/${zoom}/${this.gridSize}/`;
+        const mapContentCount = await this.post(url, data);
+        return mapContentCount;
+    }
+    async getGroupedMapContents(zoom, data) {
+        const url = `${this.apiUrl}get-grouped-map-contents/${zoom}/${this.gridSize}/`;
+        const groupedMapContents = await this.post(url, data);
+        return groupedMapContents;
+    }
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -224,11 +238,13 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
         this.geometryType = settings.geometryType ? settings.geometryType : (0, $b4f6019a3c0f60c0$export$8f4397a63c3cef66).viewport;
         this.area = settings.area ? settings.area : null;
         this.iconType = settings.iconType ? settings.iconType : (0, $b4f6019a3c0f60c0$export$13ff1290a9e22e77).rounded;
-        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $b4f6019a3c0f60c0$export$96b1907ff7fa3578);
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $2a18f65d622cfe30$var$defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $2a18f65d622cfe30$var$defaultGridStrokeColors;
+        // hooks
+        this.onGotClusters = settings.onGotClusters ? settings.onGotClusters : this._onGotClusters;
+        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         if (this.area) this.setArea(this.area);
         const gridSize = this.getGridSize();
         this.anycluster = new (0, $9ef97b21dccf4ee3$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
@@ -446,16 +462,16 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
                 this.drawCell(cluster);
             });
         } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
+        this.onGotClusters();
     }
     startClustering() {
         this.getClusters(true);
         this.addMapEventListeners();
     }
-    _onFinalClick(marker, data) {
-        alert(JSON.stringify(data));
-    }
     filtersAreEqual(filter1, filter2) {
-        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        if ("column" in filter1 && "column" in filter2) {
+            if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        } else if (JSON.stringify(filter1) === JSON.stringify(filter2)) return true;
         return false;
     }
     // filtering
@@ -513,10 +529,45 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
             this.getClusters(true);
         }
     }
+    /**
+     * methods for getting counts of objects on the current map / geometry
+     */ async getMapContentCount(modulations) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "modulations": modulations
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getMapContentCount(zoom, postData);
+        return data;
+    }
+    async getGroupedMapContents(groupBy) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "group_by": groupBy
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+        return data;
+    }
+    // hooks
+    _onFinalClick(marker, data) {
+        alert(JSON.stringify(data));
+    }
+    _onGotClusters() {}
 }
 
 
 
 
-export {$b4f6019a3c0f60c0$export$ae91e066970d978a as ClusterMethod, $b4f6019a3c0f60c0$export$8f4397a63c3cef66 as GeometryType, $b4f6019a3c0f60c0$export$13ff1290a9e22e77 as IconType, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d as SRIDS, $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 as Operators, $9ef97b21dccf4ee3$export$5e01b9ff483562af as Anycluster, $2a18f65d622cfe30$export$a09c19a7c4419c1 as AnyclusterClient};
+export {$b4f6019a3c0f60c0$export$ae91e066970d978a as ClusterMethod, $b4f6019a3c0f60c0$export$8f4397a63c3cef66 as GeometryType, $b4f6019a3c0f60c0$export$13ff1290a9e22e77 as IconType, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d as SRIDS, $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 as Operators, $b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d as LogicalOperators, $9ef97b21dccf4ee3$export$5e01b9ff483562af as Anycluster, $2a18f65d622cfe30$export$a09c19a7c4419c1 as AnyclusterClient};
 //# sourceMappingURL=anycluster.js.map

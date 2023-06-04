@@ -8,7 +8,8 @@ from rest_framework import status
 from anycluster.MapClusterer import MapClusterer
 from anycluster.definitions import GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA, CLUSTER_TYPE_GRID, CLUSTER_TYPE_KMEANS
 
-from .serializers import ClusterRequestSerializer, ClusterContentRequestSerializer
+from .serializers import (ClusterRequestSerializer, ClusterContentRequestSerializer, MapContentCountSerializer,
+                            GroupedMapContentSerializer)
 
 from anycluster import ClusterCache
 
@@ -39,7 +40,7 @@ class MapClusterViewBase:
         zoom = kwargs['zoom']
 
         if clear_cache == True:
-            cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=filters)
+            cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters)
         else:
             cluster_cache = self.get_cache(geometry_type, zoom, clustertype, request, filters)
 
@@ -50,7 +51,7 @@ class MapClusterViewBase:
 
     def get_cache(self, geometry_type, zoom, clustertype, request, filters):
         cached = request.session.get(self.cache_name, {})
-        cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters=filters)
+        cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters)
         # ClusterCache decides if the cache is still valid for the given parameters and loads the cache if so
         cluster_cache.load_geometries(cached)
         return cluster_cache
@@ -218,3 +219,58 @@ class GetDatasetContent(MapClusterViewBase, APIView):
         data = serializers.serialize('json', dataset, fields=serializer_fields)
 
         return Response(json.loads(data))
+
+
+class GetMapContentCount(MapClusterViewBase, APIView):
+
+    def post(self, request, *args, **kwargs):
+
+        serializer = MapContentCountSerializer(data=request.data)
+
+        if serializer.is_valid():
+
+            clear_cache = True
+            filters = serializer.validated_data['filters']
+            geometry_type = serializer.validated_data['geometry_type']
+            output_srid = self.parse_srid(serializer.validated_data['output_srid'])
+
+            geojson = serializer.validated_data['geojson']
+            zoom = kwargs['zoom']
+            modulations = serializer.validated_data['modulations']
+
+            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, filters, clear_cache, output_srid,
+                request, **kwargs)
+
+            map_content_counts = map_clusterer.get_map_content_counts(geojson, geometry_type, filters, zoom, modulations)
+
+            return Response(map_content_counts, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetGroupedMapContents(MapClusterViewBase, APIView):
+    
+    def post(self, request, *args, **kwargs):
+        
+        serializer = GroupedMapContentSerializer(data=request.data)
+
+        if serializer.is_valid():
+
+            clear_cache = True
+            filters = serializer.validated_data['filters']
+            geometry_type = serializer.validated_data['geometry_type']
+            output_srid = self.parse_srid(serializer.validated_data['output_srid'])
+
+            geojson = serializer.validated_data['geojson']
+            zoom = kwargs['zoom']
+
+            group_by = serializer.validated_data['group_by']
+
+            map_clusterer = self.get_map_clusterer(geometry_type, CLUSTER_TYPE_KMEANS, filters, clear_cache, output_srid,
+                request, **kwargs)
+
+            groups = map_clusterer.get_grouped_map_contents(geojson, geometry_type, zoom, filters, group_by)
+
+            return Response(groups, status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

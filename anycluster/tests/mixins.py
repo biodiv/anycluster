@@ -12,39 +12,53 @@ import subprocess, random
 from anycluster.tests.common import VALID_FILTERS
 
 
-class WithGIS:
-
-    def setUp(self):
-        super().setUp()
-        self.create_points()
-
+class WithGardens:
 
     def create_points(self, amount=100):
 
         for c in range(0,amount):
 
-
-            latitude = float('{0}.{1}'.format(random.randint(48,49), str(random.random()).split('.')[-1]))
-            longitude = float('{0}.{1}'.format(random.randint(9,13), str(random.random()).split('.')[-1]))
-
-            point = Point(longitude, latitude, srid=4326)
-
-            ct = CoordTransform(SpatialReference(point.srid), SpatialReference(3857))
-            point.transform(ct)
-
             style_index = random.randint(0, 4)
             style = GARDEN_STYLES[style_index][0]
 
-            garden = Gardens(
-                name = 'test garden {0}'.format(c),
-                style = style,
-                rating = random.randint(1, 5),
-                last_renewal = timezone.now(),
-                coordinates = point
-            )
+            name = 'test garden {0}'.format(c)
 
-            garden.save()
+            garden = self.create_point(name, style)
 
+            
+    def create_point(self, name, style):
+
+        latitude = float('{0}.{1}'.format(random.randint(48,49), str(random.random()).split('.')[-1]))
+        longitude = float('{0}.{1}'.format(random.randint(9,13), str(random.random()).split('.')[-1]))
+
+        point = Point(longitude, latitude, srid=4326)
+
+        ct = CoordTransform(SpatialReference(point.srid), SpatialReference(3857))
+        point.transform(ct)
+
+        garden = Gardens(
+            name = name,
+            style = style,
+            rating = random.randint(1, 5),
+            last_renewal = timezone.now(),
+            coordinates = point
+        )
+
+        garden.save()
+
+        return garden
+
+    def get_cluster_cache(self, geometry_type, zoom, clustertype, filters):
+
+        cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters)
+
+        return cluster_cache
+
+class WithGIS(WithGardens):
+
+    def setUp(self):
+        super().setUp()
+        self.create_points()
 
     @classmethod
     def setUpClass(cls):
@@ -57,12 +71,6 @@ class WithGIS:
         #psql -f /usr/share/postgresql15/extension/kmeans.sql -d YOURGEODJANGODATABASE
         subprocess.run(['psql', '-f', '/usr/share/postgresql15/extension/kmeans.sql', '-d', test_database_name])
         
-
-    def get_cluster_cache(self, geometry_type, zoom, clustertype, filters):
-
-        cluster_cache = ClusterCache(geometry_type, zoom, clustertype, filters)
-
-        return cluster_cache
 
 
 class WithFilters:

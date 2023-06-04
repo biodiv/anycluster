@@ -61,6 +61,24 @@ class ClusterRequestSerializer(serializers.Serializer):
         return value
 
 
+class MapContentCountSerializer(ClusterRequestSerializer):
+    # additional filters, which are applied on top of filters, only for the count query
+    modulations = serializers.JSONField(required=False, default={}, write_only=True)
+
+    def validate_modulations(self, value):
+
+        if value:
+
+            for modulation_name, modulation in value.items():
+                filters_are_allowed(modulation['filters'])
+
+        return value
+
+
+class GroupedMapContentSerializer(ClusterRequestSerializer):
+    group_by = serializers.CharField(write_only=True)
+    
+
 class ClusterContentRequestSerializer(serializers.Serializer):
 
     output_srid = serializers.CharField(default='EPSG:4326', required=False, write_only=True)

@@ -1,24 +1,24 @@
-let $aca83a355307fe8a$export$55fee9ea2526ad0d;
+var $aca83a355307fe8a$export$55fee9ea2526ad0d;
 (function(SRIDS) {
     SRIDS["EPSG4326"] = "EPSG:4326";
     SRIDS["EPSG3857"] = "EPSG:3857";
 })($aca83a355307fe8a$export$55fee9ea2526ad0d || ($aca83a355307fe8a$export$55fee9ea2526ad0d = {}));
-let $aca83a355307fe8a$export$ae91e066970d978a;
+var $aca83a355307fe8a$export$ae91e066970d978a;
 (function(ClusterMethod) {
     ClusterMethod["kmeans"] = "kmeans";
     ClusterMethod["grid"] = "grid";
 })($aca83a355307fe8a$export$ae91e066970d978a || ($aca83a355307fe8a$export$ae91e066970d978a = {}));
-let $aca83a355307fe8a$export$8f4397a63c3cef66;
+var $aca83a355307fe8a$export$8f4397a63c3cef66;
 (function(GeometryType) {
     GeometryType["viewport"] = "viewport";
     GeometryType["area"] = "area";
 })($aca83a355307fe8a$export$8f4397a63c3cef66 || ($aca83a355307fe8a$export$8f4397a63c3cef66 = {}));
-let $aca83a355307fe8a$export$13ff1290a9e22e77;
+var $aca83a355307fe8a$export$13ff1290a9e22e77;
 (function(IconType) {
     IconType["exact"] = "exact";
     IconType["rounded"] = "rounded";
 })($aca83a355307fe8a$export$13ff1290a9e22e77 || ($aca83a355307fe8a$export$13ff1290a9e22e77 = {}));
-let $aca83a355307fe8a$export$9c3a9f8fbf06a34;
+var $aca83a355307fe8a$export$9c3a9f8fbf06a34;
 (function(DefaultGridSizes) {
     DefaultGridSizes[DefaultGridSizes["grid"] = 64] = "grid";
     DefaultGridSizes[DefaultGridSizes["kmeans"] = 150] = "kmeans";
@@ -53,7 +53,7 @@ const $aca83a355307fe8a$export$96b1907ff7fa3578 = {
         60
     ]
 };
-let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
+var $aca83a355307fe8a$export$7fa100a28fbb5fe2;
 (function(Operators) {
     Operators["in"] = "in";
     Operators["notIn"] = "not in";
@@ -64,6 +64,11 @@ let $aca83a355307fe8a$export$7fa100a28fbb5fe2;
     Operators["startswith"] = "startswith";
     Operators["contains"] = "contains";
 })($aca83a355307fe8a$export$7fa100a28fbb5fe2 || ($aca83a355307fe8a$export$7fa100a28fbb5fe2 = {}));
+var $aca83a355307fe8a$export$9a28c02ac0f6fc9d;
+(function(LogicalOperators) {
+    LogicalOperators["AND"] = "AND";
+    LogicalOperators["OR"] = "OR";
+})($aca83a355307fe8a$export$9a28c02ac0f6fc9d || ($aca83a355307fe8a$export$9a28c02ac0f6fc9d = {}));
 
 
 
@@ -108,7 +113,16 @@ class $5660b38ff962cbfe$export$5e01b9ff483562af {
         const clusterContent = await this.get(url);
         return clusterContent;
     }
-    getAreaContent() {}
+    async getMapContentCount(zoom, data) {
+        const url = `${this.apiUrl}get-map-content-count/${zoom}/${this.gridSize}/`;
+        const mapContentCount = await this.post(url, data);
+        return mapContentCount;
+    }
+    async getGroupedMapContents(zoom, data) {
+        const url = `${this.apiUrl}get-grouped-map-contents/${zoom}/${this.gridSize}/`;
+        const groupedMapContents = await this.post(url, data);
+        return groupedMapContents;
+    }
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -224,11 +238,13 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
         this.geometryType = settings.geometryType ? settings.geometryType : (0, $aca83a355307fe8a$export$8f4397a63c3cef66).viewport;
         this.area = settings.area ? settings.area : null;
         this.iconType = settings.iconType ? settings.iconType : (0, $aca83a355307fe8a$export$13ff1290a9e22e77).rounded;
-        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $aca83a355307fe8a$export$96b1907ff7fa3578);
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $3e2183be5df4d9a4$var$defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $3e2183be5df4d9a4$var$defaultGridStrokeColors;
+        // hooks
+        this.onGotClusters = settings.onGotClusters ? settings.onGotClusters : this._onGotClusters;
+        this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;
         if (this.area) this.setArea(this.area);
         const gridSize = this.getGridSize();
         this.anycluster = new (0, $5660b38ff962cbfe$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
@@ -446,16 +462,16 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
                 this.drawCell(cluster);
             });
         } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
+        this.onGotClusters();
     }
     startClustering() {
         this.getClusters(true);
         this.addMapEventListeners();
     }
-    _onFinalClick(marker, data) {
-        alert(JSON.stringify(data));
-    }
     filtersAreEqual(filter1, filter2) {
-        if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        if ("column" in filter1 && "column" in filter2) {
+            if (filter1.column == filter2.column && filter1.value == filter2.value && filter1.operator == filter2.operator) return true;
+        } else if (JSON.stringify(filter1) === JSON.stringify(filter2)) return true;
         return false;
     }
     // filtering
@@ -513,6 +529,41 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
             this.getClusters(true);
         }
     }
+    /**
+     * methods for getting counts of objects on the current map / geometry
+     */ async getMapContentCount(modulations) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "modulations": modulations
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getMapContentCount(zoom, postData);
+        return data;
+    }
+    async getGroupedMapContents(groupBy) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": this.filters,
+            "group_by": groupBy
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+        return data;
+    }
+    // hooks
+    _onFinalClick(marker, data) {
+        alert(JSON.stringify(data));
+    }
+    _onGotClusters() {}
 }
 
 

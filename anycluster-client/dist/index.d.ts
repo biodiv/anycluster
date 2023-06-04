@@ -30,6 +30,10 @@ export enum Operators {
     startswith = "startswith",
     contains = "contains"
 }
+export enum LogicalOperators {
+    AND = "AND",
+    OR = "OR"
+}
 interface Viewport {
     left: number;
     top: number;
@@ -80,21 +84,37 @@ interface Filter {
     column: string;
     value: string | number | boolean;
     operator: Operators;
+    logicalOperator?: LogicalOperators;
 }
+interface NestedFilter {
+    filters: Filter[];
+    logicalOperator?: LogicalOperators;
+}
+type FilterOrNestedFilter = Filter | NestedFilter;
 interface ClusterRequestData {
     output_srid: SRIDS;
     geometry_type: GeometryType;
     geojson: GeoJSON;
     clear_cache: boolean;
-    filters: Filter[];
+    filters: FilterOrNestedFilter[];
 }
 type FilterList = Filter[];
+type FilterOrNestedFilterList = FilterOrNestedFilter[];
 interface GetKmeansClusterContentRequestData {
     geometry_type: GeometryType;
     input_srid: SRIDS;
     x: number;
     y: number;
     ids: number[];
+}
+interface Modulations {
+    [name: string]: Filter | NestedFilter;
+}
+interface MapContentCountRequestData extends ClusterRequestData {
+    modulations?: Modulations;
+}
+interface GroupedMapContentRequestData extends ClusterRequestData {
+    group_by: string;
 }
 export class Anycluster {
     gridSize: number;
@@ -105,7 +125,8 @@ export class Anycluster {
     getKmeansCluster(zoom: number, data: ClusterRequestData): Promise<any>;
     getKmeansClusterContent(zoom: number, data: GetKmeansClusterContentRequestData): Promise<any>;
     getDatasetContent(zoom: number, datasetId: number): Promise<any>;
-    getAreaContent(): void;
+    getMapContentCount(zoom: number, data: MapContentCountRequestData): Promise<any>;
+    getGroupedMapContents(zoom: number, data: GroupedMapContentRequestData): Promise<any>;
     viewportToGeoJSON(viewport: Viewport): {
         type: string;
         geometry: {
@@ -135,6 +156,7 @@ interface AnyclusterClientSettings {
     markerImageSizes?: Record<string, number[]>;
     gridFillColors?: Record<number, string>;
     gridStrokeColors?: Record<number, string>;
+    onGotClusters?: () => void;
 }
 export class AnyclusterClient {
     map: any;
@@ -150,11 +172,12 @@ export class AnyclusterClient {
     anycluster: Anycluster;
     markerList: any[];
     onFinalClick: Function;
+    onGotClusters: Function;
     singlePinImages?: Record<string, string>;
     markerImageSizes: Record<string, number[]>;
     gridFillColors: Record<number, string>;
     gridStrokeColors: Record<number, string>;
-    filters: FilterList;
+    filters: FilterOrNestedFilterList;
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings);
     createClusterLayers(): void;
     addArea(geojson: object): void;
@@ -197,15 +220,21 @@ export class AnyclusterClient {
     };
     getClusters(clearCache?: boolean): Promise<void>;
     startClustering(): void;
-    _onFinalClick(marker: Marker, data: any): void;
-    filtersAreEqual(filter1: Filter, filter2: Filter): boolean;
-    filter(filter: Filter | Filter[], reloadMarkers?: boolean): void;
+    filtersAreEqual(filter1: FilterOrNestedFilter, filter2: FilterOrNestedFilter): boolean;
+    filter(filter: Filter | NestedFilter | FilterOrNestedFilter[], reloadMarkers?: boolean): void;
     addFilter(filter: Filter, reloadMarkers?: boolean): void;
     addFilters(filtersToAdd: FilterList, reloadMarkers?: boolean): void;
     removeFilter(filter: Filter, reloadMarkers?: boolean): void;
     removeFilters(filtersToRemove: FilterList, reloadMarkers?: boolean): void;
     resetFilters(reloadMarkers?: boolean): void;
     postFilterChange(reloadMarkers?: boolean): void;
+    /**
+     * methods for getting counts of objects on the current map / geometry
+     */
+    getMapContentCount(modulations?: Modulations): Promise<any>;
+    getGroupedMapContents(groupBy: string): Promise<any>;
+    _onFinalClick(marker: Marker, data: any): void;
+    _onGotClusters(): void;
 }
 
 //# sourceMappingURL=index.d.ts.map

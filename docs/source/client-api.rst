@@ -84,6 +84,8 @@ Available settings:
 +---------------------+------------+--------------------------------------------------+----------------------------+
 | gridStrokeColors    | object     |                                                  |                            |
 +---------------------+------------+--------------------------------------------------+----------------------------+
+| onGotClusters       | function   |                                                  |                            |
++---------------------+------------+--------------------------------------------------+----------------------------+
 
 settings.onFinalClick
     Hook for what happens when the user clicks on a final marker.
@@ -93,6 +95,19 @@ settings.onFinalClick
         const settings = {
             onFinalClick: function (marker, data) {
                 alert(JSON.stringify(data))
+            }
+        };
+
+
+settings.onGotClusters
+    Hook for things that should happen after the map has been updated with new clusters.
+    This happens e.g. when the map has been panned or the zoom level changed.
+
+    .. code-block:: javascript
+
+        const settings = {
+            onFinalClick: function () {
+                console.log('got new clusters!')
             }
         };
 
@@ -110,7 +125,8 @@ filter object
     const filter = {
         "column": "DATABASE_COLUMN",
         "operator": "OPERATOR",
-        "value" : VALUE
+        "value" : VALUE,
+        "logicalOperator": "LOGICAL_OPERATOR" // optional, only has effect if more than one filter is present
     };
 
 
@@ -124,7 +140,7 @@ OPERATOR
     The :code:`OPERATOR` string can be one of the following:
 
     +---------------------+----------------------------------------------------+----------------------------------------+
-    | operator            | description                                        |          applicable to value types     |
+    | operator            | description                                        | applicable to value types              |
     +=====================+====================================================+========================================+
     | =                   | equals                                             | string, number, bool                   |
     +---------------------+----------------------------------------------------+----------------------------------------+
@@ -144,10 +160,27 @@ OPERATOR
     +---------------------+----------------------------------------------------+----------------------------------------+
 
 
+LOGICAL_OPERATOR
+
+    The :code:`LOGICAL_OPERATOR` string can be one of the following:
+
+    +---------------------+----------------------------------------------------+
+    | logical operator    | description                                        | 
+    +=====================+====================================================+
+    | AND                 | Filters are concatenated using SQL AND             |
+    +---------------------+----------------------------------------------------+
+    | OR                  | Filters are concatenated using SQL OR              |
+    +---------------------+----------------------------------------------------+
+
+
+    The default concatenation method is :code:`AND`
+
+
+
 Filtering methods of AnyclusterClient
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-filter(filterObject, reloadMarkers *boolean*)
+filter(filterObject or filterObject[], reloadMarkers *boolean*)
     Applies the given filter to AnyclusterClient. Removes all other filters.
 
 addFilter(filterObject, reloadMarkers *boolean*)
@@ -215,3 +248,196 @@ Examples
     };
 
     anyclusterLeaflet.filter(filter);
+
+
+4. Applying a logical operator
+
+.. code-block:: javascript
+
+    let anyclusterLeaflet = new AnyclusterLeaflet(map, apiUrl, markerFolderPath, settings);
+    const filters = [
+        {
+            "column": "style",
+            "value": "flower",,
+            "operator": "=" 
+        },
+        {
+            "column": "style",
+            "value": "stone",,
+            "operator": "=",
+            "logicalOperator": "OR"
+        },
+    ];
+
+    anyclusterLeaflet.filter(filters);
+
+
+Nested Filtering
+----------------
+
+If the standard filtering options are still not enough and you require more complex queries, you can use nested filters, alongside with logical operators.
+
+
+Example
+^^^^^^^
+
+.. code-block:: javascript
+
+    let anyclusterLeaflet = new AnyclusterLeaflet(map, apiUrl, markerFolderPath, settings);
+    const filters = [
+        {
+            "filters": [
+                {
+                    "column": "style",
+                    "value": "flower",,
+                    "operator": "=" 
+                },
+                {
+                    "column": "free_entrance",
+                    "value": true,
+                    "operator": "=" 
+                }
+            ]
+        },
+        {
+            "filters": [
+                {
+                    "column": "style",
+                    "value": "stone",,
+                    "operator": "=",
+                },
+                {
+                    "column": "free_entrance",
+                    "value": false,
+                    "operator": "=" 
+                }
+            ],
+            "logicalOperator": "OR"
+        }
+    ];
+
+    anyclusterLeaflet.filter(filters);
+
+
+
+Counting
+--------
+
+You can count the objects which are currently displayed on the map in different ways.
+
+getMapContentCount(modulations:object)   
+    You can count what currently is visible on the map.
+
+    .. code-block:: javascript
+
+        let anyclusterLeaflet = new AnyclusterLeaflet(map, apiUrl, markerFolderPath, settings);
+
+        const mapContentCount = await anyclusterLeaflet.getMapContentCount();
+
+        const count = mapContentCount["count"];
+
+
+    If no modulations are applied, the returned object looks like this:
+    
+    .. code-block:: javascript
+
+        {
+            "count": 756,
+            "modulations": {}
+        }
+
+    
+    **Modulations**
+
+    Modulations are like filters, but they are applied only for the current :code:`getMapContentCount` request.
+    They are not stored in :code:`anyclusterClient.filters`.
+    You can use simple filters as well as nested filters for modulations.
+    
+    .. code-block:: javascript
+
+        let anyclusterLeaflet = new AnyclusterLeaflet(map, apiUrl, markerFolderPath, settings);
+        
+        const modulations = {
+            "stone" : {
+                "column": "style",
+                "value": "stone",
+                "operator": "="
+            },
+            "flower" : {
+                "column": "style",
+                "value": "flower",
+                "operator": "="
+            },
+            "flowerOrStone" : {
+                "filters" : [
+                    {
+                        "column": "style",
+                        "value": "stone",
+                        "operator": "="
+                    },
+                    {
+                        "column": "style",
+                        "value": "flower",
+                        "operator": "=",
+                        "logicalOperator": "OR"
+                    },
+                ]
+            }
+        };
+
+        const mapContentCount = await anyclusterLeaflet.getMapContentCount(modulations);
+
+    The returned object looks like this:
+
+    .. code-block:: javascript
+
+        {
+            "count" : 756,
+            "modulations": {
+                "stone": {
+                    "count": 102
+                },
+                "flower": {
+                    "count": 76
+                },
+                "flowerOrStone": {
+                    "count": 178
+                }
+            }
+        }
+
+
+getGroupedMapContents(groupBy:string)    
+    You can query a list of the currently visible contents, grouped by a database column.
+    
+    .. code-block:: javascript
+
+        let anyclusterLeaflet = new AnyclusterLeaflet(map, apiUrl, markerFolderPath, settings);
+
+        const groupBy = "style";
+        const groupedMapContents = anyclusterLeaflet.getGroupedMapContents(groupBy);
+
+    
+    The returned object looks like this:
+
+    .. code-block:: javascript
+
+        {
+            "flower": {
+                "count": 1773
+            },
+            "imperial": {
+                "count": 1884
+            },
+            "japanese": {
+                "count": 1893
+            },
+            "other": {
+                "count":1883
+            },
+            "stone":{
+                "count":1783
+            }
+        }
+
+    :code:`flower`, :code:`imperial`, :code:`japanese`, :code:`other` and :code:`stone` are the occurring values of the column :code:`style`, which had been applied in the :code:`GROUP BY` SQL clause.
