@@ -322,6 +322,42 @@ class TestGetAreaContent(WithGIS, WithFilters, APITestCase):
                     
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+                self.assertTrue(len(response.data) > 0)
+
+
+                post_data.update({
+                    'limit': 1,
+                    'offset': 0,
+                })
+
+
+                response = self.client.post(url, post_data, format='json')
+
+                self.assertEqual(len(response.data), 1)
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class TestGetDatasetContent(WithGIS, WithFilters, APITestCase):
+
+    def test_get(self):
+
+        dataset = Gardens.objects.all().last()
+
+        url_kwargs = {
+            'zoom': ZOOM,
+            'grid_size': GRID_SIZE,
+            'dataset_id': dataset.id,
+        }
+
+        url = reverse('get_dataset_content', kwargs=url_kwargs)
+
+        response = self.client.get(url, format='json')      
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+        self.assertEqual(parsed_response['id'], dataset.id)
+        self.assertEqual(parsed_response['style'], dataset.style)
 
 
 class TestGetMapContentCount(WithGardens, WithFilters, APITestCase):

@@ -11,6 +11,7 @@ anycluster/apps.py
 anycluster/clusters.py
 anycluster/definitions.py
 anycluster/globalmaptiles.py
+anycluster/utils.py
 anycluster.egg-info/PKG-INFO
 anycluster.egg-info/SOURCES.txt
 anycluster.egg-info/dependency_links.txt

@@ -6,6 +6,7 @@ import jsonschema
 from .json_schemas import FEATURE_OR_FEATURECOLLECTION_SCHEMA
 
 from anycluster.definitions import GEOMETRY_TYPES, GEOMETRY_TYPE_VIEWPORT
+from anycluster.MapClusterer import Gis
 
 
 def filters_are_allowed(filters):
@@ -61,6 +62,13 @@ class ClusterRequestSerializer(serializers.Serializer):
         return value
 
 
+
+class AreaContentRequestSerializer(ClusterRequestSerializer):
+
+    limit = serializers.IntegerField(required=False, write_only=True)
+    offset = serializers.IntegerField(required=False, write_only=True)
+
+
 class MapContentCountSerializer(ClusterRequestSerializer):
     # additional filters, which are applied on top of filters, only for the count query
     modulations = serializers.JSONField(required=False, default={}, write_only=True)
@@ -94,3 +102,11 @@ class ClusterContentRequestSerializer(serializers.Serializer):
     def validate_filters(self, value):
         filters_are_allowed(value)
         return value
+
+
+
+class GisModelSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Gis
+        fields = '__all__'

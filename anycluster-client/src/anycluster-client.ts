@@ -7,6 +7,7 @@ import {
     ClusterRequestData,
     MapContentCountRequestData,
     GroupedMapContentRequestData,
+    AreaContentRequestData,
     Filter,
     FilterList,
     NestedFilter,
@@ -159,11 +160,6 @@ export class AnyclusterClient {
     drawCell(cluster: Cluster): void {
         throw new Error("NotImplementedError: drawCell");
     }
-
-    getAreaContent(geojson: GeoJSON): void {
-        throw new Error("NotImplementedError: getAreaContent");
-    }
-
 
     getGridSize(): number {
         if (this.clusterMethod == ClusterMethod.grid) {
@@ -362,7 +358,8 @@ export class AnyclusterClient {
             }
             else {
                 const geojson = marker["geojson"];
-                const data = await this.getAreaContent(geojson);
+                const zoom = this.getZoom();
+                const data = await this.anycluster.getAreaContent(zoom, geojson);
 
                 this.onFinalClick(marker, data);
             }
@@ -556,6 +553,29 @@ export class AnyclusterClient {
             this.removeAllMarkers();
             this.getClusters(true);
         }
+    }
+
+
+    /**
+     * method for getting the unaggregated, paginated content of the map
+     */
+    async getMapContents (limit?: number, offset?:number) {
+        const geoJSON = this.getClusterGeometry();
+        const zoom = this.getZoom();
+        
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": GeometryType.area,
+            "geojson": geoJSON,
+            "clear_cache": false,
+            "filters": this.filters,
+            "limit": limit,
+            "offset": offset,
+        } as AreaContentRequestData;
+
+        const data = this.anycluster.getAreaContent(zoom, postData);
+
+        return data;
     }
 
     /**

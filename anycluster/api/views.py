@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core import serializers
 
 from rest_framework.views import APIView
@@ -5,13 +6,17 @@ from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
 from rest_framework import status
 
-from anycluster.MapClusterer import MapClusterer
+from anycluster.MapClusterer import MapClusterer, Gis
 from anycluster.definitions import GEOMETRY_TYPE_VIEWPORT, GEOMETRY_TYPE_AREA, CLUSTER_TYPE_GRID, CLUSTER_TYPE_KMEANS
 
 from .serializers import (ClusterRequestSerializer, ClusterContentRequestSerializer, MapContentCountSerializer,
-                            GroupedMapContentSerializer)
+                            GroupedMapContentSerializer, AreaContentRequestSerializer)
 
 from anycluster import ClusterCache
+from anycluster.utils import import_module
+
+gis_serializer_path = getattr(settings, 'ANYCLUSTER_GIS_MODEL_SERIALIZER', 'anycluster.api.serializers.GisModelSerializer')
+GisModelSerializer = import_module(gis_serializer_path)
 
 import json
 
@@ -64,10 +69,14 @@ class MapClusterViewBase:
 
     def serialize_gis_model_list(self, map_clusterer, instances_list):
 
-        serializer_fields = map_clusterer.get_gis_field_names()
-        data = serializers.serialize('json', instances_list, fields=serializer_fields)
+        instances_pks = [i.pk for i in instances_list]
 
-        return json.loads(data)
+        gis_queryset = Gis.objects.filter(pk__in=instances_pks)
+
+        serializer = GisModelSerializer(gis_queryset, many=True)
+        data = serializer.data
+
+        return data
 
 
 '''
@@ -176,12 +185,15 @@ class GetAreaContent(MapClusterViewBase, APIView):
 
     def post(self, request, *args, **kwargs):
 
-        serializer = ClusterRequestSerializer(data=request.data)
+        serializer = AreaContentRequestSerializer(data=request.data)
 
         if serializer.is_valid():
 
             geometry_type = serializer.validated_data['geometry_type']
             output_srid = self.parse_srid(serializer.validated_data['output_srid'])
+
+            limit = serializer.validated_data.get('limit', None)
+            offset = serializer.validated_data.get('offset', None)
 
             filters = serializer.validated_data['filters']
 
@@ -190,7 +202,7 @@ class GetAreaContent(MapClusterViewBase, APIView):
 
             geojson = serializer.validated_data['geojson']
 
-            area_content = map_clusterer.get_area_content(geojson, filters)
+            area_content = map_clusterer.get_area_content(geojson, filters, limit, offset)
 
             data = self.serialize_gis_model_list(map_clusterer, area_content)
 
@@ -215,10 +227,10 @@ class GetDatasetContent(MapClusterViewBase, APIView):
 
         dataset = map_clusterer.get_dataset_content(dataset_id)
 
-        serializer_fields = map_clusterer.get_gis_field_names()
-        data = serializers.serialize('json', dataset, fields=serializer_fields)
+        serializer = GisModelSerializer(dataset)
+        data = serializer.data
 
-        return Response(json.loads(data))
+        return Response(data)
 
 
 class GetMapContentCount(MapClusterViewBase, APIView):

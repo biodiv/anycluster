@@ -126,6 +126,11 @@ class $5660b38ff962cbfe$export$5e01b9ff483562af {
         const groupedMapContents = await this.post(url, data);
         return groupedMapContents;
     }
+    async getAreaContent(zoom, data) {
+        const url = `${this.apiUrl}get-area-content/${zoom}/${this.gridSize}/`;
+        const areaContent = await this.post(url, data);
+        return areaContent;
+    }
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
         const right = Math.min(viewport.right, this.maxBounds.maxX);
@@ -285,9 +290,6 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
     drawCell(cluster) {
         throw new Error("NotImplementedError: drawCell");
     }
-    getAreaContent(geojson) {
-        throw new Error("NotImplementedError: getAreaContent");
-    }
     getGridSize() {
         if (this.clusterMethod == (0, $aca83a355307fe8a$export$ae91e066970d978a).grid) return this.gridGridSize;
         return this.kmeansGridSize;
@@ -420,7 +422,8 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
                 this.onFinalClick(marker, data);
             } else {
                 const geojson = marker["geojson"];
-                const data = await this.getAreaContent(geojson);
+                const zoom = this.getZoom();
+                const data = await this.anycluster.getAreaContent(zoom, geojson);
                 this.onFinalClick(marker, data);
             }
         }
@@ -531,6 +534,23 @@ class $3e2183be5df4d9a4$export$a09c19a7c4419c1 {
             this.removeAllMarkers();
             this.getClusters(true);
         }
+    }
+    /**
+     * method for getting the unaggregated, paginated content of the map
+     */ async getMapContents(limit, offset) {
+        const geoJSON = this.getClusterGeometry();
+        const zoom = this.getZoom();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": (0, $aca83a355307fe8a$export$8f4397a63c3cef66).area,
+            "geojson": geoJSON,
+            "clear_cache": false,
+            "filters": this.filters,
+            "limit": limit,
+            "offset": offset
+        };
+        const data = this.anycluster.getAreaContent(zoom, postData);
+        return data;
     }
     /**
      * methods for getting counts of objects on the current map / geometry

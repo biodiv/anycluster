@@ -58,6 +58,11 @@ export interface MapContentCountRequestData extends ClusterRequestData {
     modulations?: Modulations
 }
 
+export interface AreaContentRequestData extends ClusterRequestData {
+    limit?: number
+    offset?: number
+}
+
 export interface GroupedMapContentRequestData extends ClusterRequestData {
     group_by: string
 }
@@ -125,6 +130,14 @@ export class Anycluster {
 
         return groupedMapContents;
 
+    }
+
+    async getAreaContent(zoom:number, data: AreaContentRequestData) {
+        const url = `${this.apiUrl}get-area-content/${zoom}/${this.gridSize}/`;
+
+        const areaContent = await this.post(url, data);
+
+        return areaContent;
     }
 
     viewportToGeoJSON(viewport: Viewport) {

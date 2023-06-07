@@ -1,24 +1,24 @@
-let $b4f6019a3c0f60c0$export$55fee9ea2526ad0d;
+var $b4f6019a3c0f60c0$export$55fee9ea2526ad0d;
 (function(SRIDS) {
     SRIDS["EPSG4326"] = "EPSG:4326";
     SRIDS["EPSG3857"] = "EPSG:3857";
 })($b4f6019a3c0f60c0$export$55fee9ea2526ad0d || ($b4f6019a3c0f60c0$export$55fee9ea2526ad0d = {}));
-let $b4f6019a3c0f60c0$export$ae91e066970d978a;
+var $b4f6019a3c0f60c0$export$ae91e066970d978a;
 (function(ClusterMethod) {
     ClusterMethod["kmeans"] = "kmeans";
     ClusterMethod["grid"] = "grid";
 })($b4f6019a3c0f60c0$export$ae91e066970d978a || ($b4f6019a3c0f60c0$export$ae91e066970d978a = {}));
-let $b4f6019a3c0f60c0$export$8f4397a63c3cef66;
+var $b4f6019a3c0f60c0$export$8f4397a63c3cef66;
 (function(GeometryType) {
     GeometryType["viewport"] = "viewport";
     GeometryType["area"] = "area";
 })($b4f6019a3c0f60c0$export$8f4397a63c3cef66 || ($b4f6019a3c0f60c0$export$8f4397a63c3cef66 = {}));
-let $b4f6019a3c0f60c0$export$13ff1290a9e22e77;
+var $b4f6019a3c0f60c0$export$13ff1290a9e22e77;
 (function(IconType) {
     IconType["exact"] = "exact";
     IconType["rounded"] = "rounded";
 })($b4f6019a3c0f60c0$export$13ff1290a9e22e77 || ($b4f6019a3c0f60c0$export$13ff1290a9e22e77 = {}));
-let $b4f6019a3c0f60c0$export$9c3a9f8fbf06a34;
+var $b4f6019a3c0f60c0$export$9c3a9f8fbf06a34;
 (function(DefaultGridSizes) {
     DefaultGridSizes[DefaultGridSizes["grid"] = 64] = "grid";
     DefaultGridSizes[DefaultGridSizes["kmeans"] = 150] = "kmeans";
@@ -53,7 +53,7 @@ const $b4f6019a3c0f60c0$export$96b1907ff7fa3578 = {
         60
     ]
 };
-let $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2;
+var $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2;
 (function(Operators) {
     Operators["in"] = "in";
     Operators["notIn"] = "not in";
@@ -64,7 +64,7 @@ let $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2;
     Operators["startswith"] = "startswith";
     Operators["contains"] = "contains";
 })($b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 || ($b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 = {}));
-let $b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d;
+var $b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d;
 (function(LogicalOperators) {
     LogicalOperators["AND"] = "AND";
     LogicalOperators["OR"] = "OR";
@@ -122,6 +122,11 @@ class $9ef97b21dccf4ee3$export$5e01b9ff483562af {
         const url = `${this.apiUrl}get-grouped-map-contents/${zoom}/${this.gridSize}/`;
         const groupedMapContents = await this.post(url, data);
         return groupedMapContents;
+    }
+    async getAreaContent(zoom, data) {
+        const url = `${this.apiUrl}get-area-content/${zoom}/${this.gridSize}/`;
+        const areaContent = await this.post(url, data);
+        return areaContent;
     }
     viewportToGeoJSON(viewport) {
         const left = Math.max(viewport.left, this.maxBounds.minX);
@@ -282,9 +287,6 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
     drawCell(cluster) {
         throw new Error("NotImplementedError: drawCell");
     }
-    getAreaContent(geojson) {
-        throw new Error("NotImplementedError: getAreaContent");
-    }
     getGridSize() {
         if (this.clusterMethod == (0, $b4f6019a3c0f60c0$export$ae91e066970d978a).grid) return this.gridGridSize;
         return this.kmeansGridSize;
@@ -417,7 +419,8 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
                 this.onFinalClick(marker, data);
             } else {
                 const geojson = marker["geojson"];
-                const data = await this.getAreaContent(geojson);
+                const zoom = this.getZoom();
+                const data = await this.anycluster.getAreaContent(zoom, geojson);
                 this.onFinalClick(marker, data);
             }
         }
@@ -528,6 +531,23 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
             this.removeAllMarkers();
             this.getClusters(true);
         }
+    }
+    /**
+     * method for getting the unaggregated, paginated content of the map
+     */ async getMapContents(limit, offset) {
+        const geoJSON = this.getClusterGeometry();
+        const zoom = this.getZoom();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": (0, $b4f6019a3c0f60c0$export$8f4397a63c3cef66).area,
+            "geojson": geoJSON,
+            "clear_cache": false,
+            "filters": this.filters,
+            "limit": limit,
+            "offset": offset
+        };
+        const data = this.anycluster.getAreaContent(zoom, postData);
+        return data;
     }
     /**
      * methods for getting counts of objects on the current map / geometry

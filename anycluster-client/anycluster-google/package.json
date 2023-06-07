@@ -1,6 +1,6 @@
 {
   "name": "anycluster-google",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "anycluster client for Google Maps",
   "main": "dist/main.js",
   "lib": "lib/anycluster-google.js",

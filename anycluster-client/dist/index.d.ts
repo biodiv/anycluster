@@ -113,6 +113,10 @@ interface Modulations {
 interface MapContentCountRequestData extends ClusterRequestData {
     modulations?: Modulations;
 }
+interface AreaContentRequestData extends ClusterRequestData {
+    limit?: number;
+    offset?: number;
+}
 interface GroupedMapContentRequestData extends ClusterRequestData {
     group_by: string;
 }
@@ -127,6 +131,7 @@ export class Anycluster {
     getDatasetContent(zoom: number, datasetId: number): Promise<any>;
     getMapContentCount(zoom: number, data: MapContentCountRequestData): Promise<any>;
     getGroupedMapContents(zoom: number, data: GroupedMapContentRequestData): Promise<any>;
+    getAreaContent(zoom: number, data: AreaContentRequestData): Promise<any>;
     viewportToGeoJSON(viewport: Viewport): {
         type: string;
         geometry: {
@@ -189,7 +194,6 @@ export class AnyclusterClient {
     addMapEventListeners(): void;
     drawMarker(cluster: Cluster): void;
     drawCell(cluster: Cluster): void;
-    getAreaContent(geojson: GeoJSON): void;
     getGridSize(): number;
     setClusterMethod(clusterMethod: ClusterMethod): void;
     setArea(geojson: GeoJSON): void;
@@ -228,6 +232,10 @@ export class AnyclusterClient {
     removeFilters(filtersToRemove: FilterList, reloadMarkers?: boolean): void;
     resetFilters(reloadMarkers?: boolean): void;
     postFilterChange(reloadMarkers?: boolean): void;
+    /**
+     * method for getting the unaggregated, paginated content of the map
+     */
+    getMapContents(limit?: number, offset?: number): Promise<any>;
     /**
      * methods for getting counts of objects on the current map / geometry
      */

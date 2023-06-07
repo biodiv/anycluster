@@ -64,9 +64,11 @@ const gardenTypeButtons = document.querySelectorAll('input[name="gardentype"]');
 
 const nestedFilterButton = document.getElementById('nested-button');
 
-const totalCount = document.getElementById('total-garden-count');
-const stoneCount = document.getElementById('stone-garden-count');
-const flowerCount = document.getElementById('flower-garden-count');
+const totalCount = document.getElementById("total-garden-count");
+const stoneCount = document.getElementById("stone-garden-count");
+const flowerCount = document.getElementById("flower-garden-count");
+
+const mapContentList = document.getElementById("map-content-list");
 
 let activeGardenFilter = null;
 let activeEntranceFilter = null;
@@ -105,6 +107,19 @@ export class MapInteractions {
 
             const groups = anyclusterClient.getGroupedMapContents('style');
             console.log(groups);
+
+            const contentList = await anyclusterClient.getMapContents(20, 0);
+
+            mapContentList.innerHTML = '';
+            
+            contentList.forEach(dataset => {
+
+                let div = document.createElement("div");
+                div.innerHTML = `<small>id: ${dataset.id}</small>, <strong>${dataset.style}</strong>, free entrance: ${dataset.free_entrance}`;
+                
+                mapContentList.appendChild(div);
+
+            });
             
         }
 

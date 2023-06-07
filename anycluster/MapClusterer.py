@@ -744,7 +744,7 @@ class MapClusterer():
         return list(entries_queryset)
 
 
-    def get_area_content(self, geojson, filters):
+    def get_area_content(self, geojson, filters, limit=None, offset=None):
 
         geomfilterstring = self.get_geom_filterstring(geojson)
 
@@ -753,23 +753,33 @@ class MapClusterer():
 
         gis_fields_str = self.get_gis_fields_str()
 
-        entries_queryset = Gis.objects.raw(
-            '''SELECT {fields} FROM {schema_name}.{geo_table} WHERE {geomfilterstring} {filterstring};'''.format(
+        sql = '''SELECT {fields} FROM {schema_name}.{geo_table} WHERE {geomfilterstring} {filterstring} '''.format(
                 schema_name=self.schema_name, geo_table=geo_table, geomfilterstring=geomfilterstring,
                 filterstring=filterstring, fields=gis_fields_str)
-        )
+
+        if limit != None:
+            sql = '{sql} LIMIT {limit}'.format(sql=sql, limit=limit)
+        
+        if offset != None:
+            sql = '{sql} OFFSET {offset}'.format(sql=sql, offset=offset)
+
+        sql = '{sql};'.format(sql=sql)
+
+        entries_queryset = Gis.objects.raw(sql)
 
         return entries_queryset
 
 
     def get_dataset_content(self, id):
 
-        gis_fields_str = self.get_gis_fields_str()
+        #gis_fields_str = self.get_gis_fields_str()
 
-        queryset = Gis.objects.raw(
-            '''SELECT {fields} FROM {schema_name}.{geo_table} WHERE id={id};'''.format(
-                schema_name=self.schema_name, geo_table=geo_table, fields=gis_fields_str, id=str(id))
-        )
+        queryset = Gis.objects.filter(pk=id).first()
+
+        #queryset = Gis.objects.raw(
+        #    '''SELECT {fields} FROM {schema_name}.{geo_table} WHERE id={id};'''.format(
+        #        schema_name=self.schema_name, geo_table=geo_table, fields=gis_fields_str, id=str(id))
+        #)
 
         return queryset
 
