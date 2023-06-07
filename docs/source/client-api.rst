@@ -441,3 +441,11 @@ getGroupedMapContents(groupBy:string)
         }
 
     :code:`flower`, :code:`imperial`, :code:`japanese`, :code:`other` and :code:`stone` are the occurring values of the column :code:`style`, which had been applied in the :code:`GROUP BY` SQL clause.
+
+
+
+Getting Content
+---------------
+
+getMapContents(limit?: number, offset?:number)
+    Fetches a list of the currently displayed data. By default, model instances with all their fields are returned. You can configure this using a custom serializer with :code:`settings.ANYCLUSTER_GIS_MODEL_SERIALIZER`.

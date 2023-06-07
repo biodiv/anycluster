@@ -16,6 +16,8 @@ Available settings:
 +---------------------------------------+------------+--------------------------------------------------+---------------------------+
 | ANCLUSTER_PINCOLUMN                   | string     | 'db_column'                                      | optional                  |
 +---------------------------------------+------------+--------------------------------------------------+---------------------------+
+| ANCLUSTER_GIS_MODEL_SERIALIZER        | string     | 'myapp.api.serializers.DatasetRetrieveSerializer'| optional                  |
++---------------------------------------+------------+--------------------------------------------------+---------------------------+
 
 ANYCLUSTER_GEODJANGO_MODEL
     The model the anycluster api should query.
@@ -54,6 +56,10 @@ ANYCLUSTER_PINCOLUMN
 
     If the :code:`style` column of the dataset equals :code:`stone`, :code:`/static/anycluster/pin_stone.png` will be used as an image for the marker.
     
+
+ANYCLUSTER_GIS_MODEL_SERIALIZER
+    Define the `django-rest-framework <https://www.django-rest-framework.org/api-guide/serializers/>`_ serializer used for getting datasets with :code:`anyclusterClient.getMapContents`.
+    The defined serializer is also used for the data received by :code:`anyclusterClient.onFinalClick`.
 
 
 **Example settings with all entries**:
