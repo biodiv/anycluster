@@ -869,7 +869,7 @@ class MapClusterer():
         
         for result in results:
             count = result[0]
-            group_name = result[1]
+            group_name = str(result[1])
 
             if group_name not in groups:
                 groups[group_name] = {

@@ -448,4 +448,5 @@ Getting Content
 ---------------
 
 getMapContents(limit?: number, offset?:number)
-    Fetches a list of the currently displayed data. By default, model instances with all their fields are returned. You can configure this using a custom serializer with :code:`settings.ANYCLUSTER_GIS_MODEL_SERIALIZER`.
+    Fetches a list of the currently displayed data. By default, model instances with all their fields are returned.
+    You can configure this using a custom serializer with :code:`settings.ANYCLUSTER_GIS_MODEL_SERIALIZER`.
