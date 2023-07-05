@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: anycluster
-Version: 2.3.1
+Version: 2.3.4
 Summary: anycluster provides Server-Side clustering of map markers for Geodjango
 Home-page: https://github.com/biodiv/anycluster
 Author: Thomas Uher

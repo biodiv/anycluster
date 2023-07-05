@@ -1,5 +1,5 @@
-from django.test import TestCase
-
+from django.test import TestCase, override_settings, modify_settings
+from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.gdal import SpatialReference, CoordTransform
 from anycluster.MapClusterer import MapClusterer
@@ -39,7 +39,6 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
                     self.assertEqual(map_clusterer.db_srid, 3857)
                     self.assertEqual(map_clusterer.grid_size, 256)
                     self.assertEqual(map_clusterer.maptools.__class__, MapTools)
-                    self.assertTrue(isinstance(map_clusterer.valid_operators, list))
 
 
     def test_get_database_srid(self):
@@ -455,7 +454,7 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
             cluster_cache = self.get_cluster_cache(GEOMETRY_TYPE_VIEWPORT, TEST_ZOOM_LEVEL, CLUSTER_TYPE_GRID, filters)
             map_clusterer = MapClusterer(cluster_cache)
 
-            garden_ = map_clusterer.get_dataset_content(garden.id)[0]
+            garden_ = map_clusterer.get_dataset_content(garden.id)
 
             for field_name in map_clusterer.get_gis_field_names():
 
@@ -479,7 +478,8 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
 
 
 class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
-    def test_get_map_content_count(self):
+
+    def test_get_map_content_counts(self):
 
         zoom = 10
 
@@ -514,6 +514,19 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
             }
         }
 
+        simple_modulations = {
+            'free' : {
+                'column': 'free_entrance',
+                'value': True,
+                'operator': '=',
+            },
+            'paid' : {
+                'column': 'free_entrance',
+                'value': True,
+                'operator': '!=',
+            }
+        }
+
         
         for clustertype in CLUSTER_TYPES:
             for geometry_type in GEOMETRY_TYPES:
@@ -531,6 +544,9 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
 
                     result = map_clusterer.get_map_content_counts(geojson, geometry_type, filters, zoom, modulations)
 
+                    result_from_simple_modulations = result = map_clusterer.get_map_content_counts(geojson,
+                        geometry_type, filters, zoom, simple_modulations)
+
                     expected_result = {
                         'count': 0,
                         'modulations':  {
@@ -543,6 +559,7 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
                         },
                     }
                     self.assertEqual(result, expected_result)
+                    self.assertEqual(result_from_simple_modulations, expected_result)
 
                     if geometry_type == GEOMETRY_TYPE_VIEWPORT:
 
@@ -550,6 +567,8 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
                         self.create_point('name 2', 'flower')
 
                         result = map_clusterer.get_map_content_counts(geojson, geometry_type, filters, zoom, modulations)
+                        result_from_simple_modulations = result = map_clusterer.get_map_content_counts(geojson,
+                            geometry_type, filters, zoom, simple_modulations)
 
                         expected_result = {
                             'count': 1,
@@ -566,6 +585,7 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
                         # print(result)
 
                         self.assertEqual(result, expected_result)
+                        self.assertEqual(result_from_simple_modulations, expected_result)
                     
                     gardens = Gardens.objects.all()
                     for garden in gardens:
@@ -585,6 +605,7 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
 
         
         filters = []
+        modulation_filters = []
 
         cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
         map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
@@ -593,17 +614,17 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
 
         geometries_for_counting = map_clusterer.get_geometries_for_counting(geojson, geometry_type, zoom)
 
-        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters, modulation_filters)
         self.assertEqual(count, 0)
 
         self.create_point('name 1', 'stone')
         
-        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters, modulation_filters)
         self.assertEqual(count, 1)
 
         self.create_point('name 2', 'flower')
 
-        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters, modulation_filters)
         self.assertEqual(count, 2)
 
 
@@ -615,7 +636,7 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
             }
         ]
 
-        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters, modulation_filters)
         self.assertEqual(count, 1)
 
         filters = [
@@ -632,18 +653,84 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
             }
         ]
 
-        count = map_clusterer.query_map_content_count(geometries_for_counting, filters)
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters, modulation_filters)
         self.assertEqual(count, 2)
 
         gardens = Gardens.objects.all()
         for garden in gardens:
             garden.delete()
 
-
         gardens = Gardens.objects.all()
 
         self.assertEqual(gardens.count(), 0)
 
+
+    def test_query_map_content_count_with_modulations(self):
+
+        zoom = 10
+        geometry_type = GEOMETRY_TYPE_VIEWPORT
+        clustertype = CLUSTER_TYPE_KMEANS
+
+        filters = [
+            {
+                'column': 'style',
+                'value': 'stone',
+                'operator': '=',
+            },
+            {
+                'column': 'style',
+                'value': 'flower',
+                'operator': '=',
+                'logicalOperator': 'OR',
+            }
+        ]
+
+        cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+        map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+        geojson = GEOJSON_RECTANGLE
+
+        geometries_for_counting = map_clusterer.get_geometries_for_counting(geojson, geometry_type, zoom)
+
+
+        stone_modulation = [{
+            'column': 'style',
+            'value': 'stone',
+            'operator': '=',
+        }]
+
+
+        garden_1 = self.create_point('name 1', 'stone')
+        garden_2 =  self.create_point('name 2', 'flower')
+        garden_3 = self.create_point('name 3', 'stone')
+        garden_4 = self.create_point('name 4', 'stone')
+        garden_5 = self.create_point('name 5', 'stone')
+        garden_6 = self.create_point('name 6', 'stone')
+
+        garden_1.free_entrance = True
+        garden_1.save()
+        garden_3.free_entrance = True
+        garden_3.save()
+
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters, stone_modulation)
+        self.assertEqual(count, 5)
+
+        stone_free_modulation = [
+            {
+                'column': 'style',
+                'value': 'stone',
+                'operator': '=',
+            },
+            {
+                'column': 'free_entrance',
+                'value': True,
+                'operator': '=',
+                'logicalOperator': 'AND',
+            },
+        ]
+
+        count = map_clusterer.query_map_content_count(geometries_for_counting, filters, stone_free_modulation)
+        self.assertEqual(count, 2)
 
     def test_get_geometries_for_counting(self):
         
@@ -700,7 +787,6 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
 
                 self.assertEqual(polygon_4326, str(grid_rectangle))
 
-
     def test_get_grouped_map_contents(self):
 
         zoom = 10
@@ -737,3 +823,58 @@ class TestMapClustererContentCounts(WithFilters, WithGardens, TestCase):
 
                     gardens = Gardens.objects.all()
                     self.assertEqual(gardens.count(), 2)
+
+
+@override_settings(ANYCLUSTER_ADDITIONAL_GROUP_BY_COLUMNS = ['rating', 'last_renewal'])
+class TestMapClustererAlternativeSettings(WithFilters, WithGIS, TestCase):
+
+
+    def test_get_additional_group_by_columns_string(self):
+
+        zoom = 10
+        filters = []
+
+        for clustertype in CLUSTER_TYPES:
+            for geometry_type in GEOMETRY_TYPES:
+
+                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+
+                    map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+                    columns_string = map_clusterer.get_additional_group_by_columns_string()
+
+                    expected_string = ', MIN(rating::VARCHAR) AS rating, MIN(last_renewal::VARCHAR) AS last_renewal'
+                    self.assertEqual(columns_string, expected_string)
+
+
+    def test_get_grouped_map_contents_additional_columns(self):
+
+        zoom = 10
+        filters = []
+
+        self.create_point('name 1', 'stone')
+        self.create_point('name 2', 'flower')
+
+        self.assertTrue(hasattr(settings, 'ANYCLUSTER_ADDITIONAL_GROUP_BY_COLUMNS'))
+        
+        for clustertype in CLUSTER_TYPES:
+            for geometry_type in GEOMETRY_TYPES:
+
+                for geojson in [GEOJSON_POLYGON, GEOJSON_RECTANGLE, GEOJSON_MULTIPOLYGON, GEOJSON_FEATURECOLLECTION]:
+
+                    cluster_cache = self.get_cluster_cache(geometry_type, zoom, clustertype, filters)
+
+                    map_clusterer = MapClusterer(cluster_cache, grid_size=TEST_GRID_SIZE)
+
+                    group_by = 'style'
+
+                    result = map_clusterer.get_grouped_map_contents(geojson, geometry_type, zoom, filters, group_by)
+
+                    if geometry_type == GEOMETRY_TYPE_VIEWPORT:
+
+                        for aggregate, data in result.items():
+
+                            self.assertIn('rating', data)
+                            self.assertIn('last_renewal', data)

@@ -8,6 +8,10 @@ from .json_schemas import FEATURE_OR_FEATURECOLLECTION_SCHEMA
 from anycluster.definitions import GEOMETRY_TYPES, GEOMETRY_TYPE_VIEWPORT
 from anycluster.MapClusterer import Gis
 
+from anycluster.FilterComposer import OPERATOR_MAPPING, LIST_OPERATOR_MAPPING
+
+VALID_OPERATORS = list(OPERATOR_MAPPING.keys())
+VALID_LIST_OPERATORS = list(LIST_OPERATOR_MAPPING.keys())
 
 def filters_are_allowed(filters):
 
@@ -17,12 +21,36 @@ def filters_are_allowed(filters):
 
         if is_nested == False:
             column = filter.get('column', None)
+
+            operator = filter.get('operator', None)
+
+            value = filter.get('value', None)
+
             if not column:
-                raise serializers.ValidationError('Filter require a column')
+                raise serializers.ValidationError('Filters require a column')
         
             if column not in settings.ANYCLUSTER_FILTERS:
                 raise serializers.ValidationError('It is not allowed to filter Column {0}'.format(column))
-        
+
+            if value == None:
+                raise serializers.ValidationError('Filters require a value')
+
+            if not operator:
+                raise serializers.ValidationError('Filters require an operator')
+            
+            if isinstance(value, list):
+                if operator not in VALID_LIST_OPERATORS:
+                    message = 'Invalid operator: {0}. Allowed list operators are: {1}'.format(operator,
+                        ','.join(VALID_LIST_OPERATORS))
+                    raise serializers.ValidationError(message)
+            
+            else:
+                if operator not in VALID_OPERATORS:
+                    message = 'Invalid operator: {0}. Allowed operators are: {1}'.format(operator,
+                        ','.join(VALID_OPERATORS))
+                    raise serializers.ValidationError(message)
+
+            
         else:
             filters_are_allowed(filter['filters'])
 
@@ -77,8 +105,19 @@ class MapContentCountSerializer(ClusterRequestSerializer):
 
         if value:
 
+            if not isinstance(value, dict):
+                raise serializers.ValidationError('Modulations have to be of type dict')
+
+            # modulation can be a filter or a nested filter
             for modulation_name, modulation in value.items():
-                filters_are_allowed(modulation['filters'])
+
+                if not isinstance(modulation_name, str):
+                    raise serializers.ValidationError('Invalid modulation key: {0}'.format(modulation_name))
+
+                if not isinstance(modulation, dict):
+                    raise serializers.ValidationError('Invalid modulation')
+
+                filters_are_allowed([modulation])
 
         return value
 

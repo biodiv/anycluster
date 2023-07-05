@@ -261,6 +261,10 @@ class GetMapContentCount(MapClusterViewBase, APIView):
 
 
 class GetGroupedMapContents(MapClusterViewBase, APIView):
+
+    # hook
+    def prepare_groups(self, groups):
+        return groups
     
     def post(self, request, *args, **kwargs):
         
@@ -283,6 +287,8 @@ class GetGroupedMapContents(MapClusterViewBase, APIView):
 
             groups = map_clusterer.get_grouped_map_contents(geojson, geometry_type, zoom, filters, group_by)
 
-            return Response(groups, status=status.HTTP_200_OK)
+            prepared_groups = self.prepare_groups(groups)
+
+            return Response(prepared_groups, status=status.HTTP_200_OK)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

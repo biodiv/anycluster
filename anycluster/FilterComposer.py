@@ -13,22 +13,21 @@
 ------------------------------------------------------------------------------------------------------------------------'''
 import numbers, decimal
 
-# IMPLEMENT: check settings.ANYVLUSTER_ALLOWED_FILTER_COLUMNS
+OPERATOR_MAPPING = {
+    '=': '=',
+    '!=': '!=',
+    '>=': '>=',
+    '<=': '<=',
+    'startswith': '~',
+    'contains': '~'
+}
+
+LIST_OPERATOR_MAPPING = {
+    'in': 'IN',
+    'not in': 'NOT IN',
+}
+
 class FilterComposer:
-
-    operator_mapping = {
-        '=': '=',
-        '!=': '!=',
-        '>=': '>=',
-        '<=': '<=',
-        'startswith': '~',
-        'contains': '~'
-    }
-
-    list_operator_mapping = {
-        'in': 'IN',
-        'not in': 'NOT IN',
-    }
     
     def __init__(self, filters):
         self.filters = filters
@@ -71,7 +70,7 @@ class FilterComposer:
         filterstring += '('
 
         if isinstance(value, list):
-            parsed_operator = self.list_operator_mapping[comparison_operator]
+            parsed_operator = LIST_OPERATOR_MAPPING[comparison_operator]
 
             sql_value = str(tuple(value))
 
@@ -79,7 +78,7 @@ class FilterComposer:
                                                                     sql_value=sql_value)
 
         else:
-            parsed_operator = self.operator_mapping[comparison_operator]
+            parsed_operator = OPERATOR_MAPPING[comparison_operator]
 
             sql_value = self.parse_filter_value(comparison_operator, value)
 
@@ -122,13 +121,14 @@ class FilterComposer:
         return filterstring
 
 
-    def as_sql(self):
+    def as_sql(self, omit_leading_AND=False):
 
         filterstring = ''
 
         if self.filters:
 
-            filterstring = ' AND '
+            if omit_leading_AND == False:
+                filterstring = ' AND '
 
             filterstring += self.parse_filters(self.filters)
 

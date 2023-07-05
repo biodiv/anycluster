@@ -11,7 +11,7 @@ install_requires = [
 
 setup(
     name="anycluster",
-    version='2.3.1',
+    version='2.3.4',
     description='anycluster provides Server-Side clustering of map markers for Geodjango',
     long_description=long_description,
     long_description_content_type="text/markdown",

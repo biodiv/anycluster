@@ -119,9 +119,6 @@ class MapClusterer():
 
         self.maptools = MapTools(int(maptile_size))
 
-        # filter operators
-        self.valid_operators = ['=', '<', '>', '<=', '>=', 'list', '!list']
-
     # read the srid of the database.
 
     def get_database_srid(self):
@@ -519,8 +516,7 @@ class MapClusterer():
                     
                 '''.format(geo_column=geo_column_str, pin_qry_0=pin_qry[0], pin_qry_1=pin_qry[1], k=k,
                            schema_name=self.schema_name, geo_table=geo_table, geos_geometry=geos_geometry.ewkt,
-                           filterstring=filterstring, additional_column_qry_0=additional_column_qry[
-                               0],
+                           filterstring=filterstring, additional_column_qry_0=additional_column_qry[0],
                            additional_column_qry_1=additional_column_qry[1])
 
                 with connections['default'].cursor() as cursor:
@@ -798,13 +794,17 @@ class MapClusterer():
 
         geometries_for_counting = self.get_geometries_for_counting(geojson, geometry_type, zoom)
 
-        unmodulated_count = self.query_map_content_count(geometries_for_counting, filters)
+        unmodulated_count = self.query_map_content_count(geometries_for_counting, filters, [])
         result['count'] = unmodulated_count
 
         for modulation_name, modulation_filters in modulations.items():
 
-            combined_filters = filters + modulation_filters['filters']
-            modulated_count = self.query_map_content_count(geometries_for_counting, combined_filters)
+            if 'filters' in modulation_filters:
+                modulation_filters = modulation_filters['filters']
+            else:
+                modulation_filters = [modulation_filters]
+                
+            modulated_count = self.query_map_content_count(geometries_for_counting, filters, modulation_filters)
             result['modulations'][modulation_name] = {
                 'count': modulated_count
             }
@@ -812,7 +812,8 @@ class MapClusterer():
         return result
 
 
-    def query_map_content_count(self, geometries_for_counting, filters):
+    # a nested select is required for the modulation filters
+    def query_map_content_count(self, geometries_for_counting, filters, modulation_filters):
 
         count = 0
 
@@ -821,13 +822,25 @@ class MapClusterer():
 
         geom_filterstring = self.get_geom_filter_string_from_geos(geometries_for_counting)
 
+        modulation_filter_composer = FilterComposer(modulation_filters)
+        modulation_filterstring = modulation_filter_composer.as_sql(omit_leading_AND=True)
+
         content_count_sql = '''
-            SELECT count(*) AS count
-            FROM {schema_name}.{geo_table}
-                WHERE {geo_column_str} IS NOT NULL
-                    AND {geom_filterstring} {filterstring};
+            SELECT count(*) AS count FROM
+                (SELECT * FROM {schema_name}.{geo_table}
+                    WHERE {geo_column_str} IS NOT NULL
+                        AND {geom_filterstring} {filterstring}
+                ) AS markers
         '''.format(schema_name=self.schema_name, geo_table=geo_table, geo_column_str=geo_column_str,
                     geom_filterstring=geom_filterstring, filterstring=filterstring)
+
+        if modulation_filterstring:
+            content_count_sql = '{content_count_sql} WHERE {modulation_filterstring}'.format(
+                content_count_sql=content_count_sql, modulation_filterstring=modulation_filterstring
+            )
+
+
+        content_count_sql = '{content_count_sql};'.format(content_count_sql=content_count_sql)
 
         cursor = connections['default'].cursor()
         cursor.execute(content_count_sql)
@@ -836,6 +849,19 @@ class MapClusterer():
         count += query_result[0]
 
         return count
+
+
+    def get_additional_group_by_columns_string(self):
+
+        column_names = getattr(settings, 'ANYCLUSTER_ADDITIONAL_GROUP_BY_COLUMNS', [])
+
+        additional_group_by_columns_string = ''
+
+        for column_name in column_names:
+            additional_group_by_columns_string = '{additional_group_by_columns_string}, MIN({column}::VARCHAR) AS {column}'.format(
+                additional_group_by_columns_string=additional_group_by_columns_string, column=column_name)
+
+        return additional_group_by_columns_string
 
 
     def get_grouped_map_contents(self, geojson, geometry_type, zoom, filters, group_by):
@@ -852,20 +878,25 @@ class MapClusterer():
         filter_composer = FilterComposer(filters)
         filterstring = filter_composer.as_sql()
 
+        additional_group_by_columns_string = self.get_additional_group_by_columns_string()
+
         groups = {}
 
         grouped_count_sql = '''
-            SELECT COUNT(id), {group_by}
+            SELECT COUNT(id), {group_by} {additional_group_by_columns_string}
             FROM {schema_name}.{geo_table}
                 WHERE {geo_column_str} IS NOT NULL
                     AND {geom_filterstring} {filterstring}
                         GROUP BY {group_by} ORDER BY {group_by} ASC;
         '''.format(schema_name=self.schema_name, geo_table=geo_table, geo_column_str=geo_column_str,
-                    geom_filterstring=geom_filterstring, filterstring=filterstring, group_by=group_by)
+                    geom_filterstring=geom_filterstring, filterstring=filterstring, group_by=group_by,
+                    additional_group_by_columns_string=additional_group_by_columns_string)
 
         cursor = connections['default'].cursor()
         cursor.execute(grouped_count_sql)
         results = cursor.fetchall()
+
+        additional_column_names = getattr(settings, 'ANYCLUSTER_ADDITIONAL_GROUP_BY_COLUMNS', [])
         
         for result in results:
             count = result[0]
@@ -875,6 +906,12 @@ class MapClusterer():
                 groups[group_name] = {
                     'count' : count,
                 }
+
+                #groups[group_name][group_by] = group_name
+
+                for index, additional_column in enumerate(additional_column_names, 0):
+                    query_index = index + 2
+                    groups[group_name][additional_column] = result[query_index]
 
             else:
                 groups[group_name]['count'] += count

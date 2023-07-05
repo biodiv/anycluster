@@ -80,44 +80,44 @@ interface Cluster {
     geojson?: Geometry;
     pinimg?: string;
 }
-interface Filter {
+export interface Filter {
     column: string;
     value: string | number | boolean;
     operator: Operators;
     logicalOperator?: LogicalOperators;
 }
-interface NestedFilter {
+export interface NestedFilter {
     filters: Filter[];
     logicalOperator?: LogicalOperators;
 }
-type FilterOrNestedFilter = Filter | NestedFilter;
-interface ClusterRequestData {
+export type FilterOrNestedFilter = Filter | NestedFilter;
+export interface ClusterRequestData {
     output_srid: SRIDS;
     geometry_type: GeometryType;
     geojson: GeoJSON;
     clear_cache: boolean;
     filters: FilterOrNestedFilter[];
 }
-type FilterList = Filter[];
-type FilterOrNestedFilterList = FilterOrNestedFilter[];
-interface GetKmeansClusterContentRequestData {
+export type FilterList = Filter[];
+export type FilterOrNestedFilterList = FilterOrNestedFilter[];
+export interface GetKmeansClusterContentRequestData {
     geometry_type: GeometryType;
     input_srid: SRIDS;
     x: number;
     y: number;
     ids: number[];
 }
-interface Modulations {
+export interface Modulations {
     [name: string]: Filter | NestedFilter;
 }
-interface MapContentCountRequestData extends ClusterRequestData {
+export interface MapContentCountRequestData extends ClusterRequestData {
     modulations?: Modulations;
 }
-interface AreaContentRequestData extends ClusterRequestData {
+export interface AreaContentRequestData extends ClusterRequestData {
     limit?: number;
     offset?: number;
 }
-interface GroupedMapContentRequestData extends ClusterRequestData {
+export interface GroupedMapContentRequestData extends ClusterRequestData {
     group_by: string;
 }
 export class Anycluster {
@@ -148,7 +148,7 @@ export class Anycluster {
     post(url: string, postData: object): Promise<any>;
     get(url: string): Promise<any>;
 }
-interface AnyclusterClientSettings {
+export interface AnyclusterClientSettings {
     srid?: SRIDS;
     kmeansGridSize?: number;
     gridGridSize?: number;

@@ -16,7 +16,6 @@ import {
     Modulations
 } from "./anycluster";
 
-
 const defaultGridFillColors = {
     5: "rgba(255, 192, 203, .5)",
     10: "rgba(240, 128, 128, .5)",

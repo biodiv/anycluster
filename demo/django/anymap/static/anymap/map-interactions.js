@@ -81,11 +81,9 @@ export class MapInteractions {
 
         const modulations = {
             'stone' : {
-                'filters' : [{
-                    'column': 'style',
-                    'value': 'stone',
-                    'operator': '=',
-                }]
+                'column': 'style',
+                'value': 'stone',
+                'operator': '=',
             },
             'flower': {
                 'filters': [{
@@ -105,8 +103,16 @@ export class MapInteractions {
             stoneCount.textContent = counts['modulations']['stone']['count'];
 
 
-            const groups = anyclusterClient.getGroupedMapContents('style');
+            const groups = await anyclusterClient.getGroupedMapContents('style');
             console.log(groups);
+
+            /*if ('flower' in groups){
+                flowerCount.textContent = groups['flower']['count'];
+            }
+
+            if ('stone' in groups){
+                stoneCount.textContent = groups['stone']['count'];
+            }*/
 
             const contentList = await anyclusterClient.getMapContents(20, 0);
 

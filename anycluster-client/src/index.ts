@@ -8,9 +8,27 @@ export {
 } from "./consts";
 
 export { 
-    Anycluster
+    Anycluster,
+} from "./anycluster";
+
+export type {
+    Filter,
+    GetKmeansClusterContentRequestData,
+    ClusterRequestData,
+    MapContentCountRequestData,
+    GroupedMapContentRequestData,
+    AreaContentRequestData,
+    FilterList,
+    NestedFilter,
+    FilterOrNestedFilter,
+    FilterOrNestedFilterList,
+    Modulations,
 } from "./anycluster";
 
 export {
-    AnyclusterClient
+    AnyclusterClient,
+} from "./anycluster-client";
+
+export type {
+    AnyclusterClientSettings
 } from "./anycluster-client";
