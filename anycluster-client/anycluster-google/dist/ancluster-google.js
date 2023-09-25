@@ -49,7 +49,7 @@ class $24b0c9e43d90857a$export$bdd7c550c60f19cc extends (0, $hgUW1$AnyclusterCli
             const feature = event.feature;
             if (feature.clustertype == "cell" || feature.clustertype == "marker") {
                 let zoom = this.getZoom();
-                if (zoom >= 13 || feature.count == 1) this.onMarkerFinalClick(feature);
+                if (zoom >= this.maxZoom || feature.count == 1) this.onMarkerFinalClick(feature);
                 else this.markerClickFunction(feature.x, feature.y);
             }
         });

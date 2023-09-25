@@ -87,7 +87,7 @@ export class AnyclusterGoogle extends AnyclusterClient {
 
                 let zoom = this.getZoom();
 
-                if (zoom >= 13 || feature.count == 1) {
+                if (zoom >= this.maxZoom || feature.count == 1) {
                     this.onMarkerFinalClick(feature);
                 }
 

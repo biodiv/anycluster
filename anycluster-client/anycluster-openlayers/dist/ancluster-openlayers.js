@@ -59,7 +59,7 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
                     if (feature.clustertype == "cell" || feature.clustertype == "marker") {
                         hit = true;
                         let zoom = this.getZoom();
-                        if (zoom >= 13 || feature.count == 1) this.onMarkerFinalClick(feature);
+                        if (zoom >= this.maxZoom || feature.count == 1) this.onMarkerFinalClick(feature);
                         else this.markerClickFunction(feature.x, feature.y);
                     }
                 }

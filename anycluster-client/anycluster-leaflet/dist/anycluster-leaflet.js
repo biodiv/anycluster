@@ -125,7 +125,7 @@ class $34187c1d26cab582$export$d28c3646e727c4c9 extends (0, $hgUW1$AnyclusterCli
     }
     addMarkerClickListener(marker) {
         const zoom = this.getZoom();
-        if (zoom >= 13 || marker.count == 1) marker.on("click", (event)=>{
+        if (zoom >= this.maxZoom || marker.count == 1) marker.on("click", (event)=>{
             this.onMarkerFinalClick(marker);
         });
         else marker.on("click", (event)=>{

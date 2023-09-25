@@ -57,3 +57,5 @@ export enum LogicalOperators {
     AND = 'AND',
     OR = 'OR',
 }
+
+export const DefaultMaxZoom = 13;

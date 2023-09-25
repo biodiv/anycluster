@@ -69,6 +69,7 @@ var $b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d;
     LogicalOperators["AND"] = "AND";
     LogicalOperators["OR"] = "OR";
 })($b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d || ($b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d = {}));
+const $b4f6019a3c0f60c0$export$aa170efeb32c8cf9 = 13;
 
 
 
@@ -247,6 +248,7 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : (0, $b4f6019a3c0f60c0$export$96b1907ff7fa3578);
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $2a18f65d622cfe30$var$defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $2a18f65d622cfe30$var$defaultGridStrokeColors;
+        this.maxZoom = settings.maxZoom ? settings.maxZoom : (0, $b4f6019a3c0f60c0$export$aa170efeb32c8cf9);
         // hooks
         this.onGotClusters = settings.onGotClusters ? settings.onGotClusters : this._onGotClusters;
         this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;

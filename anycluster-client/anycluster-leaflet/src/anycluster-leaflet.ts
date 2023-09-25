@@ -206,7 +206,7 @@ export class AnyclusterLeaflet extends AnyclusterClient {
 
         const zoom = this.getZoom();
 
-        if (zoom >= 13 || marker.count == 1) {
+        if (zoom >= this.maxZoom || marker.count == 1) {
             marker.on("click", (event) => {
                 this.onMarkerFinalClick(marker);
             });

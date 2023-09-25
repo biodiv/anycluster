@@ -1,6 +1,6 @@
 {
   "name": "anycluster-leaflet",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "anycluster client for Leaflet",
   "main": "dist/main.js",
   "lib": "lib/anycluster-leaflet.js",
@@ -37,7 +37,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "anycluster-client": "^0.3.0",
+    "anycluster-client": "^0.3.2",
     "leaflet": "^1.9.3"
   },
   "targets": {

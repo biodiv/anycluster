@@ -66,7 +66,7 @@ class ClusterRequestSerializer(serializers.Serializer):
 
     clear_cache = serializers.BooleanField(default=False, required=False, write_only=True)
 
-    # viewport can be one or two polygons
+
     def validate(self, data):
         if data['geometry_type'] == GEOMETRY_TYPE_VIEWPORT:
 

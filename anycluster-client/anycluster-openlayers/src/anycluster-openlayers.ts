@@ -99,7 +99,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
                         hit = true;
                         let zoom = this.getZoom();
 
-                        if (zoom >= 13 || feature.count == 1) {
+                        if (zoom >= this.maxZoom || feature.count == 1) {
                             this.onMarkerFinalClick(feature);
                         }
 
@@ -154,7 +154,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
     drawMarker(cluster: Cluster) {
 
         const style = this.getMarkerIcon(cluster);
-        const point = new Point([cluster.center.x, cluster.center.y])
+        const point = new Point([cluster.center.x, cluster.center.y]);
 
         let marker = new Feature(point);
 

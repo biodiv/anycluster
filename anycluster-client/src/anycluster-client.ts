@@ -1,5 +1,5 @@
 
-import { ClusterMethod, GeometryType, IconType, SRIDS, DefaultGridSizes, DefaultMarkerImageSizes } from "./consts";
+import { ClusterMethod, GeometryType, IconType, SRIDS, DefaultGridSizes, DefaultMarkerImageSizes, DefaultMaxZoom } from "./consts";
 import { GeoJSON, Marker, Cluster, Viewport } from "./geometry";
 import {
     Anycluster,
@@ -42,6 +42,7 @@ export interface AnyclusterClientSettings {
     geometryType?: GeometryType
     area?: any
     iconType?: IconType
+    maxZoom?: number,
     onFinalClick?: Function
     singlePinImages?: Record<string, string>
     markerImageSizes?: Record<string, number[]>
@@ -63,6 +64,7 @@ export class AnyclusterClient {
 
     anycluster: Anycluster
     markerList: any[]
+    maxZoom: number
     onFinalClick: Function
     onGotClusters: Function
     singlePinImages?: Record<string, string>
@@ -102,6 +104,7 @@ export class AnyclusterClient {
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : defaultGridStrokeColors;
 
+        this.maxZoom = settings.maxZoom ? settings.maxZoom : DefaultMaxZoom;
         // hooks
         this.onGotClusters = settings.onGotClusters ? settings.onGotClusters : this._onGotClusters;
         this.onFinalClick = settings.onFinalClick ? settings.onFinalClick : this._onFinalClick;

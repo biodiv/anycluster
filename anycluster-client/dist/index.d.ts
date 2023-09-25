@@ -156,6 +156,7 @@ export interface AnyclusterClientSettings {
     geometryType?: GeometryType;
     area?: any;
     iconType?: IconType;
+    maxZoom?: number;
     onFinalClick?: Function;
     singlePinImages?: Record<string, string>;
     markerImageSizes?: Record<string, number[]>;
@@ -176,6 +177,7 @@ export class AnyclusterClient {
     iconType: IconType;
     anycluster: Anycluster;
     markerList: any[];
+    maxZoom: number;
     onFinalClick: Function;
     onGotClusters: Function;
     singlePinImages?: Record<string, string>;
