@@ -5,6 +5,7 @@ import {
     Cluster,
     ClusterMethod,
     GeoJSON as IGeoJSON,
+    IconType
 } from 'anycluster-client';
 
 export {
@@ -13,7 +14,7 @@ export {
 
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Icon, Stroke, Style, Fill } from 'ol/style';
+import { Icon, Stroke, Style, Fill, Text } from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
@@ -23,6 +24,11 @@ interface ExtendedFeature extends Feature {
     y: number
     count: number
     clustertype: string
+}
+
+interface StyleOptions {
+    image: Icon,
+    text?: Text,
 }
 
 export class AnyclusterOpenLayers extends AnyclusterClient {
@@ -143,9 +149,22 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
             size: piniconObj.size
         });
 
-        const style = new Style({
-            image: icon
-        });
+        const styleOptions: StyleOptions = {
+            image: icon,
+        };
+
+        if (this.iconType === IconType.exact && cluster.count > 1){
+            styleOptions.text = new Text({
+                text: cluster.count.toString(),
+                font: 'bold 14px sans-serif',
+                fill: new Fill({color: '#FFF'}),
+                justify: 'center',
+                textBaseline: 'middle',
+                offsetY: 1,
+                padding: [0,0,0,0],
+            })
+        }
+        const style = new Style(styleOptions);
 
         return style;
           

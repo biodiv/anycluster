@@ -5,6 +5,7 @@ import {
     Cluster,
     ClusterMethod,
     GeoJSON as IGeoJSON,
+    IconType,
 } from 'anycluster-client';
 
 import * as  L from 'leaflet';
@@ -65,13 +66,26 @@ export class AnyclusterLeaflet extends AnyclusterClient {
         // get the correct icon
         const piniconObj = this.selectPinIcon(cluster);
 
-        // create a leaflet icon
-        const markerIcon = L.icon({
-            iconUrl: piniconObj.url,
-            iconSize: piniconObj.size,
-            iconAnchor: piniconObj.anchor,
-            popupAnchor: piniconObj.popupAnchor
-        });
+        let markerIcon;
+
+        if (this.iconType === IconType.exact && cluster.count > 1){
+            markerIcon = L.divIcon({
+                className: '',
+                html: `<div style="display:flex;align-items:center;justify-content:center;color:#FFF;font-weight:bold;fonts-size:12px;width:100%;height:100%;background-image:url('${piniconObj.url}')">${cluster.count}</div>`,
+                iconSize: piniconObj.size,
+                iconAnchor: piniconObj.anchor,
+                popupAnchor: piniconObj.popupAnchor
+            });
+        }
+        else {
+            // create a leaflet icon
+            markerIcon = L.icon({
+                iconUrl: piniconObj.url,
+                iconSize: piniconObj.size,
+                iconAnchor: piniconObj.anchor,
+                popupAnchor: piniconObj.popupAnchor
+            });
+        }
 
         return markerIcon;
 

@@ -1,4 +1,4 @@
-import {AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $24b0c9e43d90857a$re_export$ClusterMethod} from "anycluster-client";
+import {IconType as $hgUW1$IconType, AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $24b0c9e43d90857a$re_export$ClusterMethod} from "anycluster-client";
 import {Loader as $hgUW1$Loader} from "@googlemaps/js-api-loader";
 
 
@@ -76,6 +76,11 @@ class $24b0c9e43d90857a$export$bdd7c550c60f19cc extends (0, $hgUW1$AnyclusterCli
                 "lng": cluster.center.x
             },
             "icon": markerIcon
+        };
+        if (this.iconType === (0, $hgUW1$IconType).exact && cluster.count > 1) markerOptions.label = {
+            text: cluster.count.toString(),
+            color: "#FFF",
+            fontWeight: "bold"
         };
         let marker = new this.google.maps.Marker(markerOptions);
         marker = this.setMarkerProps(marker, cluster);

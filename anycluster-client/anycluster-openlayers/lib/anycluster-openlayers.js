@@ -374,19 +374,19 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         if (cluster.hasOwnProperty("ids")) marker.ids = cluster.ids;
         if (cluster.hasOwnProperty("id")) marker.id = cluster.id;
         if (cluster.hasOwnProperty("geojson")) /*const geojson = {
-                "type": "Feature",
-                "count": cluster.count,
-                "geometry": cluster.geojson,
-                "properties": {
-                    "count": cluster.count
-                },
-                "crs" : {
-                    "type" : "name",
-                    "properties" : {
-                        "name" : this.srid
-                    }
-                }
-            };*/ marker.geojson = cluster.geojson;
+          "type": "Feature",
+          "count": cluster.count,
+          "geometry": cluster.geojson,
+          "properties": {
+              "count": cluster.count
+          },
+          "crs" : {
+              "type" : "name",
+              "properties" : {
+                  "name" : this.srid
+              }
+          }
+      };*/ marker.geojson = cluster.geojson;
         return marker;
     }
     markerClickFunction(x, y) {
@@ -531,8 +531,8 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         }
     }
     /**
-     * method for getting the unaggregated, paginated content of the map
-     */ async getMapContents(limit, offset) {
+   * method for getting the unaggregated, paginated content of the map
+   */ async getMapContents(limit, offset) {
         const geoJSON = this.getClusterGeometry();
         const zoom = this.getZoom();
         const postData = {
@@ -548,8 +548,8 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         return data;
     }
     /**
-     * methods for getting counts of objects on the current map / geometry
-     */ async getMapContentCount(modulations) {
+   * methods for getting counts of objects on the current map / geometry
+   */ async getMapContentCount(modulations) {
         const geoJSON = this.getClusterGeometry();
         const postData = {
             "output_srid": this.srid,
@@ -20484,9 +20484,26 @@ class $2bda5b0f3abd2a22$export$e7e1d3d8299bc13e extends (0, $32b89fd7bc19b068$ex
             imgSize: piniconObj.size,
             size: piniconObj.size
         });
-        const style = new (0, $0e8e066c6965c811$export$2e2bcd8739ae039)({
+        const styleOptions = {
             image: icon
+        };
+        if (this.iconType === (0, $32b89fd7bc19b068$export$13ff1290a9e22e77).exact && cluster.count > 1) styleOptions.text = new (0, $546674d0724a0df5$export$2e2bcd8739ae039)({
+            text: cluster.count.toString(),
+            font: "bold 14px sans-serif",
+            fill: new (0, $1646510b52ef7eda$export$2e2bcd8739ae039)({
+                color: "#FFF"
+            }),
+            justify: "center",
+            textBaseline: "middle",
+            offsetY: 1,
+            padding: [
+                0,
+                0,
+                0,
+                0
+            ]
         });
+        const style = new (0, $0e8e066c6965c811$export$2e2bcd8739ae039)(styleOptions);
         return style;
     }
     drawMarker(cluster) {

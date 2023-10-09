@@ -1,5 +1,5 @@
-import {AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $34187c1d26cab582$re_export$ClusterMethod} from "anycluster-client";
-import {geoJSON as $hgUW1$geoJSON, layerGroup as $hgUW1$layerGroup, icon as $hgUW1$icon, latLng as $hgUW1$latLng, marker as $hgUW1$marker} from "leaflet";
+import {IconType as $hgUW1$IconType, AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $34187c1d26cab582$re_export$ClusterMethod} from "anycluster-client";
+import {geoJSON as $hgUW1$geoJSON, layerGroup as $hgUW1$layerGroup, divIcon as $hgUW1$divIcon, icon as $hgUW1$icon, latLng as $hgUW1$latLng, marker as $hgUW1$marker} from "leaflet";
 
 
 
@@ -33,8 +33,16 @@ class $34187c1d26cab582$export$d28c3646e727c4c9 extends (0, $hgUW1$AnyclusterCli
     getMarkerIcon(cluster) {
         // get the correct icon
         const piniconObj = this.selectPinIcon(cluster);
-        // create a leaflet icon
-        const markerIcon = $hgUW1$icon({
+        let markerIcon;
+        if (this.iconType === (0, $hgUW1$IconType).exact && cluster.count > 1) markerIcon = $hgUW1$divIcon({
+            className: "",
+            html: `<div style="display:flex;align-items:center;justify-content:center;color:#FFF;font-weight:bold;fonts-size:12px;width:100%;height:100%;background-image:url('${piniconObj.url}')">${cluster.count}</div>`,
+            iconSize: piniconObj.size,
+            iconAnchor: piniconObj.anchor,
+            popupAnchor: piniconObj.popupAnchor
+        });
+        else // create a leaflet icon
+        markerIcon = $hgUW1$icon({
             iconUrl: piniconObj.url,
             iconSize: piniconObj.size,
             iconAnchor: piniconObj.anchor,

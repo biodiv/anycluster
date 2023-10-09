@@ -5,9 +5,24 @@ import {
     Cluster,
     ClusterMethod,
     GeoJSON as IGeoJSON,
+    IconType,
 } from 'anycluster-client';
 
 import { Loader } from '@googlemaps/js-api-loader';
+
+interface MarkerOptions {
+    map: any,
+    position: {
+        lat: number,
+        lng: number
+    },
+    icon: any,
+    label?: {
+        text: string,
+        color?: string,
+        fontWeight?: string
+    }
+};
 
 export {
     ClusterMethod
@@ -121,7 +136,7 @@ export class AnyclusterGoogle extends AnyclusterClient {
 
         const markerIcon = this.getMarkerIcon(cluster);
 
-        const markerOptions = {
+        const markerOptions: MarkerOptions = {
             "map": this.map,
             "position": {
                 "lat": cluster.center.y,
@@ -129,6 +144,14 @@ export class AnyclusterGoogle extends AnyclusterClient {
             },
             "icon": markerIcon,
         };
+
+        if (this.iconType === IconType.exact && cluster.count > 1) {
+            markerOptions.label = {
+                text: cluster.count.toString(),
+                color: '#FFF',
+                fontWeight: 'bold',
+            };
+        }
 
         let marker = new this.google.maps.Marker(markerOptions);
 

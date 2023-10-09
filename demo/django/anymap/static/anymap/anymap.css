@@ -1,12 +1,15 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
 .space-around {
     justify-content: space-around;
 }
 
 #map {
     width: 100%;
-    border: .5rem solid black;
-    border-radius: 1rem;
-    aspect-ratio: 4/3;
+    height: 60vh;
 }
 
 #content {
@@ -21,4 +24,28 @@
     position: sticky;
     bottom: 0;
     background-color: #FAFAFA;
+}
+
+@media (min-width: 576px) {
+
+}
+
+@media (min-width: 768px) {
+
+}
+
+@media (min-width: 992px) {
+  #map {
+    border: .5rem solid black;
+    border-radius: 1rem;
+    aspect-ratio: 4/3;
+  }
+}
+
+@media (min-width: 1200px) {
+
+}
+
+@media (min-width: 1400px) {
+
 }

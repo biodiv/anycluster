@@ -990,6 +990,11 @@ class $5083483fb1ab9858$export$bdd7c550c60f19cc extends (0, $32b89fd7bc19b068$ex
             },
             "icon": markerIcon
         };
+        if (this.iconType === (0, $32b89fd7bc19b068$export$13ff1290a9e22e77).exact && cluster.count > 1) markerOptions.label = {
+            text: cluster.count.toString(),
+            color: "#FFF",
+            fontWeight: "bold"
+        };
         let marker = new this.google.maps.Marker(markerOptions);
         marker = this.setMarkerProps(marker, cluster);
         this.addMarkerClickListener(marker);

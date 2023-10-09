@@ -70,6 +70,9 @@ const flowerCount = document.getElementById("flower-garden-count");
 
 const mapContentList = document.getElementById("map-content-list");
 
+const exactCountOnButton = document.getElementById("exactcounts-on");
+const exactCountOffButton = document.getElementById("exactcounts-off");
+
 let activeGardenFilter = null;
 let activeEntranceFilter = null;
 let activeNestedFilter = false;
@@ -161,6 +164,16 @@ export class MapInteractions {
         });
 
         nestedFilterButton.addEventListener("click", this.applyNestedFilter.bind(this));
+
+        exactCountOnButton.addEventListener("click", function (event) {
+            anyclusterClient.iconType = 'exact';
+            anyclusterClient.postFilterChange(true);
+        });
+
+        exactCountOffButton.addEventListener("click", function (event) {
+            anyclusterClient.iconType = 'rounded';
+            anyclusterClient.postFilterChange(true);
+        });
     }
 
     applyEntranceFeeFilter(event){

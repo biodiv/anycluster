@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="row mt-5 justify-content-center">
-            <div class="col-12 col-md-6 text-center">
+            <div class="col-12 col-md-4 text-center">
                 <h2>Cluster Type</h2>
                 <div class="btn-group" role="group">
                     <input id="kmeans-button" type="radio" class="btn-check" name="clustertype" checked>
@@ -35,7 +35,18 @@
 
                 </div>
             </div>
-            <div class="col-12 col-md-6 text-center">
+            <div class="col-12 col-md-4 text-center">
+                <h2>Exact Counts</h2>
+                <div class="btn-group" role="group">
+                    <input id="exactcounts-on" type="radio" class="btn-check" name="exactcount">
+                    <label class="btn btn-outline-primary" for="exactcounts-on">on</label>
+
+                    <input id="exactcounts-off" type="radio" class="btn-check" name="exactcount" checked>
+                    <label class="btn btn-outline-primary" for="exactcounts-off">off</label>
+
+                </div>
+            </div>
+            <div class="col-12 col-md-4 text-center">
                 <h2>Geometry Type</h2>
                 <div class="btn-group" role="group">
                     <input id="geometry-viewport" type="radio" class="btn-check" name="geometrytype" checked>
@@ -53,7 +64,7 @@
             </div>
             <div class="col-12 my-5 text-center">
                 <h2>garden type</h2>
-                <div class="btn-group" role="group">
+                <div class="btn-group-vertical" role="group">
                     
                     <input id="all-gardens-button" type="radio" class="btn-check" name="gardentype" value="all" checked>
                     <label class="btn btn-outline-primary" for="all-gardens-button">all</label>

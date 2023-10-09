@@ -1,7 +1,7 @@
-import {AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $899780519fbdbc61$re_export$ClusterMethod} from "anycluster-client";
+import {IconType as $hgUW1$IconType, AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $899780519fbdbc61$re_export$ClusterMethod} from "anycluster-client";
 import $hgUW1$ollayerVector from "ol/layer/Vector";
 import $hgUW1$olsourceVector from "ol/source/Vector";
-import {Style as $hgUW1$Style, Stroke as $hgUW1$Stroke, Fill as $hgUW1$Fill, Icon as $hgUW1$Icon} from "ol/style";
+import {Style as $hgUW1$Style, Stroke as $hgUW1$Stroke, Fill as $hgUW1$Fill, Icon as $hgUW1$Icon, Text as $hgUW1$Text} from "ol/style";
 import $hgUW1$olformatGeoJSON from "ol/format/GeoJSON";
 import $hgUW1$olFeature from "ol/Feature";
 import $hgUW1$olgeomPoint from "ol/geom/Point";
@@ -90,9 +90,26 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
             imgSize: piniconObj.size,
             size: piniconObj.size
         });
-        const style = new (0, $hgUW1$Style)({
+        const styleOptions = {
             image: icon
+        };
+        if (this.iconType === (0, $hgUW1$IconType).exact && cluster.count > 1) styleOptions.text = new (0, $hgUW1$Text)({
+            text: cluster.count.toString(),
+            font: "bold 14px sans-serif",
+            fill: new (0, $hgUW1$Fill)({
+                color: "#FFF"
+            }),
+            justify: "center",
+            textBaseline: "middle",
+            offsetY: 1,
+            padding: [
+                0,
+                0,
+                0,
+                0
+            ]
         });
+        const style = new (0, $hgUW1$Style)(styleOptions);
         return style;
     }
     drawMarker(cluster) {

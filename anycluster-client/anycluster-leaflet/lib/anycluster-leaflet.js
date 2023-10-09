@@ -11209,8 +11209,16 @@ class $a3011356d4483061$export$d28c3646e727c4c9 extends (0, $32b89fd7bc19b068$ex
     getMarkerIcon(cluster) {
         // get the correct icon
         const piniconObj = this.selectPinIcon(cluster);
-        // create a leaflet icon
-        const markerIcon = $bc65c9d81194eb95$exports.icon({
+        let markerIcon;
+        if (this.iconType === (0, $32b89fd7bc19b068$export$13ff1290a9e22e77).exact && cluster.count > 1) markerIcon = $bc65c9d81194eb95$exports.divIcon({
+            className: "",
+            html: `<div style="display:flex;align-items:center;justify-content:center;color:#FFF;font-weight:bold;fonts-size:12px;width:100%;height:100%;background-image:url('${piniconObj.url}')">${cluster.count}</div>`,
+            iconSize: piniconObj.size,
+            iconAnchor: piniconObj.anchor,
+            popupAnchor: piniconObj.popupAnchor
+        });
+        else // create a leaflet icon
+        markerIcon = $bc65c9d81194eb95$exports.icon({
             iconUrl: piniconObj.url,
             iconSize: piniconObj.size,
             iconAnchor: piniconObj.anchor,
