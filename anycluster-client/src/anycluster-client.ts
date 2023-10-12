@@ -602,6 +602,25 @@ export class AnyclusterClient {
     return data;
   }
 
+  async getFilteredMapContentCount(filters?: FilterOrNestedFilterList, modulations?: Modulations) {
+    const geoJSON = this.getClusterGeometry()
+
+    const postData = {
+      "output_srid": this.srid,
+      "geometry_type": this.geometryType,
+      "geojson": geoJSON,
+      "clear_cache": true,
+      "filters": filters,
+      "modulations": modulations,
+    } as MapContentCountRequestData;
+
+    const zoom = this.getZoom();
+
+    const data = await this.anycluster.getMapContentCount(zoom, postData);
+
+    return data;
+  }
+
   async getGroupedMapContents(groupBy: string) {
 
     const geoJSON = this.getClusterGeometry()

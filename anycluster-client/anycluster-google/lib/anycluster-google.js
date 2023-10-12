@@ -371,19 +371,19 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         if (cluster.hasOwnProperty("ids")) marker.ids = cluster.ids;
         if (cluster.hasOwnProperty("id")) marker.id = cluster.id;
         if (cluster.hasOwnProperty("geojson")) /*const geojson = {
-                "type": "Feature",
-                "count": cluster.count,
-                "geometry": cluster.geojson,
-                "properties": {
-                    "count": cluster.count
-                },
-                "crs" : {
-                    "type" : "name",
-                    "properties" : {
-                        "name" : this.srid
-                    }
-                }
-            };*/ marker.geojson = cluster.geojson;
+          "type": "Feature",
+          "count": cluster.count,
+          "geometry": cluster.geojson,
+          "properties": {
+              "count": cluster.count
+          },
+          "crs" : {
+              "type" : "name",
+              "properties" : {
+                  "name" : this.srid
+              }
+          }
+      };*/ marker.geojson = cluster.geojson;
         return marker;
     }
     markerClickFunction(x, y) {
@@ -528,8 +528,8 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         }
     }
     /**
-     * method for getting the unaggregated, paginated content of the map
-     */ async getMapContents(limit, offset) {
+   * method for getting the unaggregated, paginated content of the map
+   */ async getMapContents(limit, offset) {
         const geoJSON = this.getClusterGeometry();
         const zoom = this.getZoom();
         const postData = {
@@ -545,8 +545,8 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         return data;
     }
     /**
-     * methods for getting counts of objects on the current map / geometry
-     */ async getMapContentCount(modulations) {
+   * methods for getting counts of objects on the current map / geometry
+   */ async getMapContentCount(modulations) {
         const geoJSON = this.getClusterGeometry();
         const postData = {
             "output_srid": this.srid,
@@ -554,6 +554,20 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             "geojson": geoJSON,
             "clear_cache": true,
             "filters": this.filters,
+            "modulations": modulations
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getMapContentCount(zoom, postData);
+        return data;
+    }
+    async getFilteredMapContentCount(filters, modulations) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": filters,
             "modulations": modulations
         };
         const zoom = this.getZoom();

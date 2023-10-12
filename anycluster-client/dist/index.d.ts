@@ -242,6 +242,7 @@ export class AnyclusterClient {
      * methods for getting counts of objects on the current map / geometry
      */
     getMapContentCount(modulations?: Modulations): Promise<any>;
+    getFilteredMapContentCount(filters?: FilterOrNestedFilterList, modulations?: Modulations): Promise<any>;
     getGroupedMapContents(groupBy: string): Promise<any>;
     _onFinalClick(marker: Marker, data: any): void;
     _onGotClusters(): void;
