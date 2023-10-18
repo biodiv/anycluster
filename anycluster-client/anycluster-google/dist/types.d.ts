@@ -9,7 +9,7 @@ export class AnyclusterGoogle extends AnyclusterClient {
     createClusterLayers(): void;
     createAreaLayer(): void;
     getMarkerIcon(cluster: Cluster): {
-        url: string;
+        url: any;
         size: any;
         anchor: any;
     };

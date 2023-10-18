@@ -1,6 +1,9 @@
 from django.test import TestCase
 
 from anycluster import FilterComposer
+from anycluster.FilterComposer import OPERATOR_MAPPING
+
+from anymap.models import Gardens
 
 import numbers, decimal
 
@@ -43,14 +46,14 @@ class Testfilters(TestCase):
         
         filter_list = self.get_filters()
 
-        filter_composer = FilterComposer(filter_list)
+        filter_composer = FilterComposer(Gardens, filter_list)
         self.assertEqual(filter_composer.filters, filter_list)
 
     def test_parse_filter_value(self):
 
         filter_list = self.get_filters()
 
-        filter_composer = FilterComposer(filter_list)
+        filter_composer = FilterComposer(Gardens, filter_list)
         
         # test string operators
         string_value = 'flower'
@@ -67,7 +70,7 @@ class Testfilters(TestCase):
         string_startswith = filter_composer.parse_filter_value('contains', string_value)
         self.assertEqual(string_startswith, "'flower.*'")
 
-        for operator, operator_ in filter_composer.operator_mapping.items():
+        for operator, operator_ in OPERATOR_MAPPING.items():
 
             true_value = filter_composer.parse_filter_value(operator, True)
             self.assertEqual(true_value, 'TRUE')
@@ -94,11 +97,11 @@ class Testfilters(TestCase):
             'operator': '=',
         }
 
-        filter_composer = FilterComposer([equals_filter])
+        filter_composer = FilterComposer(Gardens, [equals_filter])
 
         equals_sql = filter_composer.as_sql()
         
-        self.assertEqual(equals_sql, " AND (style = 'flower')")
+        self.assertEqual(equals_sql, " AND (anymap_gardens.style = 'flower')")
         
         unequals_filter = {
             'column': 'style',
@@ -106,11 +109,11 @@ class Testfilters(TestCase):
             'operator': '!=',
         }
 
-        filter_composer = FilterComposer([unequals_filter])
+        filter_composer = FilterComposer(Gardens, [unequals_filter])
 
         unequals_sql = filter_composer.as_sql()
         
-        self.assertEqual(unequals_sql, " AND (style != 'stone')")
+        self.assertEqual(unequals_sql, " AND (anymap_gardens.style != 'stone')")
 
         # list
         list_value = ['flower', 'stone']
@@ -120,11 +123,11 @@ class Testfilters(TestCase):
             'operator': 'in',
         }
 
-        filter_composer = FilterComposer([in_list_filter])
+        filter_composer = FilterComposer(Gardens, [in_list_filter])
 
         in_list_sql = filter_composer.as_sql()
         
-        self.assertEqual(in_list_sql, " AND (style IN ('flower', 'stone'))")
+        self.assertEqual(in_list_sql, " AND (anymap_gardens.style IN ('flower', 'stone'))")
 
         not_in_list_filter = {
             'column': 'style',
@@ -132,18 +135,18 @@ class Testfilters(TestCase):
             'operator': 'not in',
         }
 
-        filter_composer = FilterComposer([not_in_list_filter])
+        filter_composer = FilterComposer(Gardens, [not_in_list_filter])
 
         not_in_list_sql = filter_composer.as_sql()
         
-        self.assertEqual(not_in_list_sql, " AND (style NOT IN ('flower', 'stone'))")
+        self.assertEqual(not_in_list_sql, " AND (anymap_gardens.style NOT IN ('flower', 'stone'))")
 
         # test multiple filters
-        filter_composer = FilterComposer([equals_filter, unequals_filter])
+        filter_composer = FilterComposer(Gardens, [equals_filter, unequals_filter])
 
         equals_sql = filter_composer.as_sql()
         
-        self.assertEqual(equals_sql, " AND ((style = 'flower') AND (style != 'stone'))")
+        self.assertEqual(equals_sql, " AND ((anymap_gardens.style = 'flower') AND (anymap_gardens.style != 'stone'))")
 
 
     def test_nested_filter(self):
@@ -164,11 +167,11 @@ class Testfilters(TestCase):
             ],
         }
 
-        filter_composer = FilterComposer([nested_filter])
+        filter_composer = FilterComposer(Gardens, [nested_filter])
 
         nested_sql = filter_composer.as_sql()
         
-        self.assertEqual(nested_sql, " AND ((style = 'flower') OR (style = 'stone'))")
+        self.assertEqual(nested_sql, " AND ((anymap_gardens.style = 'flower') OR (anymap_gardens.style = 'stone'))")
 
         equals_filter = {
             'column': 'free_entrance',
@@ -210,15 +213,125 @@ class Testfilters(TestCase):
         }
 
 
-        filter_composer = FilterComposer([nested_filter_2, nested_filter_3])
+        filter_composer = FilterComposer(Gardens, [nested_filter_2, nested_filter_3])
 
         nested_sql = filter_composer.as_sql()
         
-        self.assertEqual(nested_sql, " AND (((style = 'flower') AND (free_entrance = TRUE)) OR ((style = 'stone') AND (free_entrance = FALSE)))")
+        self.assertEqual(nested_sql, " AND (((anymap_gardens.style = 'flower') AND (anymap_gardens.free_entrance = TRUE)) OR ((anymap_gardens.style = 'stone') AND (anymap_gardens.free_entrance = FALSE)))")
 
 
-        filter_composer = FilterComposer([nested_filter_2, nested_filter_3, equals_filter])
+        filter_composer = FilterComposer(Gardens, [nested_filter_2, nested_filter_3, equals_filter])
 
         nested_sql = filter_composer.as_sql()
 
-        self.assertEqual(nested_sql, " AND (((style = 'flower') AND (free_entrance = TRUE)) OR ((style = 'stone') AND (free_entrance = FALSE)) AND (free_entrance = TRUE))")
+        self.assertEqual(nested_sql, " AND (((anymap_gardens.style = 'flower') AND (anymap_gardens.free_entrance = TRUE)) OR ((anymap_gardens.style = 'stone') AND (anymap_gardens.free_entrance = FALSE)) AND (anymap_gardens.free_entrance = TRUE))")
+
+
+    def test_left_join(self):
+        join_filter = {
+            'column': 'owner__name',
+            'value': 'Joe',
+            'operator': '=',
+        }
+
+        filter_composer = FilterComposer(Gardens, [join_filter])
+
+        join_sql = filter_composer.get_left_join_sql()
+
+        expected_sql = ' LEFT JOIN anymap_owner ON anymap_gardens.owner_id = anymap_owner.id '
+        self.assertEqual(join_sql, expected_sql)
+
+        join_filter_2 = {
+            'column': 'owner__name',
+            'value': 'John',
+            'operator': '=',
+            'logicalOperator': 'OR',
+        }
+
+        filter_composer_2 = FilterComposer(Gardens, [join_filter, join_filter_2])
+
+        join_sql_2 = filter_composer_2.get_left_join_sql()
+
+        # same sql
+        self.assertEqual(join_sql_2, expected_sql)
+
+
+    def test_parse_left_join_filter(self):
+
+        owner_name = 'Joe'
+
+        join_filter = {
+            'column': 'owner__name',
+            'value': owner_name,
+            'operator': '=',
+        }
+
+        filter_composer = FilterComposer(Gardens, [join_filter])
+
+        sql = filter_composer.parse_filter(join_filter)
+
+        expected_sql = "(anymap_owner.name = 'Joe')"
+
+        self.assertEqual(sql, expected_sql)
+
+
+    def test_fill_aliases_and_foreign_key_map(self):
+
+        simple_filter = {
+            'column': 'style',
+            'value': 'stone',
+            'operator': '=',
+        }
+
+        simple_filter_2 = {
+            'column': 'free_entrance',
+            'value': True,
+            'operator': '=',
+            'logicalOperator' : 'AND',
+        }
+
+        join_filter = {
+            'column': 'owner__name',
+            'value': 'Joe',
+            'operator': '=',
+        }
+
+        filter_composer = FilterComposer(Gardens, [simple_filter, simple_filter_2, join_filter])
+
+        expected_selected_columns = ['anymap_gardens.style', 'anymap_gardens.free_entrance']
+        expected_selected_fk_columns = ['anymap_owner.name AS owner__name']
+
+        self.assertEqual(filter_composer.selected_columns, expected_selected_columns)
+        self.assertEqual(filter_composer.selected_fk_columns, expected_selected_fk_columns)
+
+    def test_get_selected_columns(self):
+
+        simple_filter = {
+            'column': 'style',
+            'value': 'stone',
+            'operator': '=',
+        }
+
+        simple_filter_2 = {
+            'column': 'free_entrance',
+            'value': True,
+            'operator': '=',
+            'logicalOperator' : 'AND',
+        }
+
+        join_filter = {
+            'column': 'owner__name',
+            'value': 'Joe',
+            'operator': '=',
+        }
+
+        filter_composer = FilterComposer(Gardens, [simple_filter, simple_filter_2, join_filter])
+
+        selected_columns = filter_composer.get_selected_columns()
+
+        expected_select = 'anymap_gardens.style, anymap_gardens.free_entrance, anymap_owner.name AS owner__name'
+        self.assertEqual(expected_select, selected_columns)
+
+
+
+

@@ -134,7 +134,7 @@ STATIC_URL = '/static/'
 ANYCLUSTER_GEODJANGO_MODEL = 'anymap.Gardens'
 ANYCLUSTER_COORDINATES_COLUMN = 'coordinates'
 ANYCLUSTER_COORDINATES_COLUMN_SRID = 3857
-ANYCLUSTER_FILTERS = ['rating', 'free_entrance', 'last_renewal', 'style']
+ANYCLUSTER_FILTERS = ['rating', 'free_entrance', 'last_renewal', 'style', 'owner__name']
 ANYCLUSTER_PINCOLUMN = 'style'
 
 CORS_ALLOW_ALL_ORIGINS = True

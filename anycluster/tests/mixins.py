@@ -9,7 +9,7 @@ from anymap.models import Gardens, GARDEN_STYLES
 
 import subprocess, random
 
-from anycluster.tests.common import VALID_FILTERS
+from anycluster.tests.common import VALID_FILTERS, VALID_FILTERS_WITH_LEFT_JOIN, VALID_FILTERS_LEFT_JOIN_ONLY
 
 
 class WithGardens:
@@ -26,7 +26,7 @@ class WithGardens:
             garden = self.create_point(name, style)
 
             
-    def create_point(self, name, style):
+    def create_point(self, name, style, owner=None):
 
         latitude = float('{0}.{1}'.format(random.randint(48,49), str(random.random()).split('.')[-1]))
         longitude = float('{0}.{1}'.format(random.randint(9,13), str(random.random()).split('.')[-1]))
@@ -41,7 +41,8 @@ class WithGardens:
             style = style,
             rating = random.randint(1, 5),
             last_renewal = timezone.now(),
-            coordinates = point
+            coordinates = point,
+            owner=owner,
         )
 
         garden.save()
@@ -79,7 +80,9 @@ class WithFilters:
 
         filters = [
             [],
-            VALID_FILTERS
+            VALID_FILTERS,
+            VALID_FILTERS_WITH_LEFT_JOIN,
+            VALID_FILTERS_LEFT_JOIN_ONLY
         ]
 
         return filters

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: anycluster
-Version: 2.3.4
+Version: 2.4.1
 Summary: anycluster provides Server-Side clustering of map markers for Geodjango
 Home-page: https://github.com/biodiv/anycluster
 Author: Thomas Uher
@@ -14,6 +14,9 @@ Classifier: Operating System :: OS Independent
 Requires-Python: >=3.6
 Description-Content-Type: text/markdown
 License-File: LICENSE
+Requires-Dist: psycopg2
+Requires-Dist: djangorestframework
+Requires-Dist: jsonschema
 
 anycluster (POSTGIS version)
 ============================

@@ -16,6 +16,9 @@ GARDEN_STYLES = (
     ('other', _('other')),
 )
 
+class Owner(models.Model):
+    name = models.CharField(max_length=255)
+
 class Gardens(models.Model):
     connection_name="default"
     name = models.CharField(max_length=255)
@@ -25,11 +28,10 @@ class Gardens(models.Model):
     last_renewal = models.DateTimeField()
     coordinates = models.PointField(srid=3857)
 
+    owner = models.ForeignKey(Owner, null=True, on_delete=models.CASCADE)
+
     def __str__(self):
         return '{0} ({1})'.format(self.name, self.style)
 
     class Meta:
         ordering = ('pk',)
-    
-    
-    

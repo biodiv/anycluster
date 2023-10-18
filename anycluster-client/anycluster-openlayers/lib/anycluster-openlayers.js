@@ -241,6 +241,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         this.area = settings.area ? settings.area : null;
         this.iconType = settings.iconType ? settings.iconType : $32b89fd7bc19b068$export$13ff1290a9e22e77.rounded;
         this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
+        this.getSinglePinImageURL = settings.getSinglePinImageURL ? settings.getSinglePinImageURL : this._getSinglePinImageURL;
         this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$96b1907ff7fa3578;
         this.gridFillColors = settings.gridFillColors ? settings.gridFillColors : $32b89fd7bc19b068$var$$2a18f65d622cfe30$var$defaultGridFillColors;
         this.gridStrokeColors = settings.gridStrokeColors ? settings.gridStrokeColors : $32b89fd7bc19b068$var$$2a18f65d622cfe30$var$defaultGridStrokeColors;
@@ -314,7 +315,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             this.setClusterMethod($32b89fd7bc19b068$export$ae91e066970d978a.kmeans);
         }
     }
-    getSinglePinImageURL(cluster) {
+    _getSinglePinImageURL(cluster) {
         const pinimg = cluster.pinimg;
         let url = `${this.markerFolderPath}pin_unknown.png`;
         if (this.singlePinImages && pinimg && pinimg in this.singlePinImages) url = this.singlePinImages[pinimg];

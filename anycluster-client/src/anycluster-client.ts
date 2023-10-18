@@ -45,6 +45,7 @@ export interface AnyclusterClientSettings {
   maxZoom?: number,
   onFinalClick?: Function
   singlePinImages?: Record<string, string>
+  getSinglePinImageURL?: Function
   markerImageSizes?: Record<string, number[]>
   gridFillColors?: Record<number, string>
   gridStrokeColors?: Record<number, string>
@@ -68,6 +69,7 @@ export class AnyclusterClient {
   onFinalClick: Function
   onGotClusters: Function
   singlePinImages?: Record<string, string>
+  getSinglePinImageURL: Function
 
   markerImageSizes: Record<string, number[]>
 
@@ -97,6 +99,7 @@ export class AnyclusterClient {
     this.iconType = settings.iconType ? settings.iconType : IconType.rounded;
 
     this.singlePinImages = settings.singlePinImages ? settings.singlePinImages : {};
+    this.getSinglePinImageURL = settings.getSinglePinImageURL ? settings.getSinglePinImageURL : this._getSinglePinImageURL;
 
     this.markerImageSizes = settings.markerImageSizes ? settings.markerImageSizes : DefaultMarkerImageSizes;
 
@@ -206,7 +209,7 @@ export class AnyclusterClient {
     }
   }
 
-  getSinglePinImageURL(cluster: Cluster) {
+  _getSinglePinImageURL(cluster: Cluster) {
 
     const pinimg = cluster.pinimg;
 

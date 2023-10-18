@@ -102,3 +102,24 @@ VALID_FILTERS = [
         'operator': '=',
     }
 ]
+
+VALID_FILTERS_LEFT_JOIN_ONLY = [
+    {
+        'column': 'owner__name',
+        'value': 'Joe',
+        'operator': '=',
+    },
+]
+
+VALID_FILTERS_WITH_LEFT_JOIN = [
+    {
+        'column': 'style',
+        'value': 'flower',
+        'operator': '=',
+    },
+    {
+        'column': 'owner__name',
+        'value': 'Joe',
+        'operator': '=',
+    },
+]

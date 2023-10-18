@@ -51,7 +51,7 @@ export interface GetKmeansClusterContentRequestData {
 }
 
 export interface Modulations {
-    [name:string] : Filter | NestedFilter
+    [name:string] : FilterOrNestedFilter | FilterOrNestedFilterList
 }
 
 export interface MapContentCountRequestData extends ClusterRequestData {

@@ -34,7 +34,7 @@ export enum LogicalOperators {
     AND = "AND",
     OR = "OR"
 }
-interface Viewport {
+export interface Viewport {
     left: number;
     top: number;
     right: number;
@@ -52,12 +52,12 @@ interface CRS {
     type: string;
     properties: CRSProperties;
 }
-interface GeoJSON {
+export interface GeoJSON {
     type: string;
     geometry: Geometry;
     crs: CRS;
 }
-interface Marker {
+export interface Marker {
     id: number;
     x: number;
     y: number;
@@ -69,7 +69,7 @@ interface Marker {
 /**
  * A Cluster as returned from anycluster api, kmeans or grid
  */
-interface Cluster {
+export interface Cluster {
     id: number;
     center: {
         x: number;
@@ -108,7 +108,7 @@ export interface GetKmeansClusterContentRequestData {
     ids: number[];
 }
 export interface Modulations {
-    [name: string]: Filter | NestedFilter;
+    [name: string]: FilterOrNestedFilter | FilterOrNestedFilterList;
 }
 export interface MapContentCountRequestData extends ClusterRequestData {
     modulations?: Modulations;
@@ -159,6 +159,7 @@ export interface AnyclusterClientSettings {
     maxZoom?: number;
     onFinalClick?: Function;
     singlePinImages?: Record<string, string>;
+    getSinglePinImageURL?: Function;
     markerImageSizes?: Record<string, number[]>;
     gridFillColors?: Record<number, string>;
     gridStrokeColors?: Record<number, string>;
@@ -181,6 +182,7 @@ export class AnyclusterClient {
     onFinalClick: Function;
     onGotClusters: Function;
     singlePinImages?: Record<string, string>;
+    getSinglePinImageURL: Function;
     markerImageSizes: Record<string, number[]>;
     gridFillColors: Record<number, string>;
     gridStrokeColors: Record<number, string>;
@@ -199,9 +201,9 @@ export class AnyclusterClient {
     getGridSize(): number;
     setClusterMethod(clusterMethod: ClusterMethod): void;
     setArea(geojson: GeoJSON): void;
-    getSinglePinImageURL(cluster: Cluster): string;
+    _getSinglePinImageURL(cluster: Cluster): string;
     selectPinIcon(cluster: Cluster): {
-        url: string;
+        url: any;
         size: number[];
         anchor: number[];
         relativeAnchor: number[];

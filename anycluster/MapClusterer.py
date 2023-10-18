@@ -490,8 +490,9 @@ class MapClusterer():
 
         if cluster_geometries:
 
-            filter_composer = FilterComposer(filters)
+            filter_composer = FilterComposer(Gis, filters)
             filterstring = filter_composer.as_sql()
+            left_join_sql = filter_composer.get_left_join_sql()
 
             for geos_geometry in cluster_geometries:
 
@@ -506,16 +507,17 @@ class MapClusterer():
                     FROM ( 
                       SELECT {pin_qry_1} {additional_column_qry_1} kmeans(ARRAY[ST_X({geo_column}), ST_Y({geo_column})], {k}) OVER ()
                       AS kmeans, {geo_column}
-                      FROM {schema_name}.{geo_table}
+                      FROM {schema_name}.{geo_table} {geo_table} {left_join_sql}
                       WHERE {geo_column} IS NOT NULL
-                          AND ST_Intersects({geo_column}, ST_GeometryFromText('{geos_geometry}') ) {filterstring}
+                          AND ST_Intersects({geo_column}, ST_GeomFromEWKT('{geos_geometry}') ) {filterstring}
                     ) AS ksub
 
                     GROUP BY id
                     ORDER BY kmeans;
                     
                 '''.format(geo_column=geo_column_str, pin_qry_0=pin_qry[0], pin_qry_1=pin_qry[1], k=k,
-                           schema_name=self.schema_name, geo_table=geo_table, geos_geometry=geos_geometry.ewkt,
+                           schema_name=self.schema_name, geo_table=geo_table, left_join_sql=left_join_sql,
+                           geos_geometry=geos_geometry.ewkt,
                            filterstring=filterstring, additional_column_qry_0=additional_column_qry[0],
                            additional_column_qry_1=additional_column_qry[1])
 
@@ -563,8 +565,9 @@ class MapClusterer():
 
         if cluster_geometries:
 
-            filter_composer = FilterComposer(filters)
+            filter_composer = FilterComposer(Gis, filters)
             filterstring = filter_composer.as_sql()
+            left_join_sql = filter_composer.get_left_join_sql()
 
             cursor = connections['default'].cursor()
 
@@ -590,12 +593,12 @@ class MapClusterer():
             # indexing did not increase performance
             # cursor.execute('''CREATE INDEX temp_gix ON temp_clusterareas USING GIST (polygon);''')
 
-            grid_cluster_queryset = '''SELECT count(*) AS count, polygon {pin_qry_0}, ST_Union(coordinates), MAX(geotable.id)
-                FROM {schema_name}.{geo_table} geotable, temp_clusterareas
+            grid_cluster_queryset = '''SELECT count(*) AS count, polygon {pin_qry_0}, ST_Union(coordinates), MAX({geo_table}.id)
+                FROM {schema_name}.{geo_table} {geo_table} {left_join_sql}, temp_clusterareas
                 WHERE coordinates IS NOT NULL AND ST_Intersects(coordinates, polygon) {filterstring}
                 GROUP BY polygon
-            '''.format(schema_name=self.schema_name, geo_table=geo_table, filterstring=filterstring,
-                       pin_qry_0=pin_qry[0])
+            '''.format(schema_name=self.schema_name, geo_table=geo_table, left_join_sql=left_join_sql,
+                    filterstring=filterstring, pin_qry_0=pin_qry[0])
 
             cursor.execute(grid_cluster_queryset)
 
@@ -645,7 +648,10 @@ class MapClusterer():
         NON-CLUSTERING METHODS
     ---------------------------------------------------------------------------------------------------------------------'''
 
-    def get_gis_field_names(self):
+    def get_gis_field_names(self, table_name=None):
+
+        if table_name == None:
+            table_name=geo_table
 
         gis_fields = Gis._meta.concrete_fields
 
@@ -657,18 +663,18 @@ class MapClusterer():
                 # name = field.get_attname_column()[0]
                 continue
             if isinstance(field, BaseSpatialField):
-                name = '{name}::bytea'.format(name=field.name)
+                name = '{table_name}.{field_name}::bytea'.format(table_name=table_name, field_name=field.name)
             else:
-                name = field.name
+                name = '{table_name}.{field_name}'.format(table_name=table_name, field_name=field.name)
 
             gis_field_names.append(name)
 
         return gis_field_names
 
 
-    def get_gis_fields_str(self):
+    def get_gis_fields_str(self, table_name=None):
 
-        gis_field_names = self.get_gis_field_names()
+        gis_field_names = self.get_gis_field_names(table_name=table_name)
 
         gis_fields_str = ','.join(gis_field_names)
 
@@ -715,25 +721,26 @@ class MapClusterer():
         if not query_geometry:
             raise ValueError('cluster not found in cache')
 
-        filter_composer = FilterComposer(filters)
+        filter_composer = FilterComposer(Gis, filters)
         filterstring = filter_composer.as_sql()
+        left_join_sql = filter_composer.get_left_join_sql()
 
         kmeans_list = ids
         kmeans_string = (',').join(str(k) for k in kmeans_list)
 
-        gis_fields_str = self.get_gis_fields_str()
+        gis_fields_str = self.get_gis_fields_str(table_name='ksub')
 
         sql = '''
             SELECT {fields} FROM ( 
               SELECT kmeans(ARRAY[ST_X({geo_column}), ST_Y({geo_column})], {k}) OVER ()
               AS kmeans, "{geo_table}".*
-              FROM {schema_name}.{geo_table} WHERE {geo_column} IS NOT NULL
+              FROM {schema_name}.{geo_table} {geo_table} {left_join_sql} WHERE {geo_column} IS NOT NULL
               AND ST_Intersects({geo_column}, ST_GeometryFromText('{geometry}', {srid}) ) {filterstring}
             ) AS ksub
             WHERE kmeans IN ({kmeans_string})
             '''.format(geo_column=geo_column_str, k=k, geo_table=geo_table, schema_name=self.schema_name,
-                       geometry=query_geometry.ewkt, srid=self.db_srid, filterstring=filterstring,
-                       kmeans_string=kmeans_string, fields=gis_fields_str)
+                       left_join_sql=left_join_sql, geometry=query_geometry.ewkt, srid=self.db_srid,
+                       filterstring=filterstring, kmeans_string=kmeans_string, fields=gis_fields_str)
 
         entries_queryset = Gis.objects.raw(sql)
 
@@ -744,14 +751,15 @@ class MapClusterer():
 
         geomfilterstring = self.get_geom_filterstring(geojson)
 
-        filter_composer = FilterComposer(filters)
+        filter_composer = FilterComposer(Gis, filters)
         filterstring = filter_composer.as_sql()
+        left_join_sql = filter_composer.get_left_join_sql()
 
         gis_fields_str = self.get_gis_fields_str()
 
-        sql = '''SELECT {fields} FROM {schema_name}.{geo_table} WHERE {geomfilterstring} {filterstring} '''.format(
-                schema_name=self.schema_name, geo_table=geo_table, geomfilterstring=geomfilterstring,
-                filterstring=filterstring, fields=gis_fields_str)
+        sql = '''SELECT {fields} FROM {schema_name}.{geo_table} {geo_table} {left_join_sql} WHERE {geomfilterstring} {filterstring} '''.format(
+                schema_name=self.schema_name, geo_table=geo_table, left_join_sql=left_join_sql,
+                geomfilterstring=geomfilterstring, filterstring=filterstring, fields=gis_fields_str)
 
         if limit != None:
             sql = '{sql} LIMIT {limit}'.format(sql=sql, limit=limit)
@@ -773,7 +781,7 @@ class MapClusterer():
         queryset = Gis.objects.filter(pk=id).first()
 
         #queryset = Gis.objects.raw(
-        #    '''SELECT {fields} FROM {schema_name}.{geo_table} WHERE id={id};'''.format(
+        #    '''SELECT {fields} FROM {schema_name}.{geo_table} {geo_table} WHERE id={id};'''.format(
         #        schema_name=self.schema_name, geo_table=geo_table, fields=gis_fields_str, id=str(id))
         #)
 
@@ -817,22 +825,33 @@ class MapClusterer():
 
         count = 0
 
-        filter_composer = FilterComposer(filters)
+        filter_composer = FilterComposer(Gis, filters)
         filterstring = filter_composer.as_sql()
+        left_join_sql = filter_composer.get_left_join_sql()
 
         geom_filterstring = self.get_geom_filter_string_from_geos(geometries_for_counting)
 
-        modulation_filter_composer = FilterComposer(modulation_filters)
-        modulation_filterstring = modulation_filter_composer.as_sql(omit_leading_AND=True)
+        modulation_filter_composer = FilterComposer(Gis, modulation_filters)
+        modulation_filterstring = modulation_filter_composer.as_sql(omit_leading_AND=True,
+            table_name_override='markers')
+        modulation_left_join_sql = modulation_filter_composer.get_left_join_sql()
+
+        if modulation_left_join_sql not in left_join_sql:
+            left_join_sql = ' {0} {1}'.format(left_join_sql, modulation_left_join_sql)
+
+        combined_filters = filters + modulation_filters
+        combined_filter_composer = FilterComposer(Gis, combined_filters)
+        selects = combined_filter_composer.get_selected_columns()
+
 
         content_count_sql = '''
             SELECT count(*) AS count FROM
-                (SELECT * FROM {schema_name}.{geo_table}
+                (SELECT {selects} FROM {schema_name}.{geo_table} {geo_table} {left_join_sql}
                     WHERE {geo_column_str} IS NOT NULL
                         AND {geom_filterstring} {filterstring}
                 ) AS markers
-        '''.format(schema_name=self.schema_name, geo_table=geo_table, geo_column_str=geo_column_str,
-                    geom_filterstring=geom_filterstring, filterstring=filterstring)
+        '''.format(selects=selects, schema_name=self.schema_name, geo_table=geo_table, left_join_sql=left_join_sql,
+                    geo_column_str=geo_column_str, geom_filterstring=geom_filterstring, filterstring=filterstring)
 
         if modulation_filterstring:
             content_count_sql = '{content_count_sql} WHERE {modulation_filterstring}'.format(
@@ -875,8 +894,9 @@ class MapClusterer():
 
         geom_filterstring = self.get_geom_filter_string_from_geos(geometries_for_counting)
         
-        filter_composer = FilterComposer(filters)
+        filter_composer = FilterComposer(Gis, filters)
         filterstring = filter_composer.as_sql()
+        left_join_sql = filter_composer.get_left_join_sql()
 
         additional_group_by_columns_string = self.get_additional_group_by_columns_string()
 
@@ -884,13 +904,13 @@ class MapClusterer():
 
         grouped_count_sql = '''
             SELECT COUNT(id), {group_by} {additional_group_by_columns_string}
-            FROM {schema_name}.{geo_table}
+            FROM {schema_name}.{geo_table} {geo_table} {left_join_sql}
                 WHERE {geo_column_str} IS NOT NULL
                     AND {geom_filterstring} {filterstring}
                         GROUP BY {group_by} ORDER BY {group_by} ASC;
-        '''.format(schema_name=self.schema_name, geo_table=geo_table, geo_column_str=geo_column_str,
-                    geom_filterstring=geom_filterstring, filterstring=filterstring, group_by=group_by,
-                    additional_group_by_columns_string=additional_group_by_columns_string)
+        '''.format(schema_name=self.schema_name, geo_table=geo_table, left_join_sql=left_join_sql,
+                    geo_column_str=geo_column_str, geom_filterstring=geom_filterstring, filterstring=filterstring,
+                    group_by=group_by, additional_group_by_columns_string=additional_group_by_columns_string)
 
         cursor = connections['default'].cursor()
         cursor.execute(grouped_count_sql)

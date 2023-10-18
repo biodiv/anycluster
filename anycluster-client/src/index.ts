@@ -32,3 +32,10 @@ export {
 export type {
     AnyclusterClientSettings
 } from "./anycluster-client";
+
+export type {
+    GeoJSON,
+    Marker,
+    Cluster,
+    Viewport
+} from "./geometry";
