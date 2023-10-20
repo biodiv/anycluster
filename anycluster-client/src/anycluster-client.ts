@@ -625,7 +625,6 @@ export class AnyclusterClient {
   }
 
   async getGroupedMapContents(groupBy: string) {
-
     const geoJSON = this.getClusterGeometry()
 
     const postData = {
@@ -643,6 +642,25 @@ export class AnyclusterClient {
 
     return data;
 
+  }
+
+  async getFilteredGroupedMapContents(filters: FilterOrNestedFilterList, groupBy: string) {
+    const geoJSON = this.getClusterGeometry()
+
+    const postData = {
+      "output_srid": this.srid,
+      "geometry_type": this.geometryType,
+      "geojson": geoJSON,
+      "clear_cache": true,
+      "filters": filters,
+      "group_by": groupBy,
+    } as GroupedMapContentRequestData;
+
+    const zoom = this.getZoom();
+
+    const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+
+    return data;
   }
 
   // hooks

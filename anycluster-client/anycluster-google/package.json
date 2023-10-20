@@ -1,6 +1,6 @@
 {
   "name": "anycluster-google",
-  "version": "0.3.5",
+  "version": "0.3.7",
   "description": "anycluster client for Google Maps",
   "main": "dist/main.js",
   "lib": "lib/anycluster-google.js",
@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.15.1",
-    "anycluster-client": "^0.3.5"
+    "anycluster-client": "^0.3.7"
   },
   "targets": {
     "main": {

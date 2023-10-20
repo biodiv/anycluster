@@ -276,8 +276,8 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
 
                     field_names = map_clusterer.get_gis_field_names()
 
-                    expected_field_names = ['id', 'name', 'style', 'rating', 'free_entrance', 'last_renewal',
-                                            'coordinates::bytea']
+                    expected_field_names = ['anymap_gardens.id', 'anymap_gardens.name', 'anymap_gardens.style', 'anymap_gardens.rating', 'anymap_gardens.free_entrance', 'anymap_gardens.last_renewal',
+                                            'anymap_gardens.coordinates::bytea']
 
                     self.assertEqual(field_names, expected_field_names)
 
@@ -298,7 +298,7 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
                     map_clusterer = MapClusterer(cluster_cache)
 
                     fields_str = map_clusterer.get_gis_fields_str()
-                    expected_str = 'id,name,style,rating,free_entrance,last_renewal,coordinates::bytea'
+                    expected_str = 'anymap_gardens.id,anymap_gardens.name,anymap_gardens.style,anymap_gardens.rating,anymap_gardens.free_entrance,anymap_gardens.last_renewal,anymap_gardens.coordinates::bytea'
 
                     self.assertEqual(fields_str, expected_str)
 
@@ -461,10 +461,12 @@ class TestMapClusterer(WithFilters, WithGIS, TestCase):
 
             for field_name in map_clusterer.get_gis_field_names():
 
-                if field_name == 'coordinates::bytea':
-                    field_name = 'coordinates'
+                if field_name == 'anymap_gardens.coordinates::bytea':
+                    field_name = 'anymap_gardens.coordinates'
 
-                self.assertEqual(getattr(garden, field_name), getattr(garden_, field_name))
+                model_field_name = field_name.replace('anymap_gardens.', '')
+
+                self.assertEqual(getattr(garden, model_field_name), getattr(garden_, model_field_name))
 
     def test_panned_request(self):
         pass

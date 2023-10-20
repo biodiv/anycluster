@@ -70,13 +70,13 @@ var $32b89fd7bc19b068$export$9a28c02ac0f6fc9d;
     LogicalOperators["OR"] = "OR";
 })($32b89fd7bc19b068$export$9a28c02ac0f6fc9d || ($32b89fd7bc19b068$export$9a28c02ac0f6fc9d = {}));
 const $32b89fd7bc19b068$var$$b4f6019a3c0f60c0$export$aa170efeb32c8cf9 = 13;
-const $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$2104d4dd9d4984b2 = Object.freeze({
+const $32b89fd7bc19b068$export$2104d4dd9d4984b2 = Object.freeze({
     minX: -179,
     maxX: 179,
     minY: -89,
     maxY: 89
 });
-const $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$6db2f048e15a981e = Object.freeze({
+const $32b89fd7bc19b068$export$6db2f048e15a981e = Object.freeze({
     minX: -20037500,
     maxX: 20037500,
     minY: -20048960,
@@ -87,8 +87,8 @@ class $32b89fd7bc19b068$export$5e01b9ff483562af {
         this.apiUrl = apiUrl;
         this.gridSize = gridSize;
         this.srid = srid;
-        if (this.srid == $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG4326) this.maxBounds = $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$2104d4dd9d4984b2;
-        else if (this.srid == $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG3857) this.maxBounds = $32b89fd7bc19b068$var$$9ef97b21dccf4ee3$export$6db2f048e15a981e;
+        if (this.srid == $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG4326) this.maxBounds = $32b89fd7bc19b068$export$2104d4dd9d4984b2;
+        else if (this.srid == $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG3857) this.maxBounds = $32b89fd7bc19b068$export$6db2f048e15a981e;
         else throw new Error(`invalid srid given: ${this.srid} `);
     }
     async getGridCluster(zoom, data) {
@@ -583,6 +583,20 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             "geojson": geoJSON,
             "clear_cache": true,
             "filters": this.filters,
+            "group_by": groupBy
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+        return data;
+    }
+    async getFilteredGroupedMapContents(filters, groupBy) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": filters,
             "group_by": groupBy
         };
         const zoom = this.getZoom();

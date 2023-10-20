@@ -248,6 +248,7 @@ export class AnyclusterClient {
     getMapContentCount(modulations?: Modulations): Promise<any>;
     getFilteredMapContentCount(filters?: FilterOrNestedFilterList, modulations?: Modulations): Promise<any>;
     getGroupedMapContents(groupBy: string): Promise<any>;
+    getFilteredGroupedMapContents(filters: FilterOrNestedFilterList, groupBy: string): Promise<any>;
     _onFinalClick(marker: Marker, data: any): void;
     _onGotClusters(): void;
 }

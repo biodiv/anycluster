@@ -596,6 +596,20 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
         const data = await this.anycluster.getGroupedMapContents(zoom, postData);
         return data;
     }
+    async getFilteredGroupedMapContents(filters, groupBy) {
+        const geoJSON = this.getClusterGeometry();
+        const postData = {
+            "output_srid": this.srid,
+            "geometry_type": this.geometryType,
+            "geojson": geoJSON,
+            "clear_cache": true,
+            "filters": filters,
+            "group_by": groupBy
+        };
+        const zoom = this.getZoom();
+        const data = await this.anycluster.getGroupedMapContents(zoom, postData);
+        return data;
+    }
     // hooks
     _onFinalClick(marker, data) {
         alert(JSON.stringify(data));
