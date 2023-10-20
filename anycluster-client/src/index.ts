@@ -9,6 +9,8 @@ export {
 
 export { 
     Anycluster,
+    Bounds3857,
+    Bounds4326,
 } from "./anycluster";
 
 export type {

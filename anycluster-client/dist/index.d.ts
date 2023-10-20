@@ -80,6 +80,8 @@ export interface Cluster {
     geojson?: Geometry;
     pinimg?: string;
 }
+export const Bounds4326: MaxBounds;
+export const Bounds3857: MaxBounds;
 export interface Filter {
     column: string;
     value: string | number | boolean;

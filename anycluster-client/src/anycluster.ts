@@ -6,7 +6,7 @@ export const Bounds4326: MaxBounds = Object.freeze({
     maxX: 179,
     minY: -89,
     maxY: 89
-})
+});
 
 
 export const Bounds3857: MaxBounds = Object.freeze({
@@ -14,7 +14,7 @@ export const Bounds3857: MaxBounds = Object.freeze({
     maxX: 20037500, // 20037508.34
     minY: -20048960, // -20048966.1
     maxY: 20048960 //  20048966.1
-})
+});
 
 export interface Filter {
     column: string

@@ -5,7 +5,13 @@ import {
     Cluster,
     ClusterMethod,
     GeoJSON as IGeoJSON,
-    IconType
+    IconType,
+    SRIDS
+} from 'anycluster-client';
+
+import {
+    Bounds3857,
+    Bounds4326
 } from 'anycluster-client';
 
 export {
@@ -258,6 +264,29 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
         });
     }
 
+    // Openlayers accumulates coordinates when panning across world borders
+    putXCoordinateIntoWorldBounds (XCoordinate: number): number {
+
+        let bounds = Bounds3857;
+
+        if (this.srid === SRIDS.EPSG4326) {
+            bounds = Bounds4326;
+        }
+
+        const worldWidth = bounds.maxX - bounds.minX;
+        const worldCount = Math.floor( Math.abs(XCoordinate) / worldWidth ) + 1;
+        const vector = worldWidth * worldCount;
+
+        if (XCoordinate < bounds.minX) {
+            // user panned to the right, map moved leftwards over the border
+            XCoordinate = XCoordinate + vector;
+        } else if (XCoordinate > bounds.maxX) {
+            // user panned to the left, map moved rightwards over the border
+            XCoordinate = XCoordinate - vector;
+        }
+
+        return XCoordinate;
+    }
 
     getViewport(): Viewport {
 
@@ -271,9 +300,9 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
         const top = extent[3];
 
         const viewportJSON = {
-            "left": left,
+            "left": this.putXCoordinateIntoWorldBounds(left),
             "top": top,
-            "right": right,
+            "right": this.putXCoordinateIntoWorldBounds(right),
             "bottom": bottom
         };
 

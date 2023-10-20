@@ -22,6 +22,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
     drawCell(cluster: Cluster): void;
     removeAllMarkers(): void;
     addMapEventListeners(): void;
+    putXCoordinateIntoWorldBounds(XCoordinate: number): number;
     getViewport(): Viewport;
     getZoom(): number;
     setZoom(zoom: number): void;

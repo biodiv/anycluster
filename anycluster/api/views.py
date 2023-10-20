@@ -73,7 +73,9 @@ class MapClusterViewBase:
 
         gis_queryset = Gis.objects.filter(pk__in=instances_pks)
 
-        serializer = GisModelSerializer(gis_queryset, many=True)
+        serializer_context = { 'request': self.request }
+
+        serializer = GisModelSerializer(gis_queryset, context=serializer_context, many=True)
         data = serializer.data
 
         return data
@@ -227,7 +229,9 @@ class GetDatasetContent(MapClusterViewBase, APIView):
 
         dataset = map_clusterer.get_dataset_content(dataset_id)
 
-        serializer = GisModelSerializer(dataset)
+        serializer_context = { 'request': request }
+
+        serializer = GisModelSerializer(dataset, context=serializer_context)
         data = serializer.data
 
         return Response(data)

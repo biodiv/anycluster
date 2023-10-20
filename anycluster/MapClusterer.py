@@ -204,7 +204,10 @@ class MapClusterer():
                     'coordinates': [polygon]
                 }
 
-                geos = GEOSGeometry(json.dumps(geom), srid=input_srid)
+                # the below causes an error
+                # geos = GEOSGeometry(json.dumps(geom), srid=input_srid)
+                geos = GEOSGeometry(json.dumps(geom))
+                geos.srid = input_srid
 
                 if geos.srid != self.db_srid:
                     ct = CoordTransform(SpatialReference(
@@ -277,6 +280,11 @@ class MapClusterer():
 
         srid =  geojson['geometry']['crs']['properties']['name'].split(':')[-1]
 
+        #left = min(left, MAX_BOUNDS[srid]['min_x'])
+        #right = min(right, MAX_BOUNDS[srid]['max_x'])
+        top = min(top, MAX_BOUNDS[srid]['max_y'])
+        bottom = min(top, MAX_BOUNDS[srid]['min_y'])
+
         if left > right:
 
             sanitized_geojson = {
@@ -302,6 +310,7 @@ class MapClusterer():
                     ]
                 }
             }
+
         else:
             sanitized_geojson = geojson
 

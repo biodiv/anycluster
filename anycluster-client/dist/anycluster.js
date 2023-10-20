@@ -606,5 +606,5 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
 
 
 
-export {$b4f6019a3c0f60c0$export$ae91e066970d978a as ClusterMethod, $b4f6019a3c0f60c0$export$8f4397a63c3cef66 as GeometryType, $b4f6019a3c0f60c0$export$13ff1290a9e22e77 as IconType, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d as SRIDS, $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 as Operators, $b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d as LogicalOperators, $9ef97b21dccf4ee3$export$5e01b9ff483562af as Anycluster, $2a18f65d622cfe30$export$a09c19a7c4419c1 as AnyclusterClient};
+export {$b4f6019a3c0f60c0$export$ae91e066970d978a as ClusterMethod, $b4f6019a3c0f60c0$export$8f4397a63c3cef66 as GeometryType, $b4f6019a3c0f60c0$export$13ff1290a9e22e77 as IconType, $b4f6019a3c0f60c0$export$55fee9ea2526ad0d as SRIDS, $b4f6019a3c0f60c0$export$7fa100a28fbb5fe2 as Operators, $b4f6019a3c0f60c0$export$9a28c02ac0f6fc9d as LogicalOperators, $9ef97b21dccf4ee3$export$5e01b9ff483562af as Anycluster, $9ef97b21dccf4ee3$export$6db2f048e15a981e as Bounds3857, $9ef97b21dccf4ee3$export$2104d4dd9d4984b2 as Bounds4326, $2a18f65d622cfe30$export$a09c19a7c4419c1 as AnyclusterClient};
 //# sourceMappingURL=anycluster.js.map

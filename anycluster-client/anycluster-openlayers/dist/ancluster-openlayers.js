@@ -1,4 +1,4 @@
-import {IconType as $hgUW1$IconType, AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $899780519fbdbc61$re_export$ClusterMethod} from "anycluster-client";
+import {IconType as $hgUW1$IconType, Bounds3857 as $hgUW1$Bounds3857, SRIDS as $hgUW1$SRIDS, Bounds4326 as $hgUW1$Bounds4326, AnyclusterClient as $hgUW1$AnyclusterClient, ClusterMethod as $899780519fbdbc61$re_export$ClusterMethod} from "anycluster-client";
 import $hgUW1$ollayerVector from "ol/layer/Vector";
 import $hgUW1$olsourceVector from "ol/source/Vector";
 import {Style as $hgUW1$Style, Stroke as $hgUW1$Stroke, Fill as $hgUW1$Fill, Icon as $hgUW1$Icon, Text as $hgUW1$Text} from "ol/style";
@@ -171,6 +171,19 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
             this.getClusters();
         });
     }
+    // Openlayers accumulates coordinates when panning across world borders
+    putXCoordinateIntoWorldBounds(XCoordinate) {
+        let bounds = (0, $hgUW1$Bounds3857);
+        if (this.srid === (0, $hgUW1$SRIDS).EPSG4326) bounds = (0, $hgUW1$Bounds4326);
+        const worldWidth = bounds.maxX - bounds.minX;
+        const worldCount = Math.floor(Math.abs(XCoordinate) / worldWidth) + 1;
+        const vector = worldWidth * worldCount;
+        if (XCoordinate < bounds.minX) // user panned to the right, map moved leftwards over the border
+        XCoordinate = XCoordinate + vector;
+        else if (XCoordinate > bounds.maxX) // user panned to the left, map moved rightwards over the border
+        XCoordinate = XCoordinate - vector;
+        return XCoordinate;
+    }
     getViewport() {
         const view = this.map.getView();
         const extent = view.calculateExtent(this.map.getSize());
@@ -179,9 +192,9 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
         const right = extent[2];
         const top = extent[3];
         const viewportJSON = {
-            "left": left,
+            "left": this.putXCoordinateIntoWorldBounds(left),
             "top": top,
-            "right": right,
+            "right": this.putXCoordinateIntoWorldBounds(right),
             "bottom": bottom
         };
         return viewportJSON;
