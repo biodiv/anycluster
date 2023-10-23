@@ -50,6 +50,7 @@ export interface AnyclusterClientSettings {
   gridFillColors?: Record<number, string>
   gridStrokeColors?: Record<number, string>
   onGotClusters?: () => void
+  startClustering?: boolean
 }
 
 export class AnyclusterClient {
@@ -122,7 +123,11 @@ export class AnyclusterClient {
     this.createClusterLayers();
     this.markerList = [];
 
-    this.startClustering();
+    const startClustering = settings.startClustering === false ? settings.startClustering : true;
+
+    if (startClustering === true) {
+      this.startClustering();
+    }
   }
 
   createClusterLayers(): void {

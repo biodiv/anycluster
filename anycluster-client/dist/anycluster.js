@@ -258,7 +258,8 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
         this.anycluster = new (0, $9ef97b21dccf4ee3$export$5e01b9ff483562af)(this.apiUrl, gridSize, this.srid);
         this.createClusterLayers();
         this.markerList = [];
-        this.startClustering();
+        const startClustering = settings.startClustering === false ? settings.startClustering : true;
+        if (startClustering === true) this.startClustering();
     }
     createClusterLayers() {
         throw new Error("NotImplementedError: createClusterLayers");

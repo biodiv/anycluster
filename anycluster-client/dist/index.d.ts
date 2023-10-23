@@ -166,6 +166,7 @@ export interface AnyclusterClientSettings {
     gridFillColors?: Record<number, string>;
     gridStrokeColors?: Record<number, string>;
     onGotClusters?: () => void;
+    startClustering?: boolean;
 }
 export class AnyclusterClient {
     map: any;

@@ -1,6 +1,6 @@
 {
   "name": "anycluster-openlayers",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "anycluster client for OpenLayers",
   "main": "dist/main.js",
   "lib": "lib/anycluster-openlayers.js",
@@ -37,7 +37,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "anycluster-client": "^0.3.7",
+    "anycluster-client": "^0.3.8",
     "ol": "^7.3.0"
   },
   "targets": {
