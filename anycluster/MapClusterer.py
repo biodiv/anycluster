@@ -766,7 +766,7 @@ class MapClusterer():
 
         gis_fields_str = self.get_gis_fields_str()
 
-        sql = '''SELECT {fields} FROM {schema_name}.{geo_table} {geo_table} {left_join_sql} WHERE {geomfilterstring} {filterstring} '''.format(
+        sql = '''SELECT {fields} FROM {schema_name}.{geo_table} {geo_table} {left_join_sql} WHERE {geomfilterstring} {filterstring} ORDER BY id DESC'''.format(
                 schema_name=self.schema_name, geo_table=geo_table, left_join_sql=left_join_sql,
                 geomfilterstring=geomfilterstring, filterstring=filterstring, fields=gis_fields_str)
 
