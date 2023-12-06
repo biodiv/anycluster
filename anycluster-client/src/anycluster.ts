@@ -61,6 +61,7 @@ export interface MapContentCountRequestData extends ClusterRequestData {
 export interface AreaContentRequestData extends ClusterRequestData {
     limit?: number
     offset?: number
+    order_by?: string
 }
 
 export interface GroupedMapContentRequestData extends ClusterRequestData {

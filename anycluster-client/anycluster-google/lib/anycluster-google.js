@@ -531,7 +531,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
     }
     /**
    * method for getting the unaggregated, paginated content of the map
-   */ async getMapContents(limit, offset) {
+   */ async getMapContents(limit, offset, orderBy) {
         const geoJSON = this.getClusterGeometry();
         const zoom = this.getZoom();
         const postData = {
@@ -541,7 +541,8 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             "clear_cache": false,
             "filters": this.filters,
             "limit": limit,
-            "offset": offset
+            "offset": offset,
+            "order_by": orderBy
         };
         const data = this.anycluster.getAreaContent(zoom, postData);
         return data;

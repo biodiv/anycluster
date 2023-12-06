@@ -567,7 +567,7 @@ export class AnyclusterClient {
   /**
    * method for getting the unaggregated, paginated content of the map
    */
-  async getMapContents(limit?: number, offset?: number) {
+  async getMapContents(limit?: number, offset?: number, orderBy?: string) {
     const geoJSON = this.getClusterGeometry();
     const zoom = this.getZoom();
 
@@ -579,6 +579,7 @@ export class AnyclusterClient {
       "filters": this.filters,
       "limit": limit,
       "offset": offset,
+      "order_by": orderBy,
     } as AreaContentRequestData;
 
     const data = this.anycluster.getAreaContent(zoom, postData);

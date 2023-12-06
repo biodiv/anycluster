@@ -118,6 +118,7 @@ export interface MapContentCountRequestData extends ClusterRequestData {
 export interface AreaContentRequestData extends ClusterRequestData {
     limit?: number;
     offset?: number;
+    order_by?: string;
 }
 export interface GroupedMapContentRequestData extends ClusterRequestData {
     group_by: string;
@@ -242,7 +243,7 @@ export class AnyclusterClient {
     /**
      * method for getting the unaggregated, paginated content of the map
      */
-    getMapContents(limit?: number, offset?: number): Promise<any>;
+    getMapContents(limit?: number, offset?: number, orderBy?: string): Promise<any>;
     /**
      * methods for getting counts of objects on the current map / geometry
      */
