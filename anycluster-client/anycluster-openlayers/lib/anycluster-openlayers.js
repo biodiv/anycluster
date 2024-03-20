@@ -228,6 +228,9 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         this.apiUrl = apiUrl;
         this.markerFolderPath = markerFolderPath;
         this.filters = [];
+        this.isStartup = false // openlayers fires moveend after loadend. This triggers two clustering requests of which the latter has to be dismissed
+        ;
+        this.latestClusterRequestTimestamp = null;
         this.map = map;
         this.apiUrl = apiUrl;
         this.markerFolderPath = markerFolderPath;
@@ -454,22 +457,29 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             "filters": this.filters
         };
         const zoom = this.getZoom();
-        if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.kmeans) {
-            const clusters = await this.anycluster.getKmeansCluster(zoom, postData);
-            if (clusters.length > 0) clusters.forEach((cluster)=>{
-                this.drawMarker(cluster);
-            });
-        } else if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) {
-            const clusters = await this.anycluster.getGridCluster(zoom, postData);
-            if (clusters.length > 0) clusters.forEach((cluster)=>{
-                this.drawCell(cluster);
-            });
-        } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
-        this.onGotClusters();
+        if (Number.isInteger(zoom)) {
+            const requestTimestamp = new Date().getTime();
+            this.latestClusterRequestTimestamp = requestTimestamp;
+            if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.kmeans) {
+                const clusters = await this.anycluster.getKmeansCluster(zoom, postData);
+                if (requestTimestamp !== this.latestClusterRequestTimestamp) console.log(`[anycluster]: dismissing obsolete response. requestTimestamp: ${requestTimestamp} - latestClusterRequestTimestamp: ${this.latestClusterRequestTimestamp}`);
+                if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) clusters.forEach((cluster)=>{
+                    this.drawMarker(cluster);
+                });
+            } else if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) {
+                const clusters = await this.anycluster.getGridCluster(zoom, postData);
+                if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) clusters.forEach((cluster)=>{
+                    this.drawCell(cluster);
+                });
+            } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
+            this.onGotClusters();
+        } else console.log(`[anycluster]: non integer zoom: ${zoom}`);
     }
-    startClustering() {
-        this.getClusters(true);
+    async startClustering() {
+        this.isStartup = true;
+        await this.getClusters(true);
         this.addMapEventListeners();
+        this.isStartup = false;
     }
     filtersAreEqual(filter1, filter2) {
         if ("column" in filter1 && "column" in filter2) {
@@ -534,7 +544,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
     }
     /**
    * method for getting the unaggregated, paginated content of the map
-   */ async getMapContents(limit, offset) {
+   */ async getMapContents(limit, offset, orderBy) {
         const geoJSON = this.getClusterGeometry();
         const zoom = this.getZoom();
         const postData = {
@@ -544,7 +554,8 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             "clear_cache": false,
             "filters": this.filters,
             "limit": limit,
-            "offset": offset
+            "offset": offset,
+            "order_by": orderBy
         };
         const data = this.anycluster.getAreaContent(zoom, postData);
         return data;
@@ -20592,7 +20603,7 @@ class $2bda5b0f3abd2a22$export$e7e1d3d8299bc13e extends (0, $32b89fd7bc19b068$ex
                 this.removeAllMarkers();
                 this.currentZoom = newZoom;
             }
-            this.getClusters();
+            if (this.isStartup === false) this.getClusters();
         });
     }
     // Openlayers accumulates coordinates when panning across world borders

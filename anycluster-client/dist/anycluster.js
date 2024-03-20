@@ -232,6 +232,9 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
         this.apiUrl = apiUrl;
         this.markerFolderPath = markerFolderPath;
         this.filters = [];
+        this.isStartup = false // openlayers fires moveend after loadend. This triggers two clustering requests of which the latter has to be dismissed
+        ;
+        this.latestClusterRequestTimestamp = null;
         this.map = map;
         this.apiUrl = apiUrl;
         this.markerFolderPath = markerFolderPath;
@@ -458,22 +461,29 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
             "filters": this.filters
         };
         const zoom = this.getZoom();
-        if (this.clusterMethod == (0, $b4f6019a3c0f60c0$export$ae91e066970d978a).kmeans) {
-            const clusters = await this.anycluster.getKmeansCluster(zoom, postData);
-            if (clusters.length > 0) clusters.forEach((cluster)=>{
-                this.drawMarker(cluster);
-            });
-        } else if (this.clusterMethod == (0, $b4f6019a3c0f60c0$export$ae91e066970d978a).grid) {
-            const clusters = await this.anycluster.getGridCluster(zoom, postData);
-            if (clusters.length > 0) clusters.forEach((cluster)=>{
-                this.drawCell(cluster);
-            });
-        } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
-        this.onGotClusters();
+        if (Number.isInteger(zoom)) {
+            const requestTimestamp = new Date().getTime();
+            this.latestClusterRequestTimestamp = requestTimestamp;
+            if (this.clusterMethod == (0, $b4f6019a3c0f60c0$export$ae91e066970d978a).kmeans) {
+                const clusters = await this.anycluster.getKmeansCluster(zoom, postData);
+                if (requestTimestamp !== this.latestClusterRequestTimestamp) console.log(`[anycluster]: dismissing obsolete response. requestTimestamp: ${requestTimestamp} - latestClusterRequestTimestamp: ${this.latestClusterRequestTimestamp}`);
+                if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) clusters.forEach((cluster)=>{
+                    this.drawMarker(cluster);
+                });
+            } else if (this.clusterMethod == (0, $b4f6019a3c0f60c0$export$ae91e066970d978a).grid) {
+                const clusters = await this.anycluster.getGridCluster(zoom, postData);
+                if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) clusters.forEach((cluster)=>{
+                    this.drawCell(cluster);
+                });
+            } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
+            this.onGotClusters();
+        } else console.log(`[anycluster]: non integer zoom: ${zoom}`);
     }
-    startClustering() {
-        this.getClusters(true);
+    async startClustering() {
+        this.isStartup = true;
+        await this.getClusters(true);
         this.addMapEventListeners();
+        this.isStartup = false;
     }
     filtersAreEqual(filter1, filter2) {
         if ("column" in filter1 && "column" in filter2) {

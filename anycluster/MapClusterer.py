@@ -756,7 +756,7 @@ class MapClusterer():
         return list(entries_queryset)
 
 
-    def get_area_content(self, geojson, filters, limit=None, offset=None):
+    def get_area_content(self, geojson, filters, limit=None, offset=None, order_by='id'):
 
         geomfilterstring = self.get_geom_filterstring(geojson)
 
@@ -766,9 +766,15 @@ class MapClusterer():
 
         gis_fields_str = self.get_gis_fields_str()
 
-        sql = '''SELECT {fields} FROM {schema_name}.{geo_table} {geo_table} {left_join_sql} WHERE {geomfilterstring} {filterstring} ORDER BY id DESC'''.format(
+        order_direction = 'ASC'
+        if order_by.startswith('-'):
+            order_by = order_by[1:]
+            order_direction = 'DESC'
+
+        sql = '''SELECT {fields} FROM {schema_name}.{geo_table} {geo_table} {left_join_sql} WHERE {geomfilterstring} {filterstring} ORDER BY {order_by} {order_direction}'''.format(
                 schema_name=self.schema_name, geo_table=geo_table, left_join_sql=left_join_sql,
-                geomfilterstring=geomfilterstring, filterstring=filterstring, fields=gis_fields_str)
+                geomfilterstring=geomfilterstring, filterstring=filterstring, fields=gis_fields_str,
+                order_by=order_by, order_direction=order_direction)
 
         if limit != None:
             sql = '{sql} LIMIT {limit}'.format(sql=sql, limit=limit)

@@ -1,6 +1,6 @@
 {
   "name": "anycluster-client",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "anycluster client for requesting map clusters from anycluster",
   "main": "dist/main.js",
   "module": "dist/anycluster.js",

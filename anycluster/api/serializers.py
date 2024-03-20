@@ -95,6 +95,7 @@ class AreaContentRequestSerializer(ClusterRequestSerializer):
 
     limit = serializers.IntegerField(required=False, write_only=True)
     offset = serializers.IntegerField(required=False, write_only=True)
+    order_by = serializers.CharField(required=False, write_only=True)
 
 
 class MapContentCountSerializer(ClusterRequestSerializer):

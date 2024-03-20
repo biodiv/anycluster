@@ -67,11 +67,14 @@ class MapClusterViewBase:
         request.session[self.cache_name] = cluster_cache_json
 
 
-    def serialize_gis_model_list(self, map_clusterer, instances_list):
+    def serialize_gis_model_list(self, map_clusterer, instances_list, order_by=None):
 
         instances_pks = [i.pk for i in instances_list]
 
         gis_queryset = Gis.objects.filter(pk__in=instances_pks)
+
+        if order_by:
+            gis_queryset = gis_queryset.order_by(order_by)
 
         serializer_context = { 'request': self.request }
 
@@ -196,6 +199,7 @@ class GetAreaContent(MapClusterViewBase, APIView):
 
             limit = serializer.validated_data.get('limit', None)
             offset = serializer.validated_data.get('offset', None)
+            order_by = serializer.validated_data.get('order_by', 'id')
 
             filters = serializer.validated_data['filters']
 
@@ -204,9 +208,9 @@ class GetAreaContent(MapClusterViewBase, APIView):
 
             geojson = serializer.validated_data['geojson']
 
-            area_content = map_clusterer.get_area_content(geojson, filters, limit, offset)
+            area_content = map_clusterer.get_area_content(geojson, filters, limit, offset, order_by)
 
-            data = self.serialize_gis_model_list(map_clusterer, area_content)
+            data = self.serialize_gis_model_list(map_clusterer, area_content, order_by=order_by)
 
             return Response(data)
 

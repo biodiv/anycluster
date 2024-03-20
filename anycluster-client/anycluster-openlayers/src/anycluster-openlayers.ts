@@ -260,7 +260,9 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
                 this.removeAllMarkers();
                 this.currentZoom = newZoom;
             }
-            this.getClusters();
+            if (this.isStartup === false) {
+                this.getClusters();
+            }
         });
     }
 

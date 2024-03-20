@@ -168,7 +168,7 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
                 this.removeAllMarkers();
                 this.currentZoom = newZoom;
             }
-            this.getClusters();
+            if (this.isStartup === false) this.getClusters();
         });
     }
     // Openlayers accumulates coordinates when panning across world borders

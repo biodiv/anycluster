@@ -191,6 +191,8 @@ export class AnyclusterClient {
     gridFillColors: Record<number, string>;
     gridStrokeColors: Record<number, string>;
     filters: FilterOrNestedFilterList;
+    isStartup: boolean;
+    latestClusterRequestTimestamp: number | null;
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings);
     createClusterLayers(): void;
     addArea(geojson: object): void;
@@ -231,7 +233,7 @@ export class AnyclusterClient {
         };
     };
     getClusters(clearCache?: boolean): Promise<void>;
-    startClustering(): void;
+    startClustering(): Promise<void>;
     filtersAreEqual(filter1: FilterOrNestedFilter, filter2: FilterOrNestedFilter): boolean;
     filter(filter: Filter | NestedFilter | FilterOrNestedFilter[], reloadMarkers?: boolean): void;
     addFilter(filter: Filter, reloadMarkers?: boolean): void;
