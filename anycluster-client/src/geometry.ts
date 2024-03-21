@@ -49,18 +49,3 @@ export interface Marker {
     pinimg?: string
     geojson?: Geometry
 }
-
-/**
- * A Cluster as returned from anycluster api, kmeans or grid
- */
-export interface Cluster {
-    id: number
-    center : {
-        x: number
-        y: number
-    },
-    count: number
-    ids?: number[]
-    geojson?: Geometry,
-    pinimg?: string
-}

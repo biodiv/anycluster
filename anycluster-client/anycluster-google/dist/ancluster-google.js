@@ -67,7 +67,7 @@ class $24b0c9e43d90857a$export$bdd7c550c60f19cc extends (0, $hgUW1$AnyclusterCli
         };
         return markerIcon;
     }
-    drawMarker(cluster) {
+    _getSingleMarker(cluster) {
         const markerIcon = this.getMarkerIcon(cluster);
         const markerOptions = {
             "map": this.map,
@@ -82,14 +82,26 @@ class $24b0c9e43d90857a$export$bdd7c550c60f19cc extends (0, $hgUW1$AnyclusterCli
             color: "#FFF",
             fontWeight: "bold"
         };
-        let marker = new this.google.maps.Marker(markerOptions);
-        marker = this.setMarkerProps(marker, cluster);
+        const marker = new this.google.maps.Marker(markerOptions);
+        return marker;
+    }
+    _drawSingleMarker(marker) {
         this.addMarkerClickListener(marker);
         this.markerList.push(marker);
     }
+    drawKmeansMarker(cluster) {
+        let marker = this._getSingleMarker(cluster);
+        marker = this.setMarkerProps(marker, cluster);
+        this._drawSingleMarker(marker);
+    }
+    drawGridMakrer(cluster) {
+        let marker = this._getSingleMarker(cluster);
+        marker = this.setCellProps(marker, cluster);
+        this._drawSingleMarker(marker);
+    }
     drawCell(cluster) {
         const count = cluster.count;
-        if (count == 1) this.drawMarker(cluster);
+        if (count == 1) this.drawGridMarker(cluster);
         else {
             const geojson = {
                 "type": "Feature",
@@ -118,7 +130,7 @@ class $24b0c9e43d90857a$export$bdd7c550c60f19cc extends (0, $hgUW1$AnyclusterCli
         this.markerList.length = 0;
     }
     addMapEventListeners() {
-        this.map.addListener("dragend", ()=>this.getClusters());
+        this.map.addListener("tilesloaded", ()=>this.getClusters());
         this.map.addListener("zoom_changed", ()=>{
             this.removeAllMarkers();
             this.getClusters();

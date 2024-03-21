@@ -91,37 +91,47 @@ class $32b89fd7bc19b068$export$5e01b9ff483562af {
         else if (this.srid == $32b89fd7bc19b068$export$55fee9ea2526ad0d.EPSG3857) this.maxBounds = $32b89fd7bc19b068$export$6db2f048e15a981e;
         else throw new Error(`invalid srid given: ${this.srid} `);
     }
+    validateZoom(zoom) {
+        if (!Number.isInteger(zoom)) throw new Error(`[anycluster] non-integer zoom: ${zoom}`);
+    }
     async getGridCluster(zoom, data) {
+        this.validateZoom(zoom);
         const url = `${this.apiUrl}grid/${zoom}/${this.gridSize}/`;
         const clusters = await this.post(url, data);
         return clusters;
     }
     async getKmeansCluster(zoom, data) {
+        this.validateZoom(zoom);
         const url = `${this.apiUrl}kmeans/${zoom}/${this.gridSize}/`;
         const clusters = await this.post(url, data);
         return clusters;
     }
     async getKmeansClusterContent(zoom, data) {
+        this.validateZoom(zoom);
         const url = `${this.apiUrl}get-kmeans-cluster-content/${zoom}/${this.gridSize}/`;
         const clusterContent = await this.post(url, data);
         return clusterContent;
     }
     async getDatasetContent(zoom, datasetId) {
+        this.validateZoom(zoom);
         const url = `${this.apiUrl}get-dataset-content/${zoom}/${this.gridSize}/${datasetId}/`;
         const clusterContent = await this.get(url);
         return clusterContent;
     }
     async getMapContentCount(zoom, data) {
+        this.validateZoom(zoom);
         const url = `${this.apiUrl}get-map-content-count/${zoom}/${this.gridSize}/`;
         const mapContentCount = await this.post(url, data);
         return mapContentCount;
     }
     async getGroupedMapContents(zoom, data) {
+        this.validateZoom(zoom);
         const url = `${this.apiUrl}get-grouped-map-contents/${zoom}/${this.gridSize}/`;
         const groupedMapContents = await this.post(url, data);
         return groupedMapContents;
     }
     async getAreaContent(zoom, data) {
+        this.validateZoom(zoom);
         const url = `${this.apiUrl}get-area-content/${zoom}/${this.gridSize}/`;
         const areaContent = await this.post(url, data);
         return areaContent;
@@ -227,7 +237,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         this.filters = [];
         this.isStartup = false // openlayers fires moveend after loadend. This triggers two clustering requests of which the latter has to be dismissed
         ;
-        this.latestClusterRequestTimestamp = null;
+        this.latestFilterChangeTimestamp = null;
         this.map = map;
         this.apiUrl = apiUrl;
         this.markerFolderPath = markerFolderPath;
@@ -281,11 +291,14 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
     addMapEventListeners() {
         throw new Error("NotImplementedError: addMapEventListeners");
     }
-    drawMarker(cluster) {
-        throw new Error("NotImplementedError: drawMarker");
+    drawKmeansMarker(cluster) {
+        throw new Error("NotImplementedError: drawKmeansMarker");
     }
     drawCell(cluster) {
         throw new Error("NotImplementedError: drawCell");
+    }
+    drawGridMarker(cluster) {
+        throw new Error("NotImplementedError: drawGridMarker");
     }
     getGridSize() {
         if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) return this.gridGridSize;
@@ -373,23 +386,16 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         marker.x = cluster.center.x;
         marker.y = cluster.center.y;
         marker.count = cluster.count;
-        if (cluster.hasOwnProperty("ids")) marker.ids = cluster.ids;
-        if (cluster.hasOwnProperty("id")) marker.id = cluster.id;
-        if (cluster.hasOwnProperty("geojson")) /*const geojson = {
-          "type": "Feature",
-          "count": cluster.count,
-          "geometry": cluster.geojson,
-          "properties": {
-              "count": cluster.count
-          },
-          "crs" : {
-              "type" : "name",
-              "properties" : {
-                  "name" : this.srid
-              }
-          }
-      };*/ marker.geojson = cluster.geojson;
+        marker.ids = cluster.ids;
         return marker;
+    }
+    setCellProps(cell, cluster) {
+        cell.x = cluster.center.x;
+        cell.y = cluster.center.y;
+        cell.count = cluster.count;
+        cell.id = cluster.id;
+        cell.geojson = cluster.geojson;
+        return cell;
     }
     markerClickFunction(x, y) {
         this.removeAllMarkers();
@@ -401,8 +407,8 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         const zoom = this.getZoom();
         const x = marker.x;
         const y = marker.y;
-        const ids = marker.ids;
         if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.kmeans) {
+            const ids = marker.ids;
             const postData = {
                 "geometry_type": this.geometryType,
                 "input_srid": this.srid,
@@ -454,23 +460,28 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
             "filters": this.filters
         };
         const zoom = this.getZoom();
-        if (Number.isInteger(zoom)) {
-            const requestTimestamp = new Date().getTime();
-            this.latestClusterRequestTimestamp = requestTimestamp;
-            if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.kmeans) {
-                const clusters = await this.anycluster.getKmeansCluster(zoom, postData);
-                if (requestTimestamp !== this.latestClusterRequestTimestamp) console.log(`[anycluster]: dismissing obsolete response. requestTimestamp: ${requestTimestamp} - latestClusterRequestTimestamp: ${this.latestClusterRequestTimestamp}`);
-                if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) clusters.forEach((cluster)=>{
-                    this.drawMarker(cluster);
+        const filterTimestamp = this.latestFilterChangeTimestamp;
+        if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.kmeans) {
+            const clusters = await this.anycluster.getKmeansCluster(zoom, postData);
+            const postResponseZoom = this.getZoom();
+            // only draw markers/cells if the user did not zoom or change filters during the wait for the response
+            if (clusters.length > 0 && filterTimestamp === this.latestFilterChangeTimestamp && zoom === postResponseZoom) {
+                clusters.forEach((cluster)=>{
+                    this.drawKmeansMarker(cluster);
                 });
-            } else if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) {
-                const clusters = await this.anycluster.getGridCluster(zoom, postData);
-                if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) clusters.forEach((cluster)=>{
+                this.onGotClusters();
+            } else console.log(`[anycluster]: not drawing markers because of outdated response`);
+        } else if (this.clusterMethod == $32b89fd7bc19b068$export$ae91e066970d978a.grid) {
+            const clusters = await this.anycluster.getGridCluster(zoom, postData);
+            const postResponseZoom = this.getZoom();
+            // only draw markers/cells if the user did not zoom or change filters during the wait for the response
+            if (clusters.length > 0 && filterTimestamp === this.latestFilterChangeTimestamp && zoom === postResponseZoom) {
+                clusters.forEach((cluster)=>{
                     this.drawCell(cluster);
                 });
-            } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
-            this.onGotClusters();
-        } else console.log(`[anycluster]: non integer zoom: ${zoom}`);
+                this.onGotClusters();
+            } else console.log(`[anycluster]: not drawing markers because of outdated response`);
+        } else throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
     }
     async startClustering() {
         this.isStartup = true;
@@ -533,6 +544,7 @@ class $32b89fd7bc19b068$export$a09c19a7c4419c1 {
         this.postFilterChange(reloadMarkers);
     }
     postFilterChange(reloadMarkers) {
+        this.latestFilterChangeTimestamp = new Date().getTime();
         if (reloadMarkers != false) reloadMarkers = true;
         if (reloadMarkers == true) {
             this.removeAllMarkers();
@@ -1021,7 +1033,7 @@ class $5083483fb1ab9858$export$bdd7c550c60f19cc extends (0, $32b89fd7bc19b068$ex
         };
         return markerIcon;
     }
-    drawMarker(cluster) {
+    _getSingleMarker(cluster) {
         const markerIcon = this.getMarkerIcon(cluster);
         const markerOptions = {
             "map": this.map,
@@ -1036,14 +1048,26 @@ class $5083483fb1ab9858$export$bdd7c550c60f19cc extends (0, $32b89fd7bc19b068$ex
             color: "#FFF",
             fontWeight: "bold"
         };
-        let marker = new this.google.maps.Marker(markerOptions);
-        marker = this.setMarkerProps(marker, cluster);
+        const marker = new this.google.maps.Marker(markerOptions);
+        return marker;
+    }
+    _drawSingleMarker(marker) {
         this.addMarkerClickListener(marker);
         this.markerList.push(marker);
     }
+    drawKmeansMarker(cluster) {
+        let marker = this._getSingleMarker(cluster);
+        marker = this.setMarkerProps(marker, cluster);
+        this._drawSingleMarker(marker);
+    }
+    drawGridMakrer(cluster) {
+        let marker = this._getSingleMarker(cluster);
+        marker = this.setCellProps(marker, cluster);
+        this._drawSingleMarker(marker);
+    }
     drawCell(cluster) {
         const count = cluster.count;
-        if (count == 1) this.drawMarker(cluster);
+        if (count == 1) this.drawGridMarker(cluster);
         else {
             const geojson = {
                 "type": "Feature",
@@ -1072,7 +1096,7 @@ class $5083483fb1ab9858$export$bdd7c550c60f19cc extends (0, $32b89fd7bc19b068$ex
         this.markerList.length = 0;
     }
     addMapEventListeners() {
-        this.map.addListener("dragend", ()=>this.getClusters());
+        this.map.addListener("tilesloaded", ()=>this.getClusters());
         this.map.addListener("zoom_changed", ()=>{
             this.removeAllMarkers();
             this.getClusters();

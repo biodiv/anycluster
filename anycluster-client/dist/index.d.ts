@@ -66,20 +66,26 @@ export interface Marker {
     pinimg?: string;
     geojson?: Geometry;
 }
-/**
- * A Cluster as returned from anycluster api, kmeans or grid
- */
-export interface Cluster {
+export type KmeansCluster = {
+    ids: number[];
+    count: number;
+    center: {
+        x: number;
+        y: number;
+    };
+    pinimg: string;
+};
+export type KmeansClusterResponse = KmeansCluster[];
+export type GridCluster = {
     id: number;
     center: {
         x: number;
         y: number;
     };
     count: number;
-    ids?: number[];
-    geojson?: Geometry;
-    pinimg?: string;
-}
+    geojson: Geometry;
+    pinimg: null | string;
+};
 export const Bounds4326: MaxBounds;
 export const Bounds3857: MaxBounds;
 export interface Filter {
@@ -128,8 +134,9 @@ export class Anycluster {
     srid: SRIDS;
     maxBounds: MaxBounds;
     constructor(apiUrl: string, gridSize: number, srid: SRIDS);
+    validateZoom(zoom: number): void;
     getGridCluster(zoom: number, data: ClusterRequestData): Promise<any>;
-    getKmeansCluster(zoom: number, data: ClusterRequestData): Promise<any>;
+    getKmeansCluster(zoom: number, data: ClusterRequestData): Promise<KmeansClusterResponse>;
     getKmeansClusterContent(zoom: number, data: GetKmeansClusterContentRequestData): Promise<any>;
     getDatasetContent(zoom: number, datasetId: number): Promise<any>;
     getMapContentCount(zoom: number, data: MapContentCountRequestData): Promise<any>;
@@ -192,7 +199,7 @@ export class AnyclusterClient {
     gridStrokeColors: Record<number, string>;
     filters: FilterOrNestedFilterList;
     isStartup: boolean;
-    latestClusterRequestTimestamp: number | null;
+    latestFilterChangeTimestamp: number | null;
     constructor(map: any, apiUrl: string, markerFolderPath: string, settings: AnyclusterClientSettings);
     createClusterLayers(): void;
     addArea(geojson: object): void;
@@ -202,20 +209,22 @@ export class AnyclusterClient {
     setMap(x: number, y: number, zoom: number): void;
     getViewport(): Viewport;
     addMapEventListeners(): void;
-    drawMarker(cluster: Cluster): void;
-    drawCell(cluster: Cluster): void;
+    drawKmeansMarker(cluster: KmeansCluster): void;
+    drawCell(cluster: GridCluster): void;
+    drawGridMarker(cluster: GridCluster): void;
     getGridSize(): number;
     setClusterMethod(clusterMethod: ClusterMethod): void;
     setArea(geojson: GeoJSON): void;
-    _getSinglePinImageURL(cluster: Cluster): string;
-    selectPinIcon(cluster: Cluster): {
+    _getSinglePinImageURL(cluster: KmeansCluster | GridCluster): string;
+    selectPinIcon(cluster: KmeansCluster | GridCluster): {
         url: any;
         size: number[];
         anchor: number[];
         relativeAnchor: number[];
         popupAnchor: number[];
     };
-    setMarkerProps(marker: any, cluster: Cluster): any;
+    setMarkerProps(marker: any, cluster: KmeansCluster): any;
+    setCellProps(cell: any, cluster: GridCluster): any;
     markerClickFunction(x: number, y: number): void;
     onMarkerFinalClick(marker: any): Promise<void>;
     roundMarkerCount(count: number): number;

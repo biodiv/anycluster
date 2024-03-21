@@ -38,6 +38,11 @@ export type {
 export type {
     GeoJSON,
     Marker,
-    Cluster,
-    Viewport
+    Viewport,
 } from "./geometry";
+
+export type {
+    KmeansCluster,
+    KmeansClusterResponse,
+    GridCluster,
+} from "./types";

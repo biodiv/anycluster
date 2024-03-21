@@ -1,4 +1,4 @@
-import { AnyclusterClient, AnyclusterClientSettings, Viewport, Cluster, ClusterMethod, GeoJSON } from "anycluster-client";
+import { AnyclusterClient, AnyclusterClientSettings, Viewport, KmeansCluster, GridCluster, ClusterMethod, GeoJSON } from "anycluster-client";
 export { ClusterMethod };
 export class AnyclusterLeaflet extends AnyclusterClient {
     currentZoom: number;
@@ -7,9 +7,12 @@ export class AnyclusterLeaflet extends AnyclusterClient {
     addArea(geojson: GeoJSON): void;
     createClusterLayers(): void;
     createAreaLayer(): void;
-    getMarkerIcon(cluster: Cluster): any;
-    drawMarker(cluster: Cluster): void;
-    drawCell(cluster: Cluster): void;
+    getMarkerIcon(cluster: KmeansCluster | GridCluster): any;
+    _getLMarker(cluster: KmeansCluster | GridCluster): any;
+    _drawLMarker(marker: any): void;
+    drawKmeansMarker(cluster: KmeansCluster): void;
+    drawGridMarker(cluster: GridCluster): void;
+    drawCell(cluster: GridCluster): void;
     removeAllMarkers(): void;
     addMapEventListeners(): void;
     getViewport(): Viewport;

@@ -112,7 +112,7 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
         const style = new (0, $hgUW1$Style)(styleOptions);
         return style;
     }
-    drawMarker(cluster) {
+    _getMarkerFeature(cluster) {
         const style = this.getMarkerIcon(cluster);
         const point = new (0, $hgUW1$olgeomPoint)([
             cluster.center.x,
@@ -120,10 +120,22 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
         ]);
         let marker = new (0, $hgUW1$olFeature)(point);
         marker.setStyle(style);
-        let extendedMarker = this.setMarkerProps(marker, cluster);
+        return marker;
+    }
+    _drawSingleMarker(extendedMarker) {
         extendedMarker.clustertype = "marker";
         this.map.kmeansLayer.getSource().addFeature(extendedMarker);
         this.markerList.push(extendedMarker);
+    }
+    drawKmeansMarker(cluster) {
+        let marker = this._getMarkerFeature(cluster);
+        let extendedMarker = this.setMarkerProps(marker, cluster);
+        this._drawSingleMarker(extendedMarker);
+    }
+    drawGridMarker(cluster) {
+        let marker = this._getMarkerFeature(cluster);
+        let extendedMarker = this.setCellProps(marker, cluster);
+        this._drawSingleMarker(extendedMarker);
     }
     getCellStyle(feature, resolution) {
         const roundedCount = this.roundMarkerCount(feature.count);
@@ -143,14 +155,14 @@ class $899780519fbdbc61$export$e7e1d3d8299bc13e extends (0, $hgUW1$AnyclusterCli
     }
     drawCell(cluster) {
         const count = cluster.count;
-        if (count == 1) this.drawMarker(cluster);
+        if (count == 1) this.drawGridMarker(cluster);
         else {
             const geojson = {
                 "type": "Feature",
                 "geometry": cluster.geojson
             };
             let feature = new (0, $hgUW1$olformatGeoJSON)().readFeature(geojson);
-            let extendedFeature = this.setMarkerProps(feature, cluster);
+            let extendedFeature = this.setCellProps(feature, cluster);
             extendedFeature.clustertype = "cell";
             this.map.gridClusterLayer.getSource().addFeature(extendedFeature);
         }

@@ -2,7 +2,8 @@ import {
     AnyclusterClient,
     AnyclusterClientSettings,
     Viewport,
-    Cluster,
+    KmeansCluster,
+    GridCluster,
     ClusterMethod,
     GeoJSON as IGeoJSON,
     IconType,
@@ -143,7 +144,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
         this.map.areaLayer = areaLayer;
     }
 
-    getMarkerIcon(cluster: Cluster) {
+    getMarkerIcon(cluster: KmeansCluster | GridCluster) {
 
         const piniconObj = this.selectPinIcon(cluster);
 
@@ -176,8 +177,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
           
     }
 
-    drawMarker(cluster: Cluster) {
-
+    _getMarkerFeature(cluster: KmeansCluster | GridCluster) {
         const style = this.getMarkerIcon(cluster);
         const point = new Point([cluster.center.x, cluster.center.y]);
 
@@ -185,12 +185,27 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
 
         marker.setStyle(style);
 
-        let extendedMarker: ExtendedFeature = this.setMarkerProps(marker, cluster);
+        return marker;
+    }
+
+    _drawSingleMarker(extendedMarker: ExtendedFeature) {
         extendedMarker.clustertype = "marker";
 
         this.map.kmeansLayer.getSource().addFeature(extendedMarker)
 
         this.markerList.push(extendedMarker);
+    }
+
+    drawKmeansMarker(cluster: KmeansCluster) {
+        let marker = this._getMarkerFeature(cluster);
+        let extendedMarker: ExtendedFeature = this.setMarkerProps(marker, cluster);
+        this._drawSingleMarker(extendedMarker);
+    }
+
+    drawGridMarker(cluster: GridCluster) {
+        let marker = this._getMarkerFeature(cluster);
+        let extendedMarker: ExtendedFeature = this.setCellProps(marker, cluster);
+        this._drawSingleMarker(extendedMarker);
     }
 
     getCellStyle(feature: ExtendedFeature, resolution: number): Style {
@@ -213,12 +228,12 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
         return style;
     }
 
-    drawCell(cluster: Cluster) {
+    drawCell(cluster: GridCluster) {
 
         const count = cluster.count;
 
         if (count == 1) {
-            this.drawMarker(cluster)
+            this.drawGridMarker(cluster)
         }
         else {
 
@@ -229,7 +244,7 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
 
             let feature = new GeoJSON().readFeature(geojson);
 
-            let extendedFeature: ExtendedFeature = this.setMarkerProps(feature, cluster);
+            let extendedFeature: ExtendedFeature = this.setCellProps(feature, cluster);
             extendedFeature.clustertype = "cell";
 
             this.map.gridClusterLayer.getSource().addFeature(extendedFeature)

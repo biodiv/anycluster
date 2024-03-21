@@ -2,7 +2,8 @@ import {
     AnyclusterClient,
     AnyclusterClientSettings,
     Viewport,
-    Cluster,
+    KmeansCluster,
+    GridCluster,
     ClusterMethod,
     GeoJSON as IGeoJSON,
     IconType,
@@ -116,7 +117,7 @@ export class AnyclusterGoogle extends AnyclusterClient {
     createAreaLayer() {
     }
 
-    getMarkerIcon(cluster: Cluster) {
+    getMarkerIcon(cluster: KmeansCluster | GridCluster) {
         // get the correct icon
         const piniconObj = this.selectPinIcon(cluster);
 
@@ -132,8 +133,7 @@ export class AnyclusterGoogle extends AnyclusterClient {
         return markerIcon;
     }
 
-    drawMarker(cluster: Cluster) {
-
+    _getSingleMarker(cluster: KmeansCluster | GridCluster) {
         const markerIcon = this.getMarkerIcon(cluster);
 
         const markerOptions: MarkerOptions = {
@@ -153,20 +153,33 @@ export class AnyclusterGoogle extends AnyclusterClient {
             };
         }
 
-        let marker = new this.google.maps.Marker(markerOptions);
+        const marker = new this.google.maps.Marker(markerOptions);
 
-        marker = this.setMarkerProps(marker, cluster);
+        return marker;
+    }
 
+    _drawSingleMarker(marker: any) {
         this.addMarkerClickListener(marker);
-
         this.markerList.push(marker);
     }
 
-    drawCell(cluster: Cluster) {
+    drawKmeansMarker(cluster: KmeansCluster) {
+        let marker = this._getSingleMarker(cluster);
+        marker = this.setMarkerProps(marker, cluster);
+        this._drawSingleMarker(marker);
+    }
+
+    drawGridMakrer(cluster: GridCluster) {
+        let marker = this._getSingleMarker(cluster);
+        marker = this.setCellProps(marker, cluster);
+        this._drawSingleMarker(marker);
+    }
+
+    drawCell(cluster: GridCluster) {
         const count = cluster.count;
 
         if (count == 1) {
-            this.drawMarker(cluster);
+            this.drawGridMarker(cluster);
         }
 
         else {
@@ -210,7 +223,7 @@ export class AnyclusterGoogle extends AnyclusterClient {
     }
 
     addMapEventListeners() {
-        this.map.addListener("dragend", () => this.getClusters());
+        this.map.addListener("tilesloaded", () => this.getClusters());
         this.map.addListener("zoom_changed", () => {
             this.removeAllMarkers();
             this.getClusters();

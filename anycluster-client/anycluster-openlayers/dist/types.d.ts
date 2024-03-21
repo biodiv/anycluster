@@ -1,6 +1,7 @@
-import { AnyclusterClient, AnyclusterClientSettings, Viewport, Cluster, ClusterMethod, GeoJSON } from "anycluster-client";
+import { AnyclusterClient, AnyclusterClientSettings, Viewport, KmeansCluster, GridCluster, ClusterMethod, GeoJSON } from "anycluster-client";
 import { Style } from "ol/style";
 import Feature from "ol/Feature";
+import Point from "ol/geom/Point";
 export { ClusterMethod };
 interface ExtendedFeature extends Feature {
     x: number;
@@ -16,10 +17,13 @@ export class AnyclusterOpenLayers extends AnyclusterClient {
     addArea(geojson: GeoJSON): void;
     createClusterLayers(): void;
     createAreaLayer(): void;
-    getMarkerIcon(cluster: Cluster): Style;
-    drawMarker(cluster: Cluster): void;
+    getMarkerIcon(cluster: KmeansCluster | GridCluster): Style;
+    _getMarkerFeature(cluster: KmeansCluster | GridCluster): Feature<Point>;
+    _drawSingleMarker(extendedMarker: ExtendedFeature): void;
+    drawKmeansMarker(cluster: KmeansCluster): void;
+    drawGridMarker(cluster: GridCluster): void;
     getCellStyle(feature: ExtendedFeature, resolution: number): Style;
-    drawCell(cluster: Cluster): void;
+    drawCell(cluster: GridCluster): void;
     removeAllMarkers(): void;
     addMapEventListeners(): void;
     putXCoordinateIntoWorldBounds(XCoordinate: number): number;

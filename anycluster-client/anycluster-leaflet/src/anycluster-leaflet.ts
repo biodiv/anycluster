@@ -2,7 +2,8 @@ import {
     AnyclusterClient,
     AnyclusterClientSettings,
     Viewport,
-    Cluster,
+    KmeansCluster,
+    GridCluster,
     ClusterMethod,
     GeoJSON as IGeoJSON,
     IconType,
@@ -61,7 +62,7 @@ export class AnyclusterLeaflet extends AnyclusterClient {
 
     }
 
-    getMarkerIcon(cluster: Cluster) {
+    getMarkerIcon(cluster: KmeansCluster | GridCluster) {
 
         // get the correct icon
         const piniconObj = this.selectPinIcon(cluster);
@@ -91,7 +92,7 @@ export class AnyclusterLeaflet extends AnyclusterClient {
 
     }
 
-    drawMarker(cluster: Cluster) {
+    _getLMarker(cluster: KmeansCluster | GridCluster) {
         const markerIcon = this.getMarkerIcon(cluster);
 
         const latLng = L.latLng(cluster.center.y, cluster.center.x);
@@ -100,23 +101,36 @@ export class AnyclusterLeaflet extends AnyclusterClient {
             icon: markerIcon
         };
 
-        let marker = L.marker(latLng, marker_options);
+        const marker = L.marker(latLng, marker_options);
 
-        marker = this.setMarkerProps(marker, cluster);
+        return marker;
+    }
 
+    _drawLMarker(marker: any) {
         this.addMarkerClickListener(marker);
 
         marker.addTo(this.map.kmeansLayer);
 
         this.markerList.push(marker);
-
     }
 
-    drawCell(cluster: Cluster) {
+    drawKmeansMarker(cluster: KmeansCluster) {
+        let marker = this._getLMarker(cluster);
+        marker = this.setMarkerProps(marker, cluster);
+        this._drawLMarker(marker);
+    }
+
+    drawGridMarker(cluster: GridCluster) {
+        let marker = this._getLMarker(cluster);
+        marker = this.setCellProps(marker, cluster);
+        this._drawLMarker(marker);
+    }
+
+    drawCell(cluster: GridCluster) {
         const count = cluster.count;
 
         if (count == 1) {
-            this.drawMarker(cluster)
+            this.drawGridMarker(cluster)
         }
         else {
             const latLng = L.latLng(cluster.center.y, cluster.center.x);

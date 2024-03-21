@@ -50,21 +50,33 @@ class $34187c1d26cab582$export$d28c3646e727c4c9 extends (0, $hgUW1$AnyclusterCli
         });
         return markerIcon;
     }
-    drawMarker(cluster) {
+    _getLMarker(cluster) {
         const markerIcon = this.getMarkerIcon(cluster);
         const latLng = $hgUW1$latLng(cluster.center.y, cluster.center.x);
         const marker_options = {
             icon: markerIcon
         };
-        let marker = $hgUW1$marker(latLng, marker_options);
-        marker = this.setMarkerProps(marker, cluster);
+        const marker = $hgUW1$marker(latLng, marker_options);
+        return marker;
+    }
+    _drawLMarker(marker) {
         this.addMarkerClickListener(marker);
         marker.addTo(this.map.kmeansLayer);
         this.markerList.push(marker);
     }
+    drawKmeansMarker(cluster) {
+        let marker = this._getLMarker(cluster);
+        marker = this.setMarkerProps(marker, cluster);
+        this._drawLMarker(marker);
+    }
+    drawGridMarker(cluster) {
+        let marker = this._getLMarker(cluster);
+        marker = this.setCellProps(marker, cluster);
+        this._drawLMarker(marker);
+    }
     drawCell(cluster) {
         const count = cluster.count;
-        if (count == 1) this.drawMarker(cluster);
+        if (count == 1) this.drawGridMarker(cluster);
         else {
             const latLng = $hgUW1$latLng(cluster.center.y, cluster.center.x);
             const geojson = {

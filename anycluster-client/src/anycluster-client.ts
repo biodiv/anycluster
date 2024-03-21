@@ -1,6 +1,7 @@
 
 import { ClusterMethod, GeometryType, IconType, SRIDS, DefaultGridSizes, DefaultMarkerImageSizes, DefaultMaxZoom } from "./consts";
-import { GeoJSON, Marker, Cluster, Viewport } from "./geometry";
+import type { GeoJSON, Marker, Viewport } from "./geometry";
+import type { GridCluster, KmeansCluster } from "./types";
 import {
   Anycluster,
   GetKmeansClusterContentRequestData,
@@ -80,7 +81,7 @@ export class AnyclusterClient {
   filters: FilterOrNestedFilterList = []
 
   isStartup: boolean = false // openlayers fires moveend after loadend. This triggers two clustering requests of which the latter has to be dismissed
-  latestClusterRequestTimestamp: number | null = null
+  latestFilterChangeTimestamp: number | null = null
 
   constructor(public map: any, public apiUrl: string, public markerFolderPath: string, settings: AnyclusterClientSettings) {
 
@@ -165,12 +166,16 @@ export class AnyclusterClient {
     throw new Error("NotImplementedError: addMapEventListeners");
   }
 
-  drawMarker(cluster: Cluster): void {
-    throw new Error("NotImplementedError: drawMarker");
+  drawKmeansMarker(cluster: KmeansCluster): void {
+    throw new Error("NotImplementedError: drawKmeansMarker");
   }
 
-  drawCell(cluster: Cluster): void {
+  drawCell(cluster: GridCluster): void {
     throw new Error("NotImplementedError: drawCell");
+  }
+
+  drawGridMarker(cluster: GridCluster): void {
+    throw new Error("NotImplementedError: drawGridMarker");
   }
 
   getGridSize(): number {
@@ -217,7 +222,7 @@ export class AnyclusterClient {
     }
   }
 
-  _getSinglePinImageURL(cluster: Cluster) {
+  _getSinglePinImageURL(cluster: KmeansCluster | GridCluster) {
 
     const pinimg = cluster.pinimg;
 
@@ -231,7 +236,7 @@ export class AnyclusterClient {
 
   }
 
-  selectPinIcon(cluster: Cluster) {
+  selectPinIcon(cluster: KmeansCluster | GridCluster) {
 
     const count = cluster.count;
 
@@ -293,43 +298,26 @@ export class AnyclusterClient {
   }
 
   // marker can be an openlayers Feature or a L.marker
-  setMarkerProps(marker: any, cluster: Cluster) {
+  setMarkerProps(marker: any, cluster: KmeansCluster) {
 
     // add properties required by anycluster
     marker.x = cluster.center.x;
     marker.y = cluster.center.y;
     marker.count = cluster.count;
-
-    if (cluster.hasOwnProperty("ids")) {
-      marker.ids = cluster.ids;
-    }
-
-    if (cluster.hasOwnProperty("id")) {
-      marker.id = cluster.id;
-    }
-
-    if (cluster.hasOwnProperty("geojson")) {
-
-      /*const geojson = {
-          "type": "Feature",
-          "count": cluster.count,
-          "geometry": cluster.geojson,
-          "properties": {
-              "count": cluster.count
-          },
-          "crs" : {
-              "type" : "name",
-              "properties" : {
-                  "name" : this.srid
-              }
-          }
-      };*/
-
-      marker.geojson = cluster.geojson;
-    }
+    marker.ids = cluster.ids;
 
     return marker;
 
+  }
+
+  setCellProps(cell: any, cluster: GridCluster) {
+    cell.x = cluster.center.x;
+    cell.y = cluster.center.y;
+    cell.count = cluster.count;
+    cell.id = cluster.id;
+    cell.geojson = cluster.geojson;
+
+    return cell;
   }
 
   markerClickFunction(x: number, y: number) {
@@ -344,10 +332,11 @@ export class AnyclusterClient {
     const zoom = this.getZoom();
     const x = marker.x;
     const y = marker.y;
-    const ids = marker.ids;
 
     if (this.clusterMethod == ClusterMethod.kmeans) {
 
+      const ids = marker.ids;
+      
       const postData = {
         "geometry_type": this.geometryType,
         "input_srid": this.srid,
@@ -437,44 +426,39 @@ export class AnyclusterClient {
     } as ClusterRequestData;
 
     const zoom = this.getZoom();
+    const filterTimestamp = this.latestFilterChangeTimestamp;
 
-    if (Number.isInteger(zoom)) {
+    if (this.clusterMethod == ClusterMethod.kmeans) {
+      const clusters: KmeansCluster[] = await this.anycluster.getKmeansCluster(zoom, postData);
+      const postResponseZoom = this.getZoom();
+      // only draw markers/cells if the user did not zoom or change filters during the wait for the response
+      if (clusters.length > 0 && filterTimestamp === this.latestFilterChangeTimestamp && zoom === postResponseZoom) {
+        clusters.forEach(cluster => {
+          this.drawKmeansMarker(cluster);
+        });
 
-      const requestTimestamp = new Date().getTime();
-      this.latestClusterRequestTimestamp = requestTimestamp;
-
-      if (this.clusterMethod == ClusterMethod.kmeans) {
-
-        const clusters: Cluster[] = await this.anycluster.getKmeansCluster(zoom, postData);
-
-        if (requestTimestamp !== this.latestClusterRequestTimestamp) {
-          console.log(`[anycluster]: dismissing obsolete response. requestTimestamp: ${requestTimestamp} - latestClusterRequestTimestamp: ${this.latestClusterRequestTimestamp}`);
-        }
-
-        if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) {
-          clusters.forEach(cluster => {
-            this.drawMarker(cluster);
-          });
-        }
+        this.onGotClusters();
+      } else {
+        console.log(`[anycluster]: not drawing markers because of outdated response`);
       }
-      else if (this.clusterMethod == ClusterMethod.grid ) {
-        const clusters: Cluster[] = await this.anycluster.getGridCluster(zoom, postData);
 
-        if (clusters.length > 0 && requestTimestamp === this.latestClusterRequestTimestamp) {
-          clusters.forEach(cluster => {
+    } else if (this.clusterMethod == ClusterMethod.grid ) {
+      const clusters: GridCluster[] = await this.anycluster.getGridCluster(zoom, postData);
+      const postResponseZoom = this.getZoom();
+
+      // only draw markers/cells if the user did not zoom or change filters during the wait for the response
+      if (clusters.length > 0 && filterTimestamp === this.latestFilterChangeTimestamp && zoom === postResponseZoom) {
+        clusters.forEach(cluster => {
             this.drawCell(cluster);
-          });
-        }
-      }
-      else {
-        throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
-      }
+        });
 
-      this.onGotClusters();
+        this.onGotClusters();
+      } else {
+        console.log(`[anycluster]: not drawing markers because of outdated response`);
+      }
     } else {
-      console.log(`[anycluster]: non integer zoom: ${zoom}`);
+      throw new Error(`Invalid clusterMethod: ${this.clusterMethod}`);
     }
-
   }
 
   async startClustering() {
@@ -571,6 +555,9 @@ export class AnyclusterClient {
   }
 
   postFilterChange(reloadMarkers?: boolean) {
+
+    this.latestFilterChangeTimestamp = new Date().getTime();
+
     if (reloadMarkers != false) {
       reloadMarkers = true;
     }
