@@ -120,7 +120,6 @@ class MapClusterer():
         self.maptools = MapTools(int(maptile_size))
 
     # read the srid of the database.
-
     def get_database_srid(self):
 
         db_srid = None
@@ -705,12 +704,16 @@ class MapClusterer():
         query_geometry = None
         k = BASE_K
 
+        if not self.cluster_cache.geometries:
+            raise ValueError('No cached geometries found')
+
+
         for geometry in self.cluster_cache.geometries:
 
             geos = GEOSGeometry(geometry)
             # cached geometries are always srid==self.db_srid
             # bug: geos.srid is set to 4326 here, which is wrong
-            # it is impossible to instnatiate with GEOSGeometry(geometry, srid=3857), which throws an error
+            # it is impossible to instantiate with GEOSGeometry(geometry, srid=3857), which throws an error
 
             #if geos.srid != self.db_srid:
             #    ct = CoordTransform(SpatialReference(geos.srid), SpatialReference(self.db_srid))
@@ -724,11 +727,31 @@ class MapClusterer():
                 elif geometry_type == GEOMETRY_TYPE_AREA:
                     k = self.calculate_k(geos, zoom)
                     query_geometry = geos
+
+                if not query_geometry:
+                    error_message = '''cluster not found in cache.
+                        error getting geometry from geos.
+
+                        geometry from cluster cache:
+                        {0}
+
+                        cluster:
+                        {1}
+
+                        cell geos:
+                        {2}
+
+                        geometry_type: {3}
+                        x: {4}
+                        y: {5}
+                        ids: {6}
+                        filters: {7}
+                        zoom: {8}
+                        input_srid: {9}'''.format(geometry, cluster, cell_geos, geometry_type, x, y, ids, filters, zoom, input_srid)
+
+                    raise ValueError(error_message)
                     
                 break
-
-        if not query_geometry:
-            raise ValueError('cluster not found in cache')
 
         filter_composer = FilterComposer(Gis, filters)
         filterstring = filter_composer.as_sql()
