@@ -3,6 +3,7 @@ __pycache__
 node_modules
 .parcel-cache
 docs/build
+venv
 # files
 *.pyc
 *.directory
