@@ -6,12 +6,11 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from anymap.models import Gardens, GARDEN_STYLES as G
-from datetime import datetime, timedelta
 from django.utils import timezone
 
 from django.contrib.gis.geos import GEOSGeometry
 
-import random
+import datetime, random
 
 class Command(BaseCommand):
 
@@ -61,9 +60,9 @@ def random_date():
     """
     end = timezone.now()
 
-    start = datetime.strptime('1/1/2008 1:30 PM', '%m/%d/%Y %I:%M %p').replace(tzinfo=timezone.utc)
+    start = datetime.datetime.strptime('1/1/2008 1:30 PM', '%m/%d/%Y %I:%M %p').replace(tzinfo=datetime.timezone.utc)
     
     delta = end - start
     int_delta = (delta.days * 24 * 60 * 60) + delta.seconds
     random_second = random.randrange(int_delta)
-    return start + timedelta(seconds=random_second)
+    return start + datetime.timedelta(seconds=random_second)

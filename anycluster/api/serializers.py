@@ -133,11 +133,13 @@ class ClusterContentRequestSerializer(serializers.Serializer):
     input_srid = serializers.CharField(default='EPSG:4326', required=False, write_only=True)
 
     geometry_type = serializers.ChoiceField(choices=GEOMETRY_TYPES, write_only=True)
+    geojson = serializers.JSONField(write_only=True, required=False)
+    filters = serializers.ListField(required=False, default=[], write_only=True)
 
     ids = serializers.ListField(child=serializers.IntegerField(), write_only=True)
     x = serializers.FloatField(write_only=True)
     y = serializers.FloatField(write_only=True)
-    filters = serializers.ListField(required=False, default=[], write_only=True)
+    
 
     def validate_filters(self, value):
         filters_are_allowed(value)

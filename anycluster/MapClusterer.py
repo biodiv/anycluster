@@ -705,7 +705,7 @@ class MapClusterer():
         k = BASE_K
 
         if not self.cluster_cache.geometries:
-            raise ValueError('No cached geometries found')
+            raise ValueError('[MapClusterer]: No cached geometries found')
 
 
         for geometry in self.cluster_cache.geometries:

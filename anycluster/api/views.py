@@ -157,6 +157,13 @@ class GetClusterContent(MapClusterViewBase, APIView):
 
         if serializer.is_valid():
 
+            # awlays use tha latest cache
+            cache = request.session.get(self.cache_name, {})
+            cached_geometries = cache.get('geometries', [])
+
+            if not cached_geometries:
+                raise ValueError('[GetClusterContent]: No cached geometries found')
+
             geometry_type = serializer.validated_data['geometry_type']
             output_srid = self.parse_srid(serializer.validated_data['output_srid'])
             input_srid = self.parse_srid(serializer.validated_data['input_srid'])

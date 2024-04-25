@@ -21,16 +21,8 @@ anycluster/api/json_schemas.py
 anycluster/api/serializers.py
 anycluster/api/urls.py
 anycluster/api/views.py
-anycluster/api/__pycache__/json_schemas.cpython-38.pyc
-anycluster/api/__pycache__/serializer_fields.cpython-38.pyc
-anycluster/api/__pycache__/serializers.cpython-38.pyc
-anycluster/api/__pycache__/urls.cpython-38.pyc
-anycluster/api/__pycache__/views.cpython-38.pyc
 anycluster/api/tests/test_serializers.py
 anycluster/api/tests/test_views.py
-anycluster/api/tests/__pycache__/common.cpython-38.pyc
-anycluster/api/tests/__pycache__/test_serializers.cpython-38.pyc
-anycluster/api/tests/__pycache__/test_views.cpython-38.pyc
 anycluster/static/anycluster/images/10.png
 anycluster/static/anycluster/images/100.png
 anycluster/static/anycluster/images/1000.png
@@ -49,9 +41,3 @@ anycluster/tests/mixins.py
 anycluster/tests/test_ClusterCache.py
 anycluster/tests/test_FilterComposer.py
 anycluster/tests/test_MapClusterer.py
-anycluster/tests/__pycache__/common.cpython-38.pyc
-anycluster/tests/__pycache__/mixins.cpython-38.pyc
-anycluster/tests/__pycache__/test_ClusterCache.cpython-38.pyc
-anycluster/tests/__pycache__/test_FilterComposer.cpython-38.pyc
-anycluster/tests/__pycache__/test_Filters.cpython-38.pyc
-anycluster/tests/__pycache__/test_MapClusterer.cpython-38.pyc
