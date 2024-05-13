@@ -333,12 +333,15 @@ export class AnyclusterClient {
     const x = marker.x;
     const y = marker.y;
 
+    const geoJSON = this.getClusterGeometry();
+
     if (this.clusterMethod == ClusterMethod.kmeans) {
 
       const ids = marker.ids;
       
       const postData = {
         "geometry_type": this.geometryType,
+        "geojson": geoJSON,
         "input_srid": this.srid,
         "x": x,
         "y": y,
@@ -415,7 +418,7 @@ export class AnyclusterClient {
 
   async getClusters(clearCache = false) {
 
-    const geoJSON = this.getClusterGeometry()
+    const geoJSON = this.getClusterGeometry();
 
     const postData = {
       "output_srid": this.srid,

@@ -45,6 +45,7 @@ export type FilterOrNestedFilterList = FilterOrNestedFilter[];
 
 export interface GetKmeansClusterContentRequestData {
     geometry_type: GeometryType
+    geojson?: GeoJSON
     input_srid: SRIDS
     x: number
     y: number

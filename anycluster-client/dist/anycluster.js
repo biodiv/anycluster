@@ -414,10 +414,12 @@ class $2a18f65d622cfe30$export$a09c19a7c4419c1 {
         const zoom = this.getZoom();
         const x = marker.x;
         const y = marker.y;
+        const geoJSON = this.getClusterGeometry();
         if (this.clusterMethod == (0, $b4f6019a3c0f60c0$export$ae91e066970d978a).kmeans) {
             const ids = marker.ids;
             const postData = {
                 "geometry_type": this.geometryType,
+                "geojson": geoJSON,
                 "input_srid": this.srid,
                 "x": x,
                 "y": y,
