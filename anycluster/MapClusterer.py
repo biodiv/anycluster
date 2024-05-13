@@ -692,7 +692,7 @@ class MapClusterer():
 
 
     # return all IDs of the pins contained by a kmeans cluster
-    def get_kmeans_cluster_content(self, geometry_type, ids, x, y, filters, zoom, input_srid=4326):
+    def get_kmeans_cluster_content(self, geometry_type, ids, x, y, filters, zoom, geojson=None, input_srid=4326):
 
         cluster = Point(x, y, srid=input_srid)
 
@@ -703,12 +703,17 @@ class MapClusterer():
 
         query_geometry = None
         k = BASE_K
+        
+        cluster_geometries = self.cluster_cache.geometries
 
-        if not self.cluster_cache.geometries:
-            raise ValueError('[MapClusterer]: No cached geometries found')
+        if not cluster_geometries:
+            if not geojson:
+                raise ValueError('[MapClusterer]: No cached geometries found, no geojson submitted')
+            
+            cluster_geometries = self.get_cluster_geometries(geojson, geometry_type, zoom)
 
 
-        for geometry in self.cluster_cache.geometries:
+        for geometry in cluster_geometries:
 
             geos = GEOSGeometry(geometry)
             # cached geometries are always srid==self.db_srid

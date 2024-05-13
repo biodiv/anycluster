@@ -131,4 +131,3 @@ class TestMapContentCountSerializer(TestCase):
 
         nested_value = serializer.validate_modulations(nested_modulation)
         self.assertEqual(nested_value, nested_modulation)
-

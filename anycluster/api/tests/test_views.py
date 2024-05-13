@@ -251,8 +251,8 @@ class TestGetKmeansClusterContent(WithGIS, WithFilters, APITestCase):
                             break
 
                     if is_left_join == True:
-                        print(kmeans_response.data)
-                        print(filters)
+                        #print(kmeans_response.data)
+                        #print(filters)
                         continue
 
                 cluster = kmeans_response.data[0]
@@ -302,6 +302,81 @@ class TestGetKmeansClusterContent(WithGIS, WithFilters, APITestCase):
                 response = view(request, **url_kwargs)
 
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
+                
+    def test_post_with_geojson(self):
+        
+        filter_lists = self.get_test_filters()
+
+        for geometry_type in GEOMETRY_TYPES:
+
+            for filters in filter_lists:
+        
+                url_kwargs = {
+                    'zoom': ZOOM,
+                    'grid_size': GRID_SIZE,
+                }
+
+                kmeans_url = reverse('kmeans_cluster', kwargs=url_kwargs)
+
+                kmeans_post_data = {
+                    'geojson' : GEOJSON_RECTANGLE,
+                    'filters': filters,
+                    'geometry_type': geometry_type,
+                }
+                
+                factory = APIRequestFactory()
+                kmeans_request = factory.post(kmeans_url, kmeans_post_data, format='json')
+                kmeans_request.session = {}
+
+                kmeans_view = KmeansCluster.as_view()
+
+                kmeans_response = kmeans_view(kmeans_request, **url_kwargs)
+                
+                if geometry_type == GEOMETRY_TYPE_AREA:
+                    self.assertEqual(len(kmeans_request.session['anycluster_cache']['geometries']), 1)
+
+                # for left join, the data has to be changed to yield a result
+                if len(kmeans_response.data) == 0:
+                    is_left_join = False
+                    for filter in filters:
+                        if '__' in filter['column']:
+                            is_left_join = True
+                            break
+
+                    if is_left_join == True:
+                        #print(kmeans_response.data)
+                        #print(filters)
+                        continue
+
+                cluster = kmeans_response.data[0]
+
+
+                ids = cluster['ids']
+                x = cluster['center']['x']
+                y = cluster['center']['y']
+
+                # view test
+                print('requesting content for cluster ids: {}'.format(ids) )
+
+                url = reverse('get_kmeans_cluster_content', kwargs=url_kwargs)
+
+                post_data = {
+                    'geometry_type': geometry_type,
+                    'geojson': GEOJSON_RECTANGLE,
+                    'ids': ids,
+                    'x': x,
+                    'y': y,
+                    'filters': filters,
+                }
+
+                request = factory.post(url, post_data, format='json')
+                request.session = {}
+
+                view = GetClusterContent.as_view()
+                response = view(request, **url_kwargs)
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
 
 
 class TestGetAreaContent(WithGIS, WithFilters, APITestCase):

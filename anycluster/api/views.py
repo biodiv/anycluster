@@ -160,9 +160,11 @@ class GetClusterContent(MapClusterViewBase, APIView):
             # awlays use tha latest cache
             cache = request.session.get(self.cache_name, {})
             cached_geometries = cache.get('geometries', [])
+            geojson = serializer.validated_data.get('geojson', None)
 
             if not cached_geometries:
-                raise ValueError('[GetClusterContent]: No cached geometries found')
+                if not geojson:
+                    raise ValueError('[GetClusterContent]: No cached geometries found, and no geojson submitted')
 
             geometry_type = serializer.validated_data['geometry_type']
             output_srid = self.parse_srid(serializer.validated_data['output_srid'])
@@ -180,10 +182,10 @@ class GetClusterContent(MapClusterViewBase, APIView):
             zoom = kwargs['zoom']
 
             cluster_content = map_clusterer.get_kmeans_cluster_content(geometry_type, ids, x, y, filters, zoom,
-                input_srid=input_srid)
+                geojson=geojson, input_srid=input_srid)
 
             data = self.serialize_gis_model_list(map_clusterer, cluster_content)
-
+            
             return Response(data)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
